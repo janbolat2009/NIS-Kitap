@@ -1,0 +1,65 @@
+body {
+  background-color: #003060; 
+  margin: 0;
+  padding: 0;
+}
+html, body {
+  background-color: #003060;
+  max-width: 1920px;
+  margin: 0 auto;
+  color: #F6EEE1;
+  font-family: Arial, sans-serif;
+}
+
+#app {
+  background-color: inherit;
+  min-height: 100vh; 
+}
+@font-face {
+  font-family: 'Gilroy';
+  src: url('./fonts/Gilroy-Thin.ttf') format('truetype');
+  font-weight: 200;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gilroy';
+  src: url('./fonts/Gilroy-Light.ttf') format('truetype');
+  font-weight: 300;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gilroy';
+  src: url('./fonts/Gilroy-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gilroy';
+  src: url('./fonts/Gilroy-Medium.ttf') format('truetype');
+  font-weight: 500;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gilroy';
+  src: url('./fonts/Gilroy-Semibold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gilroy';
+  src: url('./fonts/Gilroy-Bold.ttf') format('truetype');
+  font-weight: 700;
+  font-style: normal;
+}
+@font-face {
+  font-family: 'Gilroy';
+  src: url('./fonts/Gilroy-ExtraBold.otf') format('truetype');
+  font-weight: 800;
+  font-style: normal;
+}
+  @font-face {
+  font-family: 'Gilroy';
+  src: url('./fonts/Gilroy-Black.ttf') format('truetype');
+  font-weight: 900;
+  font-style: normal;
+}
