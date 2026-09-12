@@ -2,6 +2,9 @@ import mongoose from 'mongoose';
 import { readFile } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import dotenv from 'dotenv';
+
+dotenv.config({ path: path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../.env') });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -21,24 +24,25 @@ try {
 const bookSchema = new mongoose.Schema({
   title: String,
   author: String,
-  genre: [String], 
+  genre: [String],
   description: String,
   year: String,
   copies: Number,
   language: String,
+  embedding: [Number], 
 });
 const Book = mongoose.model('Book', bookSchema);
 
-mongoose.connect('mongodb://127.0.0.1:27017/booksdb')
+mongoose.connect(process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/nis-kitap')
   .then(async () => {
-    console.log('✅ MongoDB connected');
+    console.log('✅ MongoDB connected to nis-kitap');
 
     await Book.deleteMany({});
-    console.log('✅ Коллекция очищена');
+    console.log('✅ Коллекция books очищена');
 
     const normalizedBooks = books.map(book => ({
       ...book,
-      genre: Array.isArray(book.genre) ? book.genre : [book.genre || ''], 
+      genre: Array.isArray(book.genre) ? book.genre : [book.genre || ''],
     }));
 
     try {

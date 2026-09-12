@@ -1,1610 +1,1291 @@
 <template>
-  <div class="main-app">
-    <header class="header">
-      <img src="./img/Logotype.svg" alt="Логотип NIS Kitap" class="logo" @click="$router.push('/')"/>
-      <ul class="header-ul desktop-nav">
-        <li class="main" @click="$router.push('/')">Главная</li>
-        <li @click="$router.push('/catalog')">Каталог</li>
-        <li @click="$router.push('/about-us')">О нас</li>
-        <li v-if="!isLoggedIn">
-          <button class="register-btn" @click="showRegister = true">Регистрация</button>
-        </li>
-        <li v-else class="profile-icon">
-          <img src="./img/mdi_user_light.png" alt="Профиль" @click="showProfile = true" />
-        </li>
-      </ul>
-      <div class="mobile-nav-toggle md:hidden">
-        <button @click.stop="toggleMenu" class="burger-button">
-          <span class="burger-icon">{{ isMenuOpen ? '✕' : '☰' }}</span>
-        </button>
-        <transition name="slide">
-          <ul v-if="isMenuOpen" class="mobile-nav">
-            <li class="main" @click="$router.push('/'); toggleMenu()">Главная</li>
-            <li @click="$router.push('/catalog'); toggleMenu()">Каталог</li>
-            <li @click="$router.push('/about-us'); toggleMenu()">О нас</li>
-            <li v-if="!isLoggedIn">
-              <button class="register-btn" @click="showRegister = true; toggleMenu()">Регистрация</button>
-            </li>
-            <li v-else class="profile-icon">
-              <img src="./img/mdi_user_light.png" alt="Профиль" @click="showProfile = true; toggleMenu()" />
-            </li>
-          </ul>
-        </transition>
-      </div>
-    </header>
+  <div class="apple-main-app">
+    <!-- Apple Floating Navbar -->
+    <AppleNavbar 
+      :is-logged-in="isLoggedIn"
+      :user-name="userName"
+      :user-avatar="userAvatar"
+      @open-register="showRegister = true"
+      @open-profile="showProfile = true"
+      @open-search="focusSearchInput"
+    />
 
-    <div v-if="showRegister" class="modal-backdrop" @click="closeModal('showRegister')">
-      <div class="modal-content" @click.stop>
-        <button class="close-btn" @click="showRegister = false">×</button>
+    <!-- Main Page Content -->
+    <main class="page-content">
+      <!-- Ambient Background Glows -->
+      <div class="ambient-glow glow-blue"></div>
+      <div class="ambient-glow glow-indigo"></div>
+
+      <!-- Hero Section -->
+      <section class="hero-section">
+        <div class="hero-container">
+          <div class="hero-text-content">
+            <div class="hero-tag">
+              <span class="pulse-dot"></span>
+              <span>Интеллектуальная библиотека NIS</span>
+            </div>
+            <h1 class="hero-headline">
+              Открывай знания. <br />
+              <span class="gradient-headline">Читай с удовольствием.</span>
+            </h1>
+            <p class="hero-subheadline">
+              Все книги школы в одном цифровом пространстве. Умный поиск с искусственным интеллектом, мгновенное онлайн-бронирование и персональные рекомендации.
+            </p>
+            <div class="hero-cta-group">
+              <a href="#ai-search-section" class="apple-btn-primary">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                </svg>
+                <span>Найти книгу с ИИ</span>
+              </a>
+              <router-link to="/catalog" class="apple-btn-secondary">
+                <span>Каталог книг</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </router-link>
+            </div>
+          </div>
+
+          <div class="hero-visual">
+            <div class="visual-glass-card">
+              <img src="@/img/publicLibrary.png" alt="NIS Kitap Library" class="hero-library-art" />
+              <div class="glass-reflection"></div>
+              <div class="floating-chip chip-books">
+                <span class="chip-icon">📖</span>
+                <div>
+                  <strong>2 000+</strong>
+                  <small>Книг в каталоге</small>
+                </div>
+              </div>
+              <div class="floating-chip chip-ai">
+                <span class="chip-icon">✨</span>
+                <div>
+                  <strong>AI Search</strong>
+                  <small>Умный подбор</small>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- AI Search Section -->
+      <section class="ai-search-section" id="ai-search-section">
+        <div class="section-container">
+          <div class="section-badge-header">
+            <div class="section-mini-badge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+              <span>Интеллектуальный помощник</span>
+            </div>
+            <h2 class="section-title">Умный поиск по смыслу</h2>
+            <p class="section-subtitle">
+              Опишите своими словами тему, эмоцию или сюжет, и наш ИИ найдет наиболее подходящие книги
+            </p>
+          </div>
+
+          <!-- Glass Search Box -->
+          <div class="ai-search-box glass-panel">
+            <div class="search-input-wrapper">
+              <svg class="search-icon-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <input 
+                ref="searchInput"
+                v-model="searchQuery" 
+                type="text" 
+                placeholder="Например: хочу захватывающую книгу про космические путешествия или антиутопию" 
+                class="ai-search-input"
+                @keyup.enter="handleAiSearch"
+              />
+              <button 
+                v-if="searchQuery" 
+                class="clear-input-btn" 
+                @click="searchQuery = ''"
+                title="Очистить"
+              >
+                ✕
+              </button>
+            </div>
+            <button class="ai-submit-btn" :disabled="isSearching" @click="handleAiSearch">
+              <span v-if="isSearching" class="btn-spinner"></span>
+              <span v-else>Найти с ИИ</span>
+            </button>
+          </div>
+
+          <!-- Suggestion Chips -->
+          <div class="suggestion-chips-row">
+            <span class="chips-label">Быстрые идеи:</span>
+            <button 
+              v-for="prompt in suggestionPrompts" 
+              :key="prompt"
+              class="prompt-chip"
+              @click="applyPrompt(prompt)"
+            >
+              {{ prompt }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Genres Section -->
+      <section class="genres-section" id="genres-section">
+        <div class="section-container">
+          <div class="section-header-flex">
+            <div>
+              <h2 class="section-title">Жанры книг</h2>
+              <p class="section-subtitle">Выберите интересующее направление для изучения коллекции</p>
+            </div>
+            <router-link to="/catalog" class="view-all-link">
+              <span>Все в каталоге</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </router-link>
+          </div>
+
+          <div class="genres-grid">
+            <div 
+              v-for="genre in genreCards" 
+              :key="genre.name"
+              class="genre-apple-card"
+              :style="{ '--card-accent': genre.accent }"
+              @click="$router.push(genre.route)"
+            >
+              <div class="genre-icon-box">
+                <img :src="genre.icon" :alt="genre.name" class="genre-icon-img" />
+              </div>
+              <div class="genre-info">
+                <h3 class="genre-title">{{ genre.name }}</h3>
+                <p class="genre-desc">{{ genre.desc }}</p>
+              </div>
+              <div class="genre-arrow">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Languages Section -->
+      <section class="languages-section" id="languages-section">
+        <div class="section-container">
+          <div class="section-header-flex">
+            <div>
+              <h2 class="section-title">Языковые отделения</h2>
+              <p class="section-subtitle">Литература на трех основных языках нашей школы</p>
+            </div>
+          </div>
+
+          <div class="languages-grid">
+            <!-- Kazakh -->
+            <div class="lang-apple-card" @click="$router.push('/kazakh')">
+              <div class="lang-card-bg kz-bg"></div>
+              <div class="lang-content">
+                <div class="lang-flag-pill">🇰🇿 Қазақстан</div>
+                <h3 class="lang-title">Қазақ тілі</h3>
+                <p class="lang-desc">Классикалық қазақ әдебиеті, тарихи романдар мен заманауи шығармалар</p>
+                <div class="lang-action">
+                  <span>Кітаптарды қарау</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- Russian -->
+            <div class="lang-apple-card" @click="$router.push('/russian')">
+              <div class="lang-card-bg ru-bg"></div>
+              <div class="lang-content">
+                <div class="lang-flag-pill">🇷🇺 Классика и современность</div>
+                <h3 class="lang-title">Русский язык</h3>
+                <p class="lang-desc">Мировая художественная классика, научная фантастика и публицистика</p>
+                <div class="lang-action">
+                  <span>Смотреть книги</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </div>
+              </div>
+            </div>
+
+            <!-- English -->
+            <div class="lang-apple-card" @click="$router.push('/english')">
+              <div class="lang-card-bg en-bg"></div>
+              <div class="lang-content">
+                <div class="lang-flag-pill">🇬🇧 World Literature</div>
+                <h3 class="lang-title">English Books</h3>
+                <p class="lang-desc">Original editions, bestselling fiction, academic and IELTS resources</p>
+                <div class="lang-action">
+                  <span>Explore books</span>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+                    <polyline points="9 18 15 12 9 6"></polyline>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Bestsellers Spotlight Section -->
+      <section class="bestsellers-section" id="bestsellers-section">
+        <div class="section-container">
+          <div class="section-header-flex">
+            <div>
+              <div class="section-mini-badge">
+                <span>🔥 Популярное среди учеников</span>
+              </div>
+              <h2 class="section-title">Бестселлеры библиотеки</h2>
+              <p class="section-subtitle">Книги, которые читают прямо сейчас</p>
+            </div>
+            <router-link to="/catalog" class="view-all-link">
+              <span>Смотреть все</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </router-link>
+          </div>
+
+          <div v-if="loadingBestsellers" class="bestsellers-loading">
+            <div v-for="n in 4" :key="n" class="skeleton-card glass-panel"></div>
+          </div>
+
+          <div v-else class="bestsellers-grid">
+            <BookCard 
+              v-for="book in bestsellers" 
+              :key="book._id" 
+              :book="book" 
+              @select="goToBookDetail"
+            />
+          </div>
+        </div>
+      </section>
+
+      <!-- About Us Teaser Section -->
+      <section class="about-teaser-section">
+        <div class="section-container">
+          <div class="about-glass-box glass-panel">
+            <div class="about-text-side">
+              <span class="about-badge">О проекте NIS Kitap</span>
+              <h2 class="about-title">Создано учениками для учеников</h2>
+              <p class="about-description">
+                NIS Kitap — это не просто каталог, а экосистема удобного чтения. Мы объединили тысячи томов школьной библиотеки в современном цифровом интерфейсе, чтобы поиск нужной литературы занимал считанные секунды.
+              </p>
+              <div class="about-stats-row">
+                <div class="stat-item">
+                  <strong>2 000+</strong>
+                  <span>Школьных книг</span>
+                </div>
+                <div class="stat-item">
+                  <strong>7</strong>
+                  <span>Жанровых секций</span>
+                </div>
+                <div class="stat-item">
+                  <strong>3</strong>
+                  <span>Языка обучения</span>
+                </div>
+              </div>
+              <router-link to="/about-us" class="apple-btn-secondary about-cta">
+                <span>Узнать больше о нас</span>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 18 15 12 9 6"></polyline>
+                </svg>
+              </router-link>
+            </div>
+            <div class="about-visual-side">
+              <img src="@/img/illustra 1.png" alt="About NIS Kitap" class="about-teaser-img" />
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Modals -->
+    <!-- Register / Login Modal -->
+    <div v-if="showRegister" class="apple-modal-overlay" @click="showRegister = false">
+      <div class="modal-wrapper" @click.stop>
+        <button class="modal-close-icon" @click="showRegister = false">✕</button>
         <Register @registered="onRegistered" @loggedIn="onLoggedIn" />
       </div>
     </div>
 
-<div v-if="showProfile" class="profile-modal-backdrop" @click="closeModal('showProfile')">
-  <div class="profile-modal-content" @click.stop>
-    <button class="profile-close-btn" @click="showProfile = false">×</button>
-    <Profile :email="userEmail" :name="userName" @back="showProfile = false" />
-  </div>
-</div>
+    <!-- User Profile Modal -->
+    <div v-if="showProfile" class="apple-modal-overlay" @click="showProfile = false">
+      <div class="modal-wrapper" @click.stop>
+        <Profile 
+          :email="userEmail" 
+          :name="userName" 
+          @back="showProfile = false" 
+          @updated="onProfileUpdated"
+          @loggedOut="onLoggedOut"
+        />
+      </div>
+    </div>
 
-    <div v-if="showSearchResults" class="modal-backdrop" @click="closeModal('showSearchResults')">
-      <div class="modal-content" @click.stop>
-        <button class="close-btn" @click="showSearchResults = false">×</button>
+    <!-- AI Search Results Modal -->
+    <div v-if="showSearchResults" class="apple-modal-overlay" @click="showSearchResults = false">
+      <div class="modal-wrapper" @click.stop>
+        <button class="modal-close-icon" @click="showSearchResults = false">✕</button>
         <SearchResults :results="searchResults" @book-click="goToBookDetail" />
       </div>
     </div>
 
-    <img src="./img/Ellipse 1.png" alt="Декоративный эллипс" class="Ellipse">
-    <div class="welcome-div">
-      <div class="welcome">
-        <h1>Добро пожаловать в NIS Kitap</h1>
-        <h4>Здесь собраны все книги нашей школы в одном удобном цифровом каталоге. Искать книги по жанрам, языкам и интересам стало проще — воспользуйся умным поиском на базе искусственного интеллекта, чтобы быстро найти именно то, что тебе нужно. Забронируй понравившуюся книгу онлайн, следи за сроками возврата и всегда будь в курсе своих задолженностей. Читай и учись с комфортом вместе с NIS Kitap — библиотекой нового поколения!</h4>
-        <button class="ai-find" id="ai-find" @click="searchBooks">Найти книгу с ИИ</button>
-      </div>
-      <img src="./img/publicLibrary.png" alt="Иллюстрация библиотеки" class="publicLibrary">
-    </div>
-
-    <div class="AI-books" id="part1">
-      <h3 class="AI-text">Введи свои пожелания — жанр, автора, язык или тему — и наш ИИ подберёт книги, идеально подходящие именно тебе.</h3>
-      <div class="search-container">
-        <input type="text" v-model="searchQuery" placeholder="Например: Хочу книги про катастрофы" class="AI-input">
-        <div class="divider"></div>
-        <button class="search-btn" @click="searchBooks">
-          <img src="./img/material-symbols_search-rounded.png" alt="Поиск">
-        </button>
-      </div>
-      <button class="AI-btn" @click="searchBooks">Найти книгу с ИИ</button>
-    </div>
-
-    <img src="./img/line-2.svg" alt="Разделитель" class="line-1">
-
-    <div class="genre-main" id="part2">
-      <h2>Жанры книг</h2>
-      <div class="genre">
-        <div class="genre-div" @click="$router.push('/fantastica')">
-          <img src="./img/Fantastic.png" alt="Фантастика" class="Fantastic">
-          <p>Фантастика</p>
-        </div>
-        <div class="genre-div" @click="$router.push('/fantasy')">
-          <img src="./img/mdi_fantasy.png" alt="Фэнтези" class="Fantasy">
-          <p>Фэнтези</p>
-        </div>
-        <div class="genre-div" @click="$router.push('/detective')">
-          <img src="./img/ph_detective-fill.png" alt="Детектив" class="Detective">
-          <p>Детектив</p>
-        </div>
-        <div class="genre-div" @click="$router.push('/adventure')">
-          <img src="./img/icons8_adventures.png" alt="Приключения" class="Adventure">
-          <p>Приключения</p>
-        </div>
-        <div class="genre-div" @click="$router.push('/biography')">
-          <img src="./img/mdi_biography.png" alt="Биография" class="Biography">
-          <p>Биография</p>
-        </div>
-        <div class="genre-div" @click="$router.push('/romantica')">
-          <img src="./img/devicon-plain_love2d.png" alt="Романтика" class="Romantico">
-          <p>Романтика</p>
-        </div>
-        <div class="genre-div" @click="$router.push('/poetry')">
-          <img src="./img/streamline-ultimate_playlist-songs-bold.png" alt="Поэзия" class="poetry">
-          <p>Поэзия</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="cream">
-      <div class="lingua" id="part3">
-        <h2>Языки книг</h2>
-        <div class="lingua-div">
-          <img src="./img/Group 17.png" alt="Казахский" class="lingua-img" @click="$router.push('/kazakh')">
-          <img src="./img/Group 18.png" alt="Русский" @click="$router.push('/russian')">
-          <img src="./img/Group 19.png" alt="Английский" @click="$router.push('/english')">
-        </div>
-      </div>
-      <img src="./img/line-3.svg" alt="Разделитель" class="line-3">
-      <div class="bestsellers" id="part4">
-        <h2>Бестселлеры</h2>
-        <div class="best-main">
-          <div class="best-div"></div>
-          <div class="best-div"></div>
-          <div class="best-div"></div>
-          <div class="best-div"></div>
-          <div class="best-div"></div>
-          <div class="best-div"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="about-us">
-      <div class="about-text">
-        <h2>О нас</h2>
-        <h4>NIS Kitap — это современная онлайн-библиотека для школьников и учителей, созданная учениками для учеников. Наша цель — сделать чтение и поиск информации максимально удобными, интересными и доступными для каждого.</h4>
-      </div>
-      <img src="./img/illustra 1.png" alt="Иллюстрация о нас" class="about-img">
-    </div>
-
-    <img src="./img/Ellipse 12.png" alt="Декоративный эллипс" class="Ellipse-2">
-
-    <footer>
-      <div class="footer-left">
-        <p @click="$router.push('/catalog')">Главная</p>
-        <p><a href="#part1">Найти книгу с ИИ</a></p>
-        <p @click="$router.push('/catalog')">Каталог</p>
-        <p><a href="#part2">Жанры книг</a></p>
-        <p><a href="#part3">Языки книг</a></p>
-        <p><a href="#part4">Бестселлеры</a></p>
-        <p @click="$router.push('/about-us')">О нас</p>
-        <p @click="$router.push('/register')">Регистрация</p>
-      </div>
-      <div class="footer-right">
-        <div class="footer-right-contacts">
-          <p>Контакты:</p>
-          <div>
-            <p>janbolatique.kz@gmail.com</p>
-            <img src="./img/ic_baseline-email.png" alt="Email" class="email">
-          </div>
-          <div>
-            <p>+7 700 757 5481</p>
-            <img src="./img/ic_baseline-phone.png" alt="Телефон" class="phone">
-          </div>
-        </div>
-        <div class="footer-right-social">
-          <p>Социальные сети:</p>
-          <div>
-            <p>niskitap</p>
-            <img src="./img/mdi_instagram.png" alt="Instagram" class="insta">
-          </div>
-          <div>
-            <p>niskitap</p>
-            <img src="./img/mingcute_telegram-fill.png" alt="Telegram" class="telegram">
-          </div>
-        </div>
-      </div>
-    </footer>
+    <!-- Apple Footer -->
+    <AppleFooter />
   </div>
 </template>
 
 <script>
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
-import Register from './components/Register.vue';
-import Profile from './components/Profile.vue';
-import SearchResults from './components/SearchResults.vue';
-import axios from 'axios';
+import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import AppleNavbar from '@/components/AppleNavbar.vue';
+import AppleFooter from '@/components/AppleFooter.vue';
+import BookCard from '@/components/BookCard.vue';
+import Register from '@/components/Register.vue';
+import Profile from '@/components/Profile.vue';
+import SearchResults from '@/components/SearchResults.vue';
+import { getBooks, searchAi } from '@/services/bookService';
+
+// Images
+import fantasticIcon from '@/img/Fantastic.png';
+import fantasyIcon from '@/img/mdi_fantasy.png';
+import detectiveIcon from '@/img/ph_detective-fill.png';
+import adventureIcon from '@/img/icons8_adventures.png';
+import biographyIcon from '@/img/mdi_biography.png';
+import romanticaIcon from '@/img/devicon-plain_love2d.png';
+import poetryIcon from '@/img/streamline-ultimate_playlist-songs-bold.png';
 
 export default {
   name: 'App',
   components: {
+    AppleNavbar,
+    AppleFooter,
+    BookCard,
     Register,
     Profile,
     SearchResults,
   },
   setup() {
     const router = useRouter();
-    const isLoggedIn = ref(!!localStorage.getItem('user'));
+    const isLoggedIn = ref(false);
     const userEmail = ref('');
     const userName = ref('');
+    const userAvatar = ref('');
+
     const showRegister = ref(false);
     const showProfile = ref(false);
-    const isMenuOpen = ref(false);
     const showSearchResults = ref(false);
-    const searchQuery = ref('');
-    const searchResults = ref([]);
 
-    onMounted(() => {
-      const auth = getAuth();
-      onAuthStateChanged(auth, (user) => {
-        if (user) {
+    const searchQuery = ref('');
+    const isSearching = ref(false);
+    const searchResults = ref([]);
+    const searchInput = ref(null);
+
+    const bestsellers = ref([]);
+    const loadingBestsellers = ref(true);
+
+    const suggestionPrompts = [
+      'Антиутопия и цензура',
+      'Космическая фантастика',
+      'Қазақ тарихы',
+      'Психология и саморазвитие',
+      'Шерлок Холмс и детективы',
+    ];
+
+    const genreCards = [
+      { name: 'Фантастика', desc: 'Будущее, технологии и космос', route: '/fantastica', icon: fantasticIcon, accent: '#38BDF8' },
+      { name: 'Фэнтези', desc: 'Магия, миры и древние мифы', route: '/fantasy', icon: fantasyIcon, accent: '#818CF8' },
+      { name: 'Детектив', desc: 'Загадки, расследования и логика', route: '/detective', icon: detectiveIcon, accent: '#F59E0B' },
+      { name: 'Приключения', desc: 'Путешествия и опасные экспедиции', route: '/adventure', icon: adventureIcon, accent: '#10B981' },
+      { name: 'Биография', desc: 'Истории великих личностей', route: '/biography', icon: biographyIcon, accent: '#EC4899' },
+      { name: 'Романтика', desc: 'Чувства, переживания и судьбы', route: '/romantica', icon: romanticaIcon, accent: '#F43F5E' },
+      { name: 'Поэзия', desc: 'Стихи и поэтические сборники', route: '/poetry', icon: poetryIcon, accent: '#6366F1' },
+    ];
+
+    onMounted(async () => {
+      // 1. Проверка авторизации из localStorage
+      const localUser = localStorage.getItem('user');
+      if (localUser) {
+        try {
+          const parsed = JSON.parse(localUser);
           isLoggedIn.value = true;
-          userEmail.value = user.email || '';
-          userName.value = user.displayName || '';
-          localStorage.setItem('user', JSON.stringify({
-            email: userEmail.value,
-            name: userName.value,
-            avatar: '',
-          }));
-          console.log('Пользователь авторизован:', userEmail.value);
-        } else {
-          isLoggedIn.value = false;
-          userEmail.value = '';
-          userName.value = '';
-          localStorage.removeItem('user');
-          console.log('Пользователь не авторизован');
+          userEmail.value = parsed.email || '';
+          userName.value = parsed.name || '';
+          userAvatar.value = parsed.avatar || '';
+        } catch {
+          // ignore
         }
-      });
+      }
+
+      // 2. Firebase auth listener
+      try {
+        const auth = getAuth();
+        onAuthStateChanged(auth, (user) => {
+          if (user) {
+            isLoggedIn.value = true;
+            userEmail.value = user.email || '';
+            userName.value = user.displayName || userName.value || user.email.split('@')[0];
+            localStorage.setItem('user', JSON.stringify({
+              email: userEmail.value,
+              name: userName.value,
+              avatar: userAvatar.value,
+            }));
+            localStorage.setItem('isLoggedIn', 'true');
+          }
+        });
+      } catch (err) {
+        console.warn('Firebase init:', err);
+      }
+
+      // 3. Загрузка бестселлеров через bookService
+      try {
+        const all = await getBooks();
+        if (all && all.length > 0) {
+          // Выбираем интересные книги с высоким рейтингом / копиями для витрины
+          bestsellers.value = all.slice(0, 8);
+        }
+      } catch (err) {
+        console.error('Ошибка загрузки бестселлеров:', err);
+      } finally {
+        loadingBestsellers.value = false;
+      }
     });
 
-    const onRegistered = (payload) => {
-      console.log('Событие регистрации:', payload);
-      if (payload?.email && payload?.name) {
-        userEmail.value = payload.email;
-        userName.value = payload.name;
-        isLoggedIn.value = true;
-        showRegister.value = false;
-        showProfile.value = true;
-      } else {
-        console.error('Неверные данные регистрации:', payload);
-        isLoggedIn.value = false;
+    const focusSearchInput = () => {
+      const el = document.getElementById('ai-search-section');
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth' });
+        setTimeout(() => {
+          searchInput.value?.focus();
+        }, 500);
       }
     };
 
-    const onLoggedIn = (payload) => {
-      console.log('Событие входа:', payload);
-      if (payload?.email && payload?.name) {
-        userEmail.value = payload.email;
-        userName.value = payload.name;
-        isLoggedIn.value = true;
-        showRegister.value = false;
-      } else {
-        console.error('Неверные данные входа:', payload);
-        isLoggedIn.value = false;
+    const applyPrompt = (promptText) => {
+      searchQuery.value = promptText;
+      handleAiSearch();
+    };
+
+    const handleAiSearch = async () => {
+      if (!searchQuery.value || !searchQuery.value.trim()) {
+        focusSearchInput();
+        return;
+      }
+
+      isSearching.value = true;
+      try {
+        const results = await searchAi(searchQuery.value);
+        searchResults.value = results;
+        showSearchResults.value = true;
+      } catch (err) {
+        console.error('Ошибка поиска ИИ:', err);
+      } finally {
+        isSearching.value = false;
       }
     };
 
     const goToBookDetail = (book) => {
-      console.log('Переход к книге:', book.title);
       showSearchResults.value = false;
-      router.push({ name: 'BookDetail', params: { title: encodeURIComponent(book.title) } });
+      router.push(`/book/${encodeURIComponent(book.title)}`);
     };
 
-    const toggleMenu = (event) => {
-      if (event) event.stopPropagation();
-      isMenuOpen.value = !isMenuOpen.value;
-      if (isMenuOpen.value) {
-        document.addEventListener('click', closeMenuOnOutsideClick);
-      } else {
-        document.removeEventListener('click', closeMenuOnOutsideClick);
-      }
+    const onRegistered = (payload) => {
+      userEmail.value = payload.email;
+      userName.value = payload.name;
+      isLoggedIn.value = true;
+      showRegister.value = false;
+      showProfile.value = true;
+      localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: '' }));
+      localStorage.setItem('isLoggedIn', 'true');
     };
 
-    const closeMenuOnOutsideClick = (event) => {
-      const menu = document.querySelector('.mobile-nav');
-      const button = document.querySelector('.burger-button');
-      if (menu && !menu.contains(event.target) && button && !button.contains(event.target)) {
-        isMenuOpen.value = false;
-        document.removeEventListener('click', closeMenuOnOutsideClick);
-      }
+    const onLoggedIn = (payload) => {
+      userEmail.value = payload.email;
+      userName.value = payload.name;
+      isLoggedIn.value = true;
+      showRegister.value = false;
+      localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: '' }));
+      localStorage.setItem('isLoggedIn', 'true');
     };
 
-    const closeModal = (modalRef) => {
-      if (modalRef === 'showSearchResults') {
-        showSearchResults.value = false;
-      } else if (modalRef === 'showRegister') {
-        showRegister.value = false;
-      } else if (modalRef === 'showProfile') {
-        showProfile.value = false;
-      }
+    const onProfileUpdated = (data) => {
+      if (data.name) userName.value = data.name;
+      if (data.avatar) userAvatar.value = data.avatar;
     };
 
-    const searchBooks = async () => {
-      if (!searchQuery.value || searchQuery.value.trim() === '') {
-        alert('Пожалуйста, введите запрос для поиска!');
-        return;
-      }
-      console.log('Отправка запроса с:', searchQuery.value);
-      try {
-        const response = await axios.post('http://localhost:3001/api/openai/search', {
-          prompt: searchQuery.value.trim(),
-        }, {
-          headers: { 'Content-Type': 'application/json' },
-          timeout: 30000,
-        });
-        console.log('Получены данные:', response.data);
-        searchResults.value = response.data.books || [];
-        showSearchResults.value = true;
-        if (searchResults.value.length === 0) {
-          alert(response.data.message || 'По вашему запросу книги не найдены.');
-        } else {
-          console.log('Результаты поиска:', searchResults.value);
-        }
-      } catch (error) {
-        console.error('Ошибка поиска:', error.response ? error.response.data : error.message);
-        const message = error.response?.data?.error || 'Ошибка при поиске. Проверьте подключение к серверу.';
-        alert(message);
-      }
+    const onLoggedOut = () => {
+      isLoggedIn.value = false;
+      userEmail.value = '';
+      userName.value = '';
+      userAvatar.value = '';
     };
-
-    onUnmounted(() => {
-      document.removeEventListener('click', closeMenuOnOutsideClick);
-    });
 
     return {
-      router,
       isLoggedIn,
       userEmail,
       userName,
+      userAvatar,
       showRegister,
       showProfile,
-      isMenuOpen,
       showSearchResults,
       searchQuery,
+      isSearching,
       searchResults,
+      searchInput,
+      bestsellers,
+      loadingBestsellers,
+      suggestionPrompts,
+      genreCards,
+      focusSearchInput,
+      applyPrompt,
+      handleAiSearch,
+      goToBookDetail,
       onRegistered,
       onLoggedIn,
-      goToBookDetail,
-      toggleMenu,
-      closeModal,
-      searchBooks,
+      onProfileUpdated,
+      onLoggedOut,
     };
   },
 };
 </script>
 
 <style scoped>
-a {
-    text-decoration: none;
-    color:#F6EEE1;
-}
-* {
-    margin: 0;
-    padding: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    box-sizing: border-box;
-}
-.main-app {
-    background-color: #003060;
-    max-width: 1920px;
-    margin: 0 auto;
-    min-height: 100vh;
-    overflow-x: hidden;
-    width: 100%;
-}
-body {
-    background-color: #003060;
-    width: 100%;
-    max-width: 100vw;
-    overflow-x: hidden;
-}
-header {
-    background-color: #003060;
-    width: 100%;
-    max-width: 1920px;
-    position: fixed;
-    top: 0px;
-    left: 0px;
-    right: 0px;
-    z-index: 1000;
-    padding: 20px;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    animation: fadeIn 1s ease-in-out;
+.apple-main-app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  overflow-x: hidden;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-20px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-.header-ul {
-    list-style: none;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    margin-left: auto; 
-    margin-right: 120px; 
+.page-content {
+  flex: 1;
+  padding-top: 80px;
+  position: relative;
 }
 
-.mobile-nav{
-    display: none;
+/* Ambient Glows */
+.ambient-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(120px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.35;
 }
-.mobile-nav-toggle{
-    display: none;
+.glow-blue {
+  top: 40px;
+  left: 20%;
+  width: 500px;
+  height: 500px;
+  background: #0071E3;
 }
-.header-ul li {
-    margin: 0 30px; 
-    cursor: pointer;
-    color: #F6EEE1;
-    transition: all 800ms ease;
-    padding: 5px 10px;
-    border-radius: 5px;
-}
-.profile-icon:hover {
-    transform: scale(1.09);
-}
-.header-ul li:hover {
-    transform: scale(1.1) rotate(2deg);
-    background-color: #F6EEE1;
-    color: #003060;
-    box-shadow: 0 3px 10px rgba(246, 238, 225, 0.2);
-}
-.register-btn {
-  background-color: #F6EEE1;
-  color: #003060;
-  padding: 10px 20px;
-  border-radius: 6px;
-  border: 2px solid #F6EEE1;
-  transition: all 0.3s ease;
-  display: inline-block; 
+.glow-indigo {
+  top: 600px;
+  right: 15%;
+  width: 600px;
+  height: 600px;
+  background: #6366F1;
 }
 
-.register-btn:hover {
-  background-color: #003060;
-  color: #F6EEE1;
-  transform: scale(1.05);
+.section-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 1;
 }
 
-.Ellipse {
-    width: 100%;
-    max-width: 1920px;
-    height: auto;
-    animation: slideUp 0.8s ease-out;
+/* Hero Section */
+.hero-section {
+  padding: 60px 0 80px;
+  position: relative;
+  z-index: 1;
 }
 
-@keyframes slideUp {
-    from { transform: translateY(50px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+.hero-container {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  align-items: center;
+  gap: 50px;
 }
 
-.logo {
-    margin-left: 120px;
-    margin-top: 20px;
-    transition: all 0.3s ease;
+.hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  background: rgba(0, 113, 227, 0.14);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38BDF8;
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+.pulse-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #38BDF8;
+  box-shadow: 0 0 8px #38BDF8;
+  animation: pulse 2s infinite;
+}
+@keyframes pulse {
+  0% { transform: scale(0.95); opacity: 0.7; }
+  50% { transform: scale(1.2); opacity: 1; }
+  100% { transform: scale(0.95); opacity: 0.7; }
 }
 
-.logo:hover {
-    transform: scale(1.05) rotate(-5deg);
+.hero-headline {
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1.12;
+  letter-spacing: -0.03em;
+  margin: 0 0 20px;
+  color: #FFFFFF;
 }
 
-.welcome {
-    position: absolute;
-    left: 120px;
-    top: 220px;
-    color: #003060;
-    width: 45%;
-    animation: fadeIn 1s ease-in-out;
+.gradient-headline {
+  background: linear-gradient(135deg, #FFFFFF 20%, #38BDF8 65%, #818CF8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
-.welcome button {
-    background-color: #003060;
-    color: #F6EEE1;
-    padding: 10px 20px;
-    border-radius: 8px;
-    border: none;
-    margin: 25px 0px;
-    transition: all 800ms ease;
+.hero-subheadline {
+  font-size: 18px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 32px;
+  max-width: 540px;
 }
 
-.welcome button:hover {
-    transform: scale(1.09);
-    background-color: #F6EEE1;
-    color: #003060;
-    border: #003060;
-    border: 2px solid;
+.hero-cta-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.profile-modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
+/* Hero Visual */
+.hero-visual {
+  display: flex;
+  justify-content: center;
+}
+
+.visual-glass-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 32px;
+  padding: 30px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.5);
+  max-width: 480px;
   width: 100%;
-  height: 100%;
-  background-color: rgba(0, 48, 96, 0.8);
+}
+
+.hero-library-art {
+  width: 100%;
+  height: auto;
+  border-radius: 20px;
+  display: block;
+  filter: drop-shadow(0 10px 25px rgba(0, 0, 0, 0.4));
+  transition: transform 0.5s ease;
+}
+.visual-glass-card:hover .hero-library-art {
+  transform: scale(1.02);
+}
+
+.floating-chip {
+  position: absolute;
+  background: rgba(14, 22, 38, 0.9);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 16px;
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.4);
+  animation: float 4s ease-in-out infinite alternate;
+}
+.chip-books {
+  top: -16px;
+  left: -20px;
+}
+.chip-ai {
+  bottom: -16px;
+  right: -20px;
+  animation-delay: 2s;
+}
+@keyframes float {
+  from { transform: translateY(0px); }
+  to { transform: translateY(-8px); }
+}
+.chip-icon {
+  font-size: 22px;
+}
+.floating-chip strong {
+  display: block;
+  font-size: 15px;
+  color: #FFFFFF;
+}
+.floating-chip small {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Section Header Shared */
+.section-badge-header {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 32px;
+}
+
+.section-mini-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 9999px;
+  background: rgba(0, 113, 227, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: #38BDF8;
+  font-size: 12px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 10px;
+  color: #FFFFFF;
+}
+
+.section-subtitle {
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.65);
+  margin: 0;
+  max-width: 600px;
+  line-height: 1.5;
+}
+
+.section-header-flex {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.view-all-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #38BDF8;
+  text-decoration: none;
+  font-size: 14.5px;
+  font-weight: 600;
+  padding: 6px 14px;
+  background: rgba(0, 113, 227, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 9999px;
+  transition: all 0.25s ease;
+}
+.view-all-link:hover {
+  background: rgba(0, 113, 227, 0.22);
+  border-color: rgba(56, 189, 248, 0.5);
+  transform: translateX(3px);
+}
+
+/* AI Search Box */
+.ai-search-section {
+  padding: 60px 0;
+}
+
+.ai-search-box {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px 8px 18px;
+  max-width: 860px;
+  margin: 0 auto 20px;
+  border-radius: 9999px;
+  background: rgba(14, 24, 44, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), 0 0 30px rgba(0, 113, 227, 0.2);
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+.ai-search-box:focus-within {
+  border-color: #38BDF8;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5), 0 0 35px rgba(56, 189, 248, 0.35);
+}
+
+.search-input-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.search-icon-svg {
+  stroke: #38BDF8;
+  flex-shrink: 0;
+}
+
+.ai-search-input {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #FFFFFF;
+  font-family: inherit;
+  font-size: 16px;
+  outline: none;
+}
+.ai-search-input::placeholder {
+  color: rgba(255, 255, 255, 0.45);
+}
+
+.clear-input-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 4px 8px;
+}
+.clear-input-btn:hover {
+  color: #FFFFFF;
+}
+
+.ai-submit-btn {
+  background: linear-gradient(135deg, #0071E3 0%, #0056B3 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  padding: 12px 26px;
+  font-family: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 14px rgba(0, 113, 227, 0.4);
+}
+.ai-submit-btn:hover:not(:disabled) {
+  transform: scale(1.02);
+  box-shadow: 0 6px 20px rgba(0, 113, 227, 0.6);
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.suggestion-chips-row {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
-  animation: fadeIn 0.5s ease-in-out;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.profile-modal-content {
-  background: rgba(246, 238, 225, 0.95);
-  padding: 30px;
-  border-radius: 20px;
-  width: 90%;
-  max-width: 500px; 
-  max-height: 90vh;
-  overflow-y: auto;
+.chips-label {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.prompt-chip {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.8);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.prompt-chip:hover {
+  background: rgba(0, 113, 227, 0.2);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+/* Genres Grid */
+.genres-section {
+  padding: 70px 0;
+}
+
+.genres-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.genre-apple-card {
   position: relative;
-  box-shadow: 0 15px 40px rgba(0, 48, 96, 0.4);
-  animation: slideUp 0.6s ease-out;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 20px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.profile-close-btn {
+.genre-apple-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: var(--card-accent);
+  transform: translateY(-4px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+}
+
+.genre-icon-box {
+  width: 52px;
+  height: 52px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.genre-icon-img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.genre-info {
+  flex: 1;
+}
+
+.genre-title {
+  margin: 0 0 4px;
+  font-size: 16.5px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+
+.genre-desc {
+  margin: 0;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.55);
+  line-height: 1.4;
+}
+
+.genre-arrow {
+  color: rgba(255, 255, 255, 0.3);
+  transition: transform 0.2s ease, color 0.2s ease;
+}
+.genre-apple-card:hover .genre-arrow {
+  color: var(--card-accent);
+  transform: translateX(3px);
+}
+
+/* Languages Section */
+.languages-section {
+  padding: 50px 0 70px;
+}
+
+.languages-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 24px;
+}
+
+.lang-apple-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.04);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  padding: 30px;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.lang-apple-card:hover {
+  transform: translateY(-5px);
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+}
+
+.lang-card-bg {
   position: absolute;
-  top: 15px;
-  right: 15px;
-  background: rgba(0, 48, 96, 0.3);
-  font-size: 28px;
-  width: 40px;
-  height: 40px;
-  border: none;
+  inset: 0;
+  opacity: 0.12;
+  transition: opacity 0.35s ease;
+}
+.lang-apple-card:hover .lang-card-bg {
+  opacity: 0.2;
+}
+
+.kz-bg {
+  background: radial-gradient(circle at bottom right, #00AFCA, transparent 70%);
+}
+.ru-bg {
+  background: radial-gradient(circle at bottom right, #3B82F6, transparent 70%);
+}
+.en-bg {
+  background: radial-gradient(circle at bottom right, #8B5CF6, transparent 70%);
+}
+
+.lang-content {
+  position: relative;
+  z-index: 1;
+}
+
+.lang-flag-pill {
+  font-size: 12px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 4px 10px;
+  border-radius: 9999px;
+  width: fit-content;
+  margin-bottom: 16px;
+}
+
+.lang-title {
+  margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.lang-desc {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.5;
+  margin: 0 0 24px;
+}
+
+.lang-action {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #38BDF8;
+  font-size: 14px;
+  font-weight: 600;
+}
+.lang-apple-card:hover .lang-action svg {
+  transform: translateX(4px);
+}
+.lang-action svg {
+  transition: transform 0.2s ease;
+}
+
+/* Bestsellers */
+.bestsellers-section {
+  padding: 60px 0;
+}
+
+.bestsellers-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.bestsellers-loading {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 24px;
+}
+
+.skeleton-card {
+  height: 340px;
+  border-radius: 20px;
+  animation: pulse-skeleton 1.5s infinite ease-in-out;
+}
+@keyframes pulse-skeleton {
+  0% { opacity: 0.3; }
+  50% { opacity: 0.6; }
+  100% { opacity: 0.3; }
+}
+
+/* About Teaser */
+.about-teaser-section {
+  padding: 60px 0 100px;
+}
+
+.about-glass-box {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  align-items: center;
+  gap: 40px;
+  padding: 48px;
+  border-radius: 32px;
+}
+
+.about-badge {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #38BDF8;
+  background: rgba(0, 113, 227, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  padding: 4px 12px;
+  border-radius: 9999px;
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
+.about-title {
+  margin: 0 0 14px;
+  font-size: 32px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #FFFFFF;
+}
+
+.about-description {
+  font-size: 16px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 28px;
+}
+
+.about-stats-row {
+  display: flex;
+  gap: 32px;
+  margin-bottom: 32px;
+  flex-wrap: wrap;
+}
+
+.stat-item strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 800;
+  color: #FFFFFF;
+}
+.stat-item span {
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.about-visual-side {
+  display: flex;
+  justify-content: center;
+}
+.about-teaser-img {
+  max-width: 100%;
+  height: auto;
+  filter: drop-shadow(0 15px 30px rgba(0, 0, 0, 0.4));
+}
+
+/* Apple Modal Overlays */
+.apple-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.modal-wrapper {
+  position: relative;
+  max-width: 100%;
+}
+
+.modal-close-icon {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.7);
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   cursor: pointer;
-  color: #003060;
-  transition: all 0.3s ease;
-}
-
-.profile-close-btn:hover {
-  background: rgba(0, 48, 96, 0.5);
-  transform: scale(1.1);
-}
-
-@media (max-width: 768px) {
-  .profile-modal-content {
-    padding: 20px;
-    border-radius: 15px;
-    max-width: 95%;
-    margin: 10px;
-  }
-
-  .profile-close-btn {
-    top: 10px;
-    right: 10px;
-    width: 36px;
-    height: 36px;
-    font-size: 24px;
-  }
-}
-
-.welcome h1 {
-    margin-bottom: 20px;
-    font-weight: 800;
-    text-shadow: 1px 1px 5px rgba(246, 238, 225, 0.5);
-}
-
-.welcome h4 {
-    font-weight: 500;
-    line-height: 1.6;
-}
-
-.publicLibrary {
-    position: absolute;
-    right: 120px;
-    top: 110px;
-    animation: slideUp 0.8s ease-out;
-}
-
-.AI-books {
-    position: relative;
-    top: 95px;
-    margin: 0 auto;         
-    width: 40%;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-direction: column;
-    color: #F6EEE1;
-    text-align: center;
-    animation: fadeIn 1s ease-in-out;
-}
-
-.AI-text {
-    margin-bottom: 40px;
-    font-weight: 600;
-    text-shadow: 1px 1px 5px rgba(246, 238, 225, 0.5);
-}
-
-.AI-input {
-    flex: 1;
-    border: none;
-    outline: none;
-    background: transparent;
-    font-size: 16px;
-    color: #F6EEE1;
-    transition: all 0.3s ease;
-}
-
-.AI-input:focus {
-    transform: scale(1.02);
-    box-shadow: 0 0 10px rgba(246, 238, 225, 0.3);
-}
-
-.search-container {
-    display: flex;
-    align-items: center;
-    background-color: rgba(246, 238, 225, 0.9);
-    border-radius: 8px;
-    padding: 10px 20px;
-    width: 100%;
-    max-width: 700px;
-    margin: 0 auto;
-    margin-bottom: 45px;
-    transition: all 0.3s;
-}
-
-.search-container:hover {
-    transform: scale(1.02);
-    box-shadow: 0 0 15px rgba(246, 238, 225, 0.4);
-}
-
-.divider {
-    width: 2px;
-    height: 24px;
-    background-color: #F6EEE1;
-    margin: 0 15px;
-}
-
-.search-btn {
-    background: transparent;
-    border: none;
-    cursor: pointer;
-    transition: all 0.4s ease;
-}
-
-.search-btn img {
-    width: 24px;
-    height: 24px;
-    transition: all 0.3s ease;
-    filter: brightness(0.9);
-}
-
-.search-btn:hover img {
-    transform: rotate(360deg) scale(1.2);
-    filter: brightness(1.2) drop-shadow(0 0 5px #F6EEE1);
-}
-
-.AI-btn {
-    padding: 10px 20px;
-    background-color: rgba(246, 238, 225, 0.9);
-    color: #003060;
-    border: none;
-    border-radius: 8px;
-    transition: all 800ms ease;
-}
-
-.AI-btn:hover {
-    transform: scale(1.09);
-    background-color: #F6EEE1;
-    color: #003060;
-}
-
-.line-1 {
-    position: absolute;
-    top: 1134px;
-    width: 100%;
-    max-width: 1920px;
-    animation: fadeIn 1s ease-in-out;
-}
-
-.genre-main {
-    position: absolute;
-    top: 1234px;
-    width: 100%;
-    max-width: 1920px;
-    text-align: center;
-    animation: slideUp 0.8s ease-out;
-}
-
-.genre {
-    display: flex;
-    justify-content: space-between;
-    color: #F6EEE1;
-    margin: 0 120px;
-    transition: opacity 2s ease-in;
-}
-
-.genre.visible {
-    opacity: 1;
-}
-
-.genre-main h2 {
-    display: block;
-    color: #F6EEE1;
-    margin-bottom: 80px;
-    font-weight: 600;
-    text-shadow: 1px 1px 5px rgba(246, 238, 225, 0.5);
-}
-
-.genre-div {
-    transition: all 800ms ease;
-    cursor: pointer;
-    padding: 10px;
-    border-radius: 10px;
-    background: rgba(246, 238, 225, 0.2);
-}
-
-.genre-div:hover {
-    transform: scale(1.1) rotate(-5deg);
-    background: rgba(246, 238, 225, 0.4);
-    box-shadow: 0 5px 15px rgba(246, 238, 225, 0.3);
-}
-
-.genre-div p {
-    margin-top: 15px;
-}
-
-.cream {
-    position: absolute;
-    top: 1651px;
-    background-color: #F6EEE1;
-    width: 100%;
-    max-width: 1920px;
-    animation: slideUp 0.8s ease-out;
-}
-
-.lingua {
-    width: 100%;
-    display: block;
-    text-align: center;
-    margin-top: 100px;
-    margin-bottom: 130px;
-    position: relative;
-    top: -20px;
-}
-
-.lingua h2 {
-    margin-bottom: 80px;
-    color: #003060;
-}
-
-.lingua-div img {
-    margin: 0px 20px;
-    transition: all 800ms ease;
-    cursor: pointer;
-    border-radius: 10px;
-    padding: 5px;
-    background: rgba(0, 48, 96, 0.2);
-}
-
-.lingua-div img:hover {
-    transform: scale(1.1) rotate(5deg);
-    background: rgba(0, 48, 96, 0.4);
-    box-shadow: 0 5px 15px rgba(246, 238, 225, 0.3);
-}
-
-.line-3 {
-    width: 100%;
-    max-width: 1920px;
-    animation: fadeIn 1s ease-in-out;
-}
-
-.bestsellers {
-    margin-top: 100px;
-    color: #003060;
-    margin-bottom: 130px;
-}
-
-.bestsellers h2 {
-    font-weight: 600;
-    text-align: center;
-    margin-bottom: 80px;
-}
-
-.best-main {
-    width: 100%;
-    justify-content: space-around;
-    display: flex;
-    flex-direction: row;
-}
-
-.best-div {
-    width: 180px;
-    height: 250px;
-    background-color: gray;
-    margin: 0 24px;
-    border-radius: 8px;
-    transition: all 800ms ease;
-}
-
-.best-div:hover {
-    transform: scale(1.09);
-}
-
-.about-us {
-    position: absolute;
-    top: 2760px;
-    width: 100%;
-    max-width: 1920px;
-    display: flex;
-    justify-content: space-between;
-    background-color: #003060;
-    color: #F6EEE1;
-    align-items: center;
-    animation: fadeIn 1s ease-in-out;
-}
-
-.about-text {
-    width: 30%;
-    height: auto;
-    margin-left: 120px;
-    margin-top: 100px;
-    margin-bottom: 115px;
-}
-
-.about-text h2 {
-    font-weight: 600;
-    margin-bottom: 15px;
-    font-size: 40px;
-}
-
-.about-text h4 {
-    font-weight: 500;
-    font-size: 24px;
-}
-
-.about-img {
-    margin-right: 120px;
-    margin-top: 46px;
-    width: 393px;
-    height: auto;
-    position: relative;
-    top: -50px;
-    animation: slideUp 0.8s ease-out;
-}
-
-.Ellipse-2 {
-    width: 100%;
-    max-width: 1920px;
-    background-color: #003060;
-    z-index: 1;
-    position: absolute;
-    top: 3202px;
-    animation: fadeIn 1s ease-in-out;
-}
-
-footer {
-    position: absolute;
-    top: 3350px;
-    width: 100%;
-    max-width: 1920px;
-    background-color: #003060;
-    color: #F6EEE1;
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    z-index: 1000;
-    align-items: center;
-    animation: slideUp 0.8s ease-out;
-}
-
-.footer-left {
-    margin-left: 120px;
-}
-
-.footer-left p {
-    margin: 10px 0px;
-}
-
-.footer-right {
-    margin-right: 120px;
-    text-align: end;
-    justify-content: end;
-}
-
-.footer-right-contacts {
-    margin-bottom: 35px;
-}
-
-.footer-right-contacts div {
-    display: flex;
-    flex-direction: row;
-    margin-top: 11px;
-    justify-content: end;
-}
-
-.footer-right-social div {
-    display: flex;
-    flex-direction: row;
-    margin-top: 11px;
-    justify-content: end;
-}
-
-.footer-right-contacts div p, .footer-right-social div p {
-    margin-right: 4px;
-}
-
-.main {
-    font-weight: 600;
-    font-size: 20px;
-}
-
-.header-ul li {
-    transition: all 800ms ease;
-}
-
-.header-ul li:hover {
-    transform: scale(1.1) rotate(2deg);
-    background-color: #F6EEE1;
-    color: #003060;
-    box-shadow: 0 3px 10px rgba(246, 238, 225, 0.2);
-}
-
-.AI-btn {
-    transition: all 800ms ease;
-}
-
-.AI-btn:hover {
-    transform: scale(1.09);
-    background-color: #F6EEE1;
-    color: #003060;
-}
-
-.ai-find {
-    transition: all 800ms ease;
-}
-
-.ai-find:hover {
-    transform: scale(1.09);
-    background-color: #003060;
-    color: #F6EEE1;
-}
-
-.modal-backdrop {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 10000;
-  animation: fadeIn 0.5s ease-in-out;
+  font-size: 14px;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+.modal-close-icon:hover {
+  background: rgba(255, 255, 255, 0.18);
+  color: #FFFFFF;
 }
 
-.modal-content {
-  background: #F6EEE1;
-  padding: 30px;
-  border-radius: 12px;
-  width: 900px;
-  max-width: 90%;
-  max-height: 80vh;
-  overflow-y: auto;
-  position: relative;
-  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-  animation: slideUp 0.8s ease-out;
+/* Responsive */
+@media (max-width: 960px) {
+  .hero-container {
+    grid-template-columns: 1fr;
+    text-align: center;
+  }
+  .hero-headline {
+    font-size: 38px;
+  }
+  .hero-subheadline {
+    margin: 0 auto 28px;
+  }
+  .hero-cta-group {
+    justify-content: center;
+  }
+  .about-glass-box {
+    grid-template-columns: 1fr;
+    padding: 32px 24px;
+  }
 }
 
-.close-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  background: transparent;
-  font-size: 24px;
-  border: none;
-  cursor: pointer;
-  color: #003060;
-  transition: all 0.3s ease;
-}
-
-.close-btn:hover {
-  transform: rotate(90deg) scale(1.2);
-  color: #FF6B6B;
-}
-
-.book-item {
-  background-color: #fff;
-  padding: 15px;
-  margin-bottom: 15px;
-  border-radius: 8px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.book-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-}
-
-.book-item h3 {
-  color: #003060;
-  margin-bottom: 10px;
-  font-size: 1.2em;
-}
-
-.book-item p {
-  color: #666;
-  margin: 5px 0;
-  font-size: 0.9em;
-}
-
-@media (max-width: 768px) {
-    * {
-        box-sizing: border-box;
-    }
-     .mobile-nav-toggle {
-        display: block;
-    }
-    .desktop-nav {
-        display: none;
-    }
-
-    .main-app {
-        width: 100%;
-        min-height: 100vh;
-        position: relative;
-    }
-
-    header {
-        width: 100%;
-        padding: 4vw;
-        position: fixed;
-        top: 0;
-        left: 0;
-        right: 0;
-        z-index: 1000;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        background-color: #003060;
-    }
-
-    .logo {
-        width: 15vw;
-        max-width: 120px;
-        margin: 0;
-        transition: transform 0.3s ease;
-    }
-
-    .logo:hover {
-        transform: scale(1.05);
-    }
-
-   .mobile-nav-toggle {
-  display: block;
-}
-
-.burger-button {
-        background: transparent;
-        border: none;
-        cursor: pointer;
-        padding: 2vw;
-        z-index: 3000;
-        position: relative;
-    }
-
-    .burger-icon {
-        font-size: 6vw;
-        color: #F6EEE1;
-        font-weight: bold;
-        display: block;
-        transition: all 0.3s ease;
-    }
-
-    .mobile-nav {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100vh;
-        background: #003060;
-        padding: 20vw 5vw 10vw 5vw;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-        z-index: 2500;
-        list-style: none;
-        margin: 0;
-        gap: 6vw;
-    }
-
-    .mobile-nav li {
-        color: #F6EEE1;
-        font-size: 5vw;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        padding: 3vw 6vw;
-        border-radius: 2vw;
-        text-align: center;
-        width: 100% !important;
-        max-width: 300px !important;
-    }
-
-    .mobile-nav li:hover {
-        background-color: #F6EEE1;
-        color: #003060;
-        transform: scale(1.05);
-    }
-
-    .mobile-nav .register-btn {
-        background-color: #F6EEE1;
-        color: #003060;
-        padding: 4vw 8vw;
-        font-size: 4vw;
-        border-radius: 2vw;
-        border: none;
-        width: 100%;
-        max-width: 250px;
-    }
-
-    .mobile-nav .register-btn:hover {
-        background-color: #003060;
-        color: #F6EEE1;
-        border: 2px solid #F6EEE1;
-    }
-
-    .slide-enter-active,
-    .slide-leave-active {
-        transition: transform 0.3s ease;
-    }
-
-    .slide-enter-from,
-    .slide-leave-to {
-        transform: translateY(-100%);
-    }
-
-    .slide-enter-to,
-    .slide-leave-from {
-        transform: translateY(0);
-    }
-
-    .Ellipse {
-        width: 100%;
-        height: 360px;
-        margin-top: 20vw;
-        display: block;
-        object-fit: cover;
-    }
-
-    .welcome-div {
-        width: 100%;
-        padding: 5vw;
-        margin-top: 0;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        position: relative;
-        top: -60px;
-    }
-
-    .welcome {
-        width: 100%;
-        position: static;
-        color: #003060;
-        margin-bottom: -15vw;
-        order: 2;
-    }
-
-    .welcome h1 {
-        font-size: 6vw;
-        margin-bottom: 4vw;
-        font-weight: 800;
-        line-height: 1.2;
-        position: relative;
-        top: -250px; 
-    }
-
-    .welcome h4 {
-        font-size: 2.5vw;
-        line-height: 1.4;
-        font-weight: 500;
-        margin-bottom: 6vw;
-        position: relative;
-        top: -250px; 
-    }
-
-    .welcome .ai-find {
-        padding: 3vw 6vw;
-        font-size: 3vw;
-        border-radius: 2vw;
-        margin: 0;
-        position: relative;
-        top: -265px; 
-    }
-
-    .publicLibrary {
-        display: none;
-    }
-
-    .AI-books {
-        width: 90%;
-        margin: -15vw auto 5vw auto; 
-        padding: 5vw;
-        position: static;
-        top: auto;
-        text-align: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .AI-text {
-        font-size: 4vw;
-        margin-bottom: 6vw;
-        font-weight: 600;
-        line-height: 1.3;
-    }
-
-    .search-container {
-        width: 100%;
-        max-width: none;
-        padding: 3vw 4vw;
-        margin-bottom: 6vw;
-        display: flex;
-        align-items: center;
-        background-color: rgba(246, 238, 225, 0.9);
-        border-radius: 2vw;
-    }
-
-    .AI-input {
-        flex: 1;
-        font-size: 4vw;
-        color: #003060;
-        background: transparent;
-        border: none;
-        outline: none;
-    }
-
-    .AI-input::placeholder {
-        color: rgba(0, 48, 96, 0.7);
-        font-size: 3.5vw;
-    }
-
-    .divider {
-        width: 0.5vw;
-        height: 6vw;
-        background-color: #003060;
-        margin: 0 3vw;
-    }
-
-    .search-btn img {
-        width: 6vw;
-        height: 6vw;
-    }
-
-    .AI-btn {
-        padding: 3vw 6vw;
-        font-size: 4vw;
-        border-radius: 2vw;
-        margin: 0;
-    }
-
-    .line-1 {
-        width: 100%;
-        margin: 10vw 0 8vw 0; 
-        position: static;
-        top: auto;
-    }
-
-    .genre-main {
-        width: 100%;
-        padding: 0 5vw;
-        position: static;
-        top: auto;
-        margin: 8vw 0; 
-    }
-
-    .genre-main h2 {
-        font-size: 6vw;
-        margin-bottom: 8vw;
-        font-weight: 600;
-    }
-
-    .genre {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 6vw;
-        margin: 0;
-        justify-items: center;
-    }
-
-    .genre-div {
-        width: 100%;
-        max-width: 35vw;
-        text-align: center;
-        padding: 4vw;
-        border-radius: 3vw;
-        background: rgba(246, 238, 225, 0.2);
-        transition: all 0.3s ease;
-    }
-
-    .genre-div:hover {
-        transform: scale(1.05);
-        background: rgba(246, 238, 225, 0.4);
-    }
-
-    .genre-div img {
-        width: 60%;
-        height: auto;
-        margin-bottom: 2vw;
-    }
-
-    .genre-div p {
-        font-size: 3.5vw;
-        margin: 0;
-        color: #F6EEE1;
-    }
-
-    .genre-div:nth-child(7) {
-        grid-column: span 2;
-        max-width: 35vw;
-        margin: 0 auto;
-    }
-
-    .cream {
-        width: 100%;
-        background-color: #F6EEE1;
-        padding: 10vw 5vw;
-        position: static;
-        top: auto;
-        margin: 10vw 0 0 0;
-    }
-
-    .lingua {
-        width: 100%;
-        margin: 0;
-        text-align: center;
-    }
-
-    .lingua h2 {
-        font-size: 6vw;
-        margin-bottom: 8vw;
-        color: #003060;
-        font-weight: 600;
-    }
-
-    .lingua-div {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 6vw;
-        align-items: center;
-    }
-
-    .lingua-div img {
-        width: 70vw; 
-        height: 25vw; 
-        object-fit: contain; 
-        margin: 0;
-        padding: 2vw;
-        border-radius: 3vw;
-        background: rgba(0, 48, 96, 0.2);
-        transition: all 0.3s ease;
-    }
-     .lingua-div img:nth-child(3) {
-      width: 35vw;
-      height: 25vw;
-      grid-column: span 2;
-        max-width: 35vw;
-        margin: 0 auto;
-     }
-
-
-
-    .lingua-div img:hover {
-        transform: scale(1.05);
-        background: rgba(0, 48, 96, 0.4);
-    }
-
-    .line-3 {
-        width: 100%;
-        margin: 8vw 0;
-    }
-
-    .bestsellers {
-        margin: 8vw 0;
-        padding: 0 5vw;
-    }
-
-    .bestsellers h2 {
-        font-size: 6vw;
-        margin-bottom: 8vw;
-        color: #003060;
-        font-weight: 600;
-    }
-
-    .best-main {
-        display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        gap: 4vw;
-        justify-items: center;
-    }
-
-    .best-div {
-        width: 100%;
-        max-width: 35vw;
-        height: 45vw;
-        background-color: #ccc;
-        border-radius: 2vw;
-        transition: all 0.3s ease;
-    }
-
-    .best-div:hover {
-        transform: scale(1.05);
-    }
-
-    .about-us {
-        width: 100%;
-        padding: 10vw 5vw;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        background-color: #003060;
-        color: #F6EEE1;
-        position: static;
-        top: auto;
-        margin: 15vw 0 0 0;
-    }
-
-    .about-text {
-        width: 100%;
-        margin: 0 0 6vw 0;
-        order: 2;
-    }
-
-    .about-text h2 {
-        font-size: 6vw;
-        margin-bottom: 4vw;
-        font-weight: 600;
-    }
-
-    .about-text h4 {
-        font-size: 4vw;
-        line-height: 1.4;
-        font-weight: 500;
-    }
-
-    .about-img {
-        width: 60%;
-        max-width: 300px;
-        height: auto;
-        margin: 0;
-        order: 1;
-        position: static;
-        top: auto;
-    }
-
-    .Ellipse-2 {
-        width: 100%;
-        margin: 5vw 0 0 0;
-        position: static;
-        top: auto;
-    }
-
-    footer {
-        width: 100%;
-        padding: 8vw 5vw;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        text-align: center;
-        background-color: #003060;
-        color: #F6EEE1;
-        position: static;
-        top: auto;
-        margin: 0;
-    }
-
-    .footer-left {
-        margin: 0 0 6vw 0;
-        width: 100%;
-    }
-
-    .footer-left p {
-        font-size: 4vw;
-        margin: 2vw 0;
-        cursor: pointer;
-        transition: color 0.3s ease;
-    }
-
-    .footer-left p:hover {
-        color: #F6EEE1;
-        opacity: 0.8;
-    }
-
-    .footer-right {
-        width: 100%;
-        margin: 0;
-        text-align: center;
-    }
-
-    .footer-right-contacts {
-        margin-bottom: 6vw;
-    }
-
-    .footer-right-contacts p:first-child,
-    .footer-right-social p:first-child {
-        font-size: 4.5vw;
-        font-weight: 600;
-        margin-bottom: 3vw;
-    }
-
-    .footer-right-contacts div,
-    .footer-right-social div {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        margin: 2vw 0;
-    }
-
-    .footer-right-contacts div p,
-    .footer-right-social div p {
-        font-size: 3.5vw;
-        margin-right: 2vw;
-    }
-
-    .footer-right-contacts img,
-    .footer-right-social img {
-        width: 5vw;
-        height: 5vw;
-    }
-
-    .modal-backdrop {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(0, 0, 0, 0.5);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        z-index: 10000;
-        padding: 5vw;
-    }
-
-    .modal-content {
-        background: #F6EEE1;
-        padding: 6vw;
-        border-radius: 3vw;
-        width: 100%;
-        max-width: 90vw;
-        max-height: 80vh;
-        overflow-y: auto;
-        position: relative;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
-    }
-
-    .close-btn {
-        position: absolute;
-        top: 3vw;
-        right: 3vw;
-        background: transparent;
-        font-size: 6vw;
-        border: none;
-        cursor: pointer;
-        color: #003060;
-        transition: all 0.3s ease;
-    }
-
-    .close-btn:hover {
-        transform: rotate(90deg) scale(1.2);
-        color: #FF6B6B;
-    }
-
-    .book-item {
-        background-color: #fff;
-        padding: 4vw;
-        margin-bottom: 3vw;
-        border-radius: 2vw;
-        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-
-    .book-item:hover {
-        transform: translateY(-1vw);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    }
-
-    .book-item h3 {
-        color: #003060;
-        margin-bottom: 2vw;
-        font-size: 4.5vw;
-        line-height: 1.2;
-    }
-
-    .book-item p {
-        color: #666;
-        margin: 1vw 0;
-        font-size: 3.5vw;
-        line-height: 1.3;
-    }
+@media (max-width: 600px) {
+  .hero-headline {
+    font-size: 32px;
+  }
+  .ai-search-box {
+    border-radius: 20px;
+    flex-direction: column;
+    padding: 12px;
+  }
+  .ai-submit-btn {
+    width: 100%;
+  }
+  .chip-books, .chip-ai {
+    display: none;
+  }
 }
 </style>

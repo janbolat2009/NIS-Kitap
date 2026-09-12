@@ -8,8 +8,6 @@ const openai = process.env.OPENAI_API_KEY
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
-console.log('✅ Роут openai.js успешно загружен!');
-
 function cosineSimilarity(vecA, vecB) {
   if (!vecA || !vecB || vecA.length !== vecB.length) return 0;
   const dotProduct = vecA.reduce((sum, a, i) => sum + a * vecB[i], 0);
@@ -20,7 +18,7 @@ function cosineSimilarity(vecA, vecB) {
 
 router.get('/test', (req, res) => {
   res.json({
-    message: '✅ OpenAI route is working!',
+    message: 'OpenAI route is working!',
     timestamp: new Date().toISOString(),
     hasApiKey: !!process.env.OPENAI_API_KEY,
     mongoConnected: mongoose.connection.readyState === 1,
@@ -38,20 +36,22 @@ router.post('/search', async (req, res) => {
     console.log('➡️ Ищем книги в MongoDB...');
     console.log('Prompt:', prompt);
 
-    const keywords = prompt.toLowerCase().split(/\s+/).filter(word => word.length > 2);
+    const stopWords = ['хочу', 'книги', 'книга', 'про', 'о', 'на', 'в', 'и', 'а', 'по'];
+    const keywords = prompt.toLowerCase().split(/\s+/).filter(word => word.length > 2 && !stopWords.includes(word));
     console.log('Ключевые слова:', keywords);
 
-    
-   
-const query = {
-  $or: [
-    { title: { $regex: keywords.join('|'), $options: 'i' } },
-    { author: { $regex: keywords.join('|'), $options: 'i' } },
-    { description: { $regex: keywords.join('|'), $options: 'i' } },
-  ],
-};
+    const query = {
+      $and: keywords.map(keyword => ({
+        $or: [
+          { title: { $regex: keyword, $options: 'i' } },
+          { author: { $regex: keyword, $options: 'i' } },
+          { description: { $regex: keyword, $options: 'i' } },
+          { genre: { $regex: keyword, $options: 'i' } },
+        ],
+      })),
+    };
 
-    let books = await Book.find(query).lean().limit(10);
+    let books = keywords.length > 0 ? await Book.find(query).lean().limit(10) : [];
     console.log(`📚 Найдено книг по ключевым словам: ${books.length}`);
 
     if (books.length === 0 && openai) {
@@ -61,48 +61,45 @@ const query = {
       });
       const promptEmbedding = response.data[0].embedding;
 
-      books = await Book.find({}).lean();
-      console.log('Сырые значения схожести:', books.map(b => b.similarity).slice(0, 5)); 
+      books = await Book.find({ embedding: { $exists: true, $ne: [] } }).lean();
       books = books
         .map(book => ({
           ...book,
-          similarity: cosineSimilarity(promptEmbedding, book.embedding || []),
+          similarity: cosineSimilarity(promptEmbedding, book.embedding),
         }))
-        .filter(book => book.similarity > 0.6)
+        .filter(book => book.similarity > 0.8)
         .sort((a, b) => b.similarity - a.similarity)
         .slice(0, 10);
-    } 
-    else if (books.length > 0) {
-  books = books
-    .map(book => {
-      let score = 0;
+    } else if (books.length > 0) {
+      books = books
+        .map(book => {
+          let score = 0;
 
-      const titleLower = book.title.toLowerCase();
-      const authorLower = book.author.toLowerCase();
-      const descLower = book.description.toLowerCase();
+          const titleLower = book.title.toLowerCase();
+          const authorLower = book.author.toLowerCase();
+          const descLower = book.description.toLowerCase();
+          const genreLower = book.genre.join(' ').toLowerCase();
 
-      if (titleLower.includes(prompt.toLowerCase())) score += 2.0;
-      if (authorLower.includes(prompt.toLowerCase())) score += 1.5;
-      if (descLower.includes(prompt.toLowerCase())) score += 1.0;
+          if (titleLower.includes(prompt.toLowerCase())) score += 3.0;
+          if (descLower.includes(prompt.toLowerCase())) score += 2.0;
+          if (genreLower.includes(prompt.toLowerCase())) score += 1.5;
+          if (authorLower.includes(prompt.toLowerCase())) score += 1.0;
 
-      keywords.forEach(keyword => {
-        if (titleLower.includes(keyword)) score += 0.7; 
-        if (authorLower.includes(keyword)) score += 0.4;
-        if (descLower.includes(keyword)) score += 0.3;
-      });
+          keywords.forEach(keyword => {
+            if (titleLower.includes(keyword)) score += 1.0;
+            if (descLower.includes(keyword)) score += 0.7;
+            if (genreLower.includes(keyword)) score += 0.5;
+            if (authorLower.includes(keyword)) score += 0.3;
+          });
 
-      const matchesInTitle = keywords.filter(kw => titleLower.includes(kw)).length;
-      const matchesInDesc = keywords.filter(kw => descLower.includes(kw)).length;
-      score += (matchesInTitle * 0.1) + (matchesInDesc * 0.05);
-
-      return {
-        ...book,
-        similarity: score,
-      };
-    })
-    .sort((a, b) => b.similarity - a.similarity)
-    .slice(0, 10);
-}
+          return {
+            ...book,
+            similarity: score,
+          };
+        })
+        .sort((a, b) => b.similarity - a.similarity)
+        .slice(0, 10);
+    }
 
     console.log(`📚 Найдено книг: ${books.length}`, books);
 

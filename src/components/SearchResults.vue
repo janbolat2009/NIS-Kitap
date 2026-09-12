@@ -1,98 +1,241 @@
 <template>
-  <div class="search-results">
-    <h2>Результаты поиска</h2>
-    <div v-if="results.length" class="books-container">
-      <div v-for="book in results" :key="book.title" class="book-item" @click="$emit('book-click', book)">
-        <h3>{{ book.title }}</h3>
-        <p><strong>Автор:</strong> {{ book.author }}</p>
-        <p><strong>Жанр:</strong> {{ book.genre }}</p>
-        <p><strong>Описание:</strong> {{ book.description }}</p>
+  <div class="apple-search-results">
+    <div class="results-header">
+      <div class="header-icon">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </div>
+      <div>
+        <h3 class="results-title">Результаты умного поиска</h3>
+        <p class="results-subtitle">
+          Найдено рекомендаций: <b>{{ results.length }}</b>
+        </p>
       </div>
     </div>
-    <p v-else class="no-results">Нет результатов.</p>
+
+    <div v-if="results.length" class="results-container">
+      <div 
+        v-for="(book, index) in results" 
+        :key="book._id || index" 
+        class="result-item-card"
+        @click="$emit('book-click', book)"
+      >
+        <div class="item-rank-badge">#{{ index + 1 }}</div>
+        <div class="item-info">
+          <div class="item-meta-top">
+            <span class="item-genre-pill">
+              {{ Array.isArray(book.genre) ? book.genre.join(', ') : (book.genre || 'Книга') }}
+            </span>
+            <span class="item-lang-pill">{{ book.language || 'RU' }}</span>
+          </div>
+
+          <h4 class="item-title">{{ book.title }}</h4>
+          <p class="item-author">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+            <span>{{ book.author }}</span>
+          </p>
+
+          <p v-if="book.description" class="item-desc">
+            {{ book.description }}
+          </p>
+        </div>
+
+        <div class="item-arrow">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div v-else class="no-results-state">
+      <p class="no-results-text">По вашему запросу книги не найдены. Попробуйте изменить ключевые слова или тему.</p>
+    </div>
   </div>
 </template>
 
 <script>
 export default {
+  name: 'SearchResults',
   props: {
-    results: Array,
+    results: {
+      type: Array,
+      default: () => [],
+    },
   },
+  emits: ['book-click'],
 };
 </script>
 
 <style scoped>
-.search-results {
-  color: #003060;
-  padding: 20px;
+.apple-search-results {
+  width: 100%;
+  max-width: 640px;
+  background: rgba(14, 22, 38, 0.96);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 24px;
+  padding: 24px 26px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  color: #FFFFFF;
 }
 
-.books-container {
+.results-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.header-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(0, 113, 227, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.results-title {
+  margin: 0 0 4px;
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.results-subtitle {
+  margin: 0;
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.6);
+}
+.results-subtitle b {
+  color: #38BDF8;
+}
+
+.results-container {
   max-height: 60vh;
   overflow-y: auto;
-  padding-right: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 4px;
 }
 
-.book-item {
-  background-color: #F6EEE1;
-  padding: 15px;
-  margin-bottom: 15px;
-  border-radius: 10px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+.result-item-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 16px;
+  padding: 14px 16px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.book-item:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-  background-color: #E0D1C1;
+.result-item-card:hover {
+  background: rgba(255, 255, 255, 0.09);
+  border-color: rgba(56, 189, 248, 0.35);
+  transform: translateX(4px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
 }
 
-.book-item h3 {
-  color: #003060;
-  margin-bottom: 10px;
-  font-size: 1.2em;
-  transition: color 0.3s ease;
+.item-rank-badge {
+  font-size: 12px;
+  font-weight: 700;
+  color: #38BDF8;
+  background: rgba(0, 113, 227, 0.15);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
-.book-item:hover h3 {
-  color: #0056b3;
+.item-info {
+  flex: 1;
+  min-width: 0;
 }
 
-.book-item p {
-  color: #444;
-  margin: 5px 0;
-  font-size: 0.9em;
+.item-meta-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
 }
 
-.no-results {
+.item-genre-pill {
+  font-size: 11px;
+  font-weight: 600;
+  color: #818CF8;
+  background: rgba(99, 102, 241, 0.15);
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.item-lang-pill {
+  font-size: 10.5px;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.item-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #FFFFFF;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.item-author {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.65);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.item-desc {
+  margin: 0;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.item-arrow {
+  color: rgba(255, 255, 255, 0.4);
+  transition: transform 0.2s ease, color 0.2s ease;
+  flex-shrink: 0;
+}
+.result-item-card:hover .item-arrow {
+  color: #38BDF8;
+  transform: translateX(3px);
+}
+
+.no-results-state {
   text-align: center;
-  color: #666;
-  font-size: 1em;
-  margin-top: 20px;
+  padding: 30px 10px;
 }
-
-@media (max-width: 768px) {
-  .search-results {
-    padding: 10px;
-  }
-
-  .book-item {
-    padding: 10px;
-    margin-bottom: 10px;
-  }
-
-  .book-item h3 {
-    font-size: 1em;
-  }
-
-  .book-item p {
-    font-size: 0.8em;
-  }
-
-  .no-results {
-    font-size: 0.9em;
-  }
+.no-results-text {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 14px;
 }
 </style>

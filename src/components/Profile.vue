@@ -1,436 +1,625 @@
 <template>
-  <div class="profile-detail">
-    <button class="close-btn" @click="$emit('back')">✕</button>
-    <div class="profile-card">
-      <h1 class="title">Мой профиль</h1>
+  <div class="apple-profile-modal">
+    <!-- Header -->
+    <div class="profile-header">
+      <div class="profile-header-main">
+        <h2 class="profile-title">Личный кабинет</h2>
+        <span class="user-role-badge">Читатель NIS</span>
+      </div>
+      <button class="profile-close-btn" @click="$emit('back')">✕</button>
+    </div>
+
+    <!-- Profile Nav Tabs -->
+    <div class="profile-tabs">
+      <button 
+        class="tab-btn" 
+        :class="{ active: currentTab === 'info' }"
+        @click="currentTab = 'info'"
+      >
+        <span>👤 Мой профиль</span>
+      </button>
+      <button 
+        class="tab-btn" 
+        :class="{ active: currentTab === 'reservations' }"
+        @click="currentTab = 'reservations'"
+      >
+        <span>📚 Мои книги</span>
+        <span v-if="reservations.length" class="badge-counter">{{ reservations.length }}</span>
+      </button>
+    </div>
+
+    <!-- Alert / Toast -->
+    <div v-if="statusMsg" class="apple-status-toast" :class="statusType">
+      <span>{{ statusMsg }}</span>
+    </div>
+
+    <!-- Tab 1: Profile Info -->
+    <div v-if="currentTab === 'info'" class="profile-content">
+      <!-- Avatar Section -->
       <div class="avatar-section">
-        <div class="avatar-wrapper" @click="onAvatarClick">
-          <img :src="currentAvatar" class="avatar" alt="Аватар пользователя" />
-          <div class="avatar-overlay">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M12 5v14M5 12h14"></path>
+        <div class="avatar-circle" @click="triggerFileInput">
+          <img v-if="avatarUrl" :src="avatarUrl" alt="Avatar" class="avatar-img" />
+          <span v-else class="avatar-initials">{{ initials }}</span>
+          <div class="avatar-hover-overlay">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+              <circle cx="12" cy="13" r="4"></circle>
             </svg>
           </div>
         </div>
-        <p class="avatar-label">Изменить фото</p>
-        <input type="file" ref="avatarInput" @change="onAvatarChange" accept="image/*" class="avatar-input" />
+        <input type="file" ref="fileInput" @change="onAvatarFileChange" accept="image/*" class="hidden-input" />
+        <p class="avatar-hint">Нажмите на фото, чтобы изменить аватар</p>
       </div>
 
-      <div class="form-section">
-        <div class="form-group">
-          <label class="form-label">Имя пользователя</label>
-          <div class="input-wrapper">
-            <input 
-              type="text" 
-              v-model="newName" 
-              placeholder="Введите ваше имя" 
-              @keyup.enter="updateName"
-              class="input-field"
-            />
-          </div>
+      <!-- Form Details -->
+      <div class="profile-fields">
+        <div class="field-item">
+          <label>Имя и фамилия</label>
+          <input 
+            v-model="userName" 
+            type="text" 
+            class="apple-input" 
+            placeholder="Введите ваше имя"
+          />
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Электронная почта</label>
-          <div class="input-wrapper disabled">
-            <input 
-              type="email" 
-              :value="email" 
-              disabled
-              class="input-field"
-            />
-          </div>
+        <div class="field-item">
+          <label>Школьная почта (Email)</label>
+          <input 
+            :value="email || 'Ученик NIS'" 
+            type="email" 
+            disabled 
+            class="apple-input disabled"
+          />
         </div>
 
-        <div class="form-group">
-          <label class="form-label">Новый пароль</label>
-          <div class="input-wrapper">
-            <input 
-              type="password" 
-              v-model="password" 
-              placeholder="••••••••" 
-              class="input-field"
-            />
-          </div>
+        <div class="field-item">
+          <label>Сменить пароль</label>
+          <input 
+            v-model="newPassword" 
+            type="password" 
+            placeholder="Новый пароль (оставьте пустым, если не меняете)" 
+            class="apple-input"
+          />
         </div>
+      </div>
 
-        <button class="save-btn" @click="updateProfile">
-          <span>Сохранить изменения</span>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
+      <div class="profile-actions-row">
+        <button class="apple-save-btn" @click="saveProfile">
+          Сохранить изменения
         </button>
+        <button class="apple-logout-btn" @click="logout">
+          Выйти из аккаунта
+        </button>
+      </div>
+    </div>
+
+    <!-- Tab 2: Reservations -->
+    <div v-else class="reservations-content">
+      <div v-if="reservations.length === 0" class="empty-reservations">
+        <div class="empty-icon">📖</div>
+        <h3>У вас пока нет активных бронирований</h3>
+        <p>Найдите понравившуюся книгу в каталоге или через поиск с ИИ и нажмите «Забронировать».</p>
+        <button class="go-catalog-btn" @click="$router.push('/catalog'); $emit('back')">
+          Перейти в каталог
+        </button>
+      </div>
+
+      <div v-else class="reservations-list">
+        <div v-for="res in reservations" :key="res.id" class="res-card">
+          <div class="res-card-left">
+            <div class="res-book-spine"></div>
+            <div>
+              <h4 class="res-title">{{ res.title }}</h4>
+              <p class="res-author">{{ res.author }} • {{ res.genre }}</p>
+              <div class="res-date-badge">
+                <span>Срок сдачи: <b>{{ formatDate(res.dueDate) }}</b></span>
+              </div>
+            </div>
+          </div>
+          <div class="res-card-right">
+            <button class="return-btn" @click="cancelRes(res.id)" title="Отметить книгу как сданную">
+              Вернуть книгу
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script>
-import { getAuth, updatePassword, updateProfile } from 'firebase/auth';
-import { doc, updateDoc } from 'firebase/firestore';
-import { ref, uploadString, getDownloadURL } from 'firebase/storage';
-import { auth, db, storage } from '../firebase';
-import defaultAvatar from '@/img/a68eab.jpg'
+import { getAuth, updatePassword, updateProfile, signOut } from 'firebase/auth';
+import { getUserReservations, cancelReservation } from '@/services/bookService';
 
 export default {
   name: 'Profile',
   props: {
-    email: { type: String, required: true },
-    name: { type: String, required: true },
+    email: {
+      type: String,
+      default: '',
+    },
+    name: {
+      type: String,
+      default: '',
+    },
   },
+  emits: ['back', 'updated', 'loggedOut'],
   data() {
     return {
-      password: '',
-      avatar: null,
-      newName: '',
-      avatarUrl: null,
+      currentTab: 'info',
+      userName: this.name || '',
+      newPassword: '',
+      avatarUrl: '',
+      statusMsg: '',
+      statusType: '',
+      reservations: [],
     };
   },
   computed: {
-    currentAvatar() {
-      return this.avatarUrl || defaultAvatar;
-    },
-  },
-  methods: {
-    onAvatarClick() {
-      this.$refs.avatarInput.click();
-    },
-    async onAvatarChange(e) {
-      const file = e.target.files[0];
-      if (file) {
-        const reader = new FileReader();
-        reader.onload = async (evt) => {
-          this.avatar = evt.target.result;
-          await this.uploadAvatar(file);
-        };
-        reader.readAsDataURL(file);
-      }
-    },
-    async uploadAvatar(file) {
-      const user = auth.currentUser;
-      if (user) {
-        const storageRef = ref(storage, `avatars/${user.uid}/${Date.now()}_${file.name}`);
-        try {
-          const response = await fetch(this.avatar);
-          const blob = await response.blob();
-          await uploadString(storageRef, await blob.text(), 'raw');
-          this.avatarUrl = await getDownloadURL(storageRef);
-        } catch (error) {
-          console.error('Ошибка загрузки аватара:', error.message);
-          alert('Ошибка загрузки аватара');
-        }
-      }
-    },
-    async updateName() {
-      const user = auth.currentUser;
-      if (!user || !this.newName.trim()) {
-        alert('Введите имя');
-        return;
-      }
-      try {
-        await updateProfile(user, { displayName: this.newName });
-        await updateDoc(doc(db, 'users', user.uid), { name: this.newName });
-        alert('Имя обновлено');
-        this.$emit('update:user', { name: this.newName, email: user.email, avatar: this.avatarUrl || '' });
-      } catch (error) {
-        console.error('Ошибка обновления имени:', error.message);
-        alert(error.message);
-      }
-    },
-    async updateProfile() {
-      const user = auth.currentUser;
-      if (!user) {
-        alert('Не авторизован');
-        return;
-      }
-      try {
-        const updates = {};
-        if (this.password) {
-          await updatePassword(user, this.password);
-          updates.password = 'обновлён';
-        }
-        if (this.avatarUrl) {
-          await updateProfile(user, { photoURL: this.avatarUrl });
-          await updateDoc(doc(db, 'users', user.uid), { avatar: this.avatarUrl });
-          updates.avatar = this.avatarUrl;
-        }
-        alert('Профиль обновлён');
-        this.$emit('update:user', { name: user.displayName, email: user.email, avatar: user.photoURL || '' });
-      } catch (error) {
-        console.error('Ошибка обновления:', error.message);
-        alert(error.message);
-      }
+    initials() {
+      if (!this.userName) return 'U';
+      const parts = this.userName.trim().split(' ');
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      return this.userName.slice(0, 2).toUpperCase();
     },
   },
   mounted() {
-    this.newName = this.name;
+    this.loadUserData();
+    this.refreshReservations();
+  },
+  methods: {
+    loadUserData() {
+      const local = localStorage.getItem('user');
+      if (local) {
+        try {
+          const parsed = JSON.parse(local);
+          if (parsed.name && !this.userName) this.userName = parsed.name;
+          if (parsed.avatar) this.avatarUrl = parsed.avatar;
+        } catch {
+          // ignore
+        }
+      }
+    },
+    refreshReservations() {
+      this.reservations = getUserReservations();
+    },
+    formatDate(dateStr) {
+      if (!dateStr) return '14 дней';
+      const d = new Date(dateStr);
+      return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+    },
+    triggerFileInput() {
+      this.$refs.fileInput?.click();
+    },
+    onAvatarFileChange(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        this.avatarUrl = event.target.result;
+        this.saveAvatarLocal(this.avatarUrl);
+        this.showToast('Аватар успешно обновлен!', 'success');
+      };
+      reader.readAsDataURL(file);
+    },
+    saveAvatarLocal(url) {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      user.avatar = url;
+      localStorage.setItem('user', JSON.stringify(user));
+    },
+    async saveProfile() {
+      this.statusMsg = '';
+      try {
+        const auth = getAuth();
+        if (auth.currentUser) {
+          if (this.userName) {
+            await updateProfile(auth.currentUser, { displayName: this.userName });
+          }
+          if (this.newPassword && this.newPassword.length >= 6) {
+            await updatePassword(auth.currentUser, this.newPassword);
+          }
+        }
+      } catch (err) {
+        console.warn('Firebase profile update warning:', err.message);
+      }
+
+      // Сохранение в localStorage
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      user.name = this.userName;
+      localStorage.setItem('user', JSON.stringify(user));
+
+      this.showToast('Профиль успешно сохранен!', 'success');
+      this.$emit('updated', { name: this.userName, avatar: this.avatarUrl });
+    },
+    cancelRes(id) {
+      cancelReservation(id);
+      this.refreshReservations();
+      this.showToast('Бронирование книги отменено / сдано в библиотеку', 'success');
+    },
+    async logout() {
+      try {
+        const auth = getAuth();
+        await signOut(auth);
+      } catch {
+        // ignore
+      }
+      localStorage.removeItem('user');
+      localStorage.removeItem('isLoggedIn');
+      this.$emit('loggedOut');
+      this.$emit('back');
+      window.location.reload();
+    },
+    showToast(msg, type = 'success') {
+      this.statusMsg = msg;
+      this.statusType = type;
+      setTimeout(() => {
+        this.statusMsg = '';
+      }, 4000);
+    },
   },
 };
 </script>
 
 <style scoped>
-.profile-detail {
-  position: fixed;
-  top: 0;
-  left: 0;
+.apple-profile-modal {
   width: 100%;
-  height: 100%;
-  background: rgba(0, 48, 96, 0.7);
+  max-width: 520px;
+  background: rgba(14, 22, 38, 0.96);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  color: #FFFFFF;
+}
+
+.profile-header {
   display: flex;
-  justify-content: center;
   align-items: center;
-  padding: 20px;
-  z-index: 1000;
+  justify-content: space-between;
+  margin-bottom: 20px;
 }
 
-.close-btn {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background: rgba(246, 238, 225, 0.3);
-  border: none;
-  color: #003060;
-  font-size: 28px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: all 0.3s ease;
+.profile-header-main {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.close-btn:hover {
-  background: rgba(246, 238, 225, 0.5);
-  transform: scale(1.1);
-}
-
-.profile-card {
-  background: rgba(246, 238, 225, 0.9);
-  border-radius: 20px;
-  padding: 40px;
-  box-shadow: 0 15px 30px rgba(0, 48, 96, 0.3);
-  max-width: 500px;
-  width: 100%;
-  animation: slideIn 0.6s ease-out;
-  position: relative;
-}
-
-@keyframes slideIn {
-  from {
-    opacity: 0;
-    transform: translateY(30px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-.title {
-  color: #003060;
-  font-size: 28px;
+.profile-title {
+  margin: 0;
+  font-size: 22px;
   font-weight: 700;
-  text-align: center;
-  margin-bottom: 30px;
-  position: relative;
+  letter-spacing: -0.01em;
 }
 
-.title::after {
-  content: '';
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 60px;
-  height: 3px;
-  background: #003060;
-  border-radius: 2px;
+.user-role-badge {
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(0, 113, 227, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38BDF8;
+  padding: 2px 8px;
+  border-radius: 9999px;
 }
 
-.avatar-section {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.avatar-wrapper {
-  position: relative;
-  display: inline-block;
-  cursor: pointer;
-  margin-bottom: 10px;
-}
-
-.avatar {
-  width: 100px;
-  height: 100px;
+.profile-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  object-fit: cover;
-  border: 3px solid #003060;
-  box-shadow: 0 4px 10px rgba(0, 48, 96, 0.15);
-  transition: all 0.3s ease;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+.profile-close-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #FFFFFF;
 }
 
-.avatar:hover {
-  transform: scale(1.05);
-  box-shadow: 0 6px 15px rgba(0, 48, 96, 0.25);
+/* Tabs */
+.profile-tabs {
+  display: flex;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 20px;
 }
 
-.avatar-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
+.tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.7);
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.tab-btn.active {
+  background: #0071E3;
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.badge-counter {
+  background: #EF4444;
+  color: #FFFFFF;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 9999px;
+}
+
+/* Toast */
+.apple-status-toast {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+.apple-status-toast.success {
+  background: rgba(16, 185, 129, 0.2);
+  border: 1px solid rgba(16, 185, 129, 0.4);
+  color: #6EE7B7;
+}
+
+/* Avatar */
+.avatar-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.avatar-circle {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0071E3, #818CF8);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.35);
+}
+
+.avatar-img {
   width: 100%;
   height: 100%;
-  background: rgba(0, 48, 96, 0.6);
-  border-radius: 50%;
+  object-fit: cover;
+}
+
+.avatar-initials {
+  font-size: 26px;
+  font-weight: 700;
+  color: #FFFFFF;
+}
+
+.avatar-hover-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
-  transition: opacity 0.3s ease;
-  color: #F6EEE1;
+  transition: opacity 0.2s ease;
 }
-
-.avatar-wrapper:hover .avatar-overlay {
+.avatar-circle:hover .avatar-hover-overlay {
   opacity: 1;
 }
 
-.avatar-label {
-  color: #003060;
-  font-size: 14px;
-  margin-top: 8px;
-  font-weight: 500;
-  transition: color 0.3s ease;
+.avatar-hint {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  margin: 0;
 }
-
-.avatar-wrapper:hover .avatar-label {
-  color: #003060;
-  opacity: 0.8;
-}
-
-.avatar-input {
+.hidden-input {
   display: none;
 }
 
-.form-section {
+/* Fields */
+.profile-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.field-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+}
+
+.field-item label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.apple-input {
   width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 12px;
+  padding: 10px 14px;
+  font-size: 14px;
+  color: #FFFFFF;
+  font-family: inherit;
+  outline: none;
+  transition: all 0.25s ease;
 }
 
-.form-group {
-  margin-bottom: 20px;
+.apple-input:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #38BDF8;
 }
 
-.form-label {
-  display: block;
-  color: #003060;
+.apple-input.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.profile-actions-row {
+  display: flex;
+  gap: 10px;
+}
+
+.apple-save-btn {
+  flex: 1;
+  background: linear-gradient(135deg, #0071E3 0%, #0056B3 100%);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 12px;
+  padding: 12px;
   font-size: 14px;
   font-weight: 600;
-  margin-bottom: 8px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.apple-save-btn:hover {
+  box-shadow: 0 4px 16px rgba(0, 113, 227, 0.4);
 }
 
-.input-wrapper {
-  position: relative;
+.apple-logout-btn {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #F87171;
   border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 2px 8px rgba(0, 48, 96, 0.1);
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.apple-logout-btn:hover {
+  background: rgba(239, 68, 68, 0.25);
 }
 
-.input-wrapper:hover {
-  box-shadow: 0 4px 12px rgba(0, 48, 96, 0.15);
+/* Reservations tab */
+.empty-reservations {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 30px 10px;
 }
-
-.input-wrapper.disabled {
-  opacity: 0.7;
+.empty-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
 }
-
-.input-field {
-  width: 100%;
-  padding: 14px 20px;
+.empty-reservations h3 {
+  margin: 0 0 6px;
+  font-size: 17px;
+  color: #FFFFFF;
+}
+.empty-reservations p {
+  font-size: 13.5px;
+  color: rgba(255, 255, 255, 0.6);
+  max-width: 320px;
+  margin: 0 0 16px;
+}
+.go-catalog-btn {
+  background: #0071E3;
+  color: #FFFFFF;
   border: none;
-  background: rgba(255, 255, 255, 0.8);
-  font-size: 16px;
-  color: #003060;
-  transition: all 0.3s ease;
-  outline: none;
-}
-
-.input-field:focus {
-  background: white;
-  box-shadow: inset 0 0 0 2px #003060;
-}
-
-.save-btn {
-  width: 100%;
-  padding: 16px;
-  background: #003060;
-  color: #F6EEE1;
-  border: none;
-  border-radius: 12px;
-  font-size: 16px;
+  padding: 10px 20px;
+  border-radius: 9999px;
+  font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
+}
+
+.reservations-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 380px;
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.res-card {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 12px 16px;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 10px;
-  transition: all 0.3s ease;
-  box-shadow: 0 4px 12px rgba(0, 48, 96, 0.2);
+  justify-content: space-between;
+  gap: 12px;
 }
 
-.save-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 18px rgba(0, 48, 96, 0.3);
-  background: #00254d;
+.res-card-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
-.save-btn:active {
-  transform: translateY(0);
+.res-book-spine {
+  width: 6px;
+  height: 48px;
+  border-radius: 3px;
+  background: linear-gradient(to bottom, #0071E3, #818CF8);
 }
 
-@media (max-width: 600px) {
-  .profile-detail {
-    padding: 10px;
-  }
+.res-title {
+  margin: 0 0 4px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
 
-  .close-btn {
-    top: 15px;
-    right: 15px;
-    width: 36px;
-    height: 36px;
-    font-size: 24px;
-  }
+.res-author {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.6);
+}
 
-  .profile-card {
-    padding: 30px 20px;
-    margin: 10px;
-  }
+.res-date-badge {
+  font-size: 11.5px;
+  color: #38BDF8;
+}
 
-  .title {
-    font-size: 24px;
-    margin-bottom: 25px;
-  }
-
-  .avatar {
-    width: 80px;
-    height: 80px;
-    border: 2px solid #003060;
-  }
-
-  .form-label {
-    font-size: 13px;
-  }
-
-  .input-field {
-    padding: 12px 15px;
-    font-size: 15px;
-  }
-
-  .save-btn {
-    padding: 14px;
-    font-size: 15px;
-  }
+.return-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.85);
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s ease;
+}
+.return-btn:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.4);
+  color: #FCA5A5;
 }
 </style>

@@ -5,16 +5,11 @@
 </template>
 
 <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  background-color: #003060;
-  font-family: Arial, sans-serif;
-}
-
 .root-container {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  width: 100%;
 }
 </style>
+

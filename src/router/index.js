@@ -1,43 +1,37 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import App from '@/App.vue';
-import Register from '@/components/Register.vue';
-import Profile from '@/components/Profile.vue';
-import Catalog from '@/pages/Catalog.vue';
-import BookDetail from '@/pages/BookDetail.vue';
-import Fantastica from '@/pages/genres/Fantastica.vue';
-import Fantasy from '@/pages/genres/Fantasy.vue';
-import Detective from '@/pages/genres/Detective.vue';
-import Adventure from '@/pages/genres/Adventure.vue';
-import Biography from '@/pages/genres/Biography.vue';
-import Romantica from '@/pages/genres/Romantica.vue';
-import Poetry from '@/pages/genres/Poetry.vue';
-import EnglishBooks from '@/pages/languages/EnglishBooks.vue';
-import RussianBooks from '@/pages/languages/RussianBooks.vue';
-import KazakhBooks from '@/pages/languages/KazakhBooks.vue';
-import aboutUs from '@/pages/about-us.vue';
 
 const routes = [
-  { path: '/', name: 'App', component: App },
-  { path: '/register', name: 'Register', component: Register },
-  { path: '/profile', name: 'Profile', component: Profile },
-  { path: '/catalog', name: 'Catalog', component: Catalog },
-  { path: '/book/:title', name: 'BookDetail', component: BookDetail }, 
-  { path: '/fantastica', name: 'Fantastica', component: Fantastica },
-  { path: '/fantasy', name: 'Fantasy', component: Fantasy },
-  { path: '/detective', name: 'Detective', component: Detective },
-  { path: '/adventure', name: 'Adventure', component: Adventure },
-  { path: '/biography', name: 'Biography', component: Biography },
-  { path: '/romantica', name: 'Romantica', component: Romantica },
-  { path: '/poetry', name: 'Poetry', component: Poetry },
-  { path: '/english', name: 'English', component: EnglishBooks },
-  { path: '/russian', name: 'Russian', component: RussianBooks },
-  { path: '/kazakh', name: 'Kazakh', component: KazakhBooks },
-  { path: '/about-us', name: 'AboutUs', component: aboutUs }
+  { path: '/', name: 'App', component: () => import('@/App.vue') },
+  { path: '/register', name: 'Register', component: () => import('@/components/Register.vue') },
+  { path: '/profile', name: 'Profile', component: () => import('@/components/Profile.vue') },
+  { path: '/catalog', name: 'Catalog', component: () => import('@/pages/Catalog.vue') },
+  { path: '/book/:title', name: 'BookDetail', component: () => import('@/pages/BookDetail.vue') },
+  { path: '/fantastica', name: 'Fantastica', component: () => import('@/pages/genres/Fantastica.vue') },
+  { path: '/fantasy', name: 'Fantasy', component: () => import('@/pages/genres/Fantasy.vue') },
+  { path: '/detective', name: 'Detective', component: () => import('@/pages/genres/Detective.vue') },
+  { path: '/adventure', name: 'Adventure', component: () => import('@/pages/genres/Adventure.vue') },
+  { path: '/biography', name: 'Biography', component: () => import('@/pages/genres/Biography.vue') },
+  { path: '/romantica', name: 'Romantica', component: () => import('@/pages/genres/Romantica.vue') },
+  { path: '/poetry', name: 'Poetry', component: () => import('@/pages/genres/Poetry.vue') },
+  { path: '/english', name: 'English', component: () => import('@/pages/languages/EnglishBooks.vue') },
+  { path: '/russian', name: 'Russian', component: () => import('@/pages/languages/RussianBooks.vue') },
+  { path: '/kazakh', name: 'Kazakh', component: () => import('@/pages/languages/KazakhBooks.vue') },
+  { path: '/about-us', name: 'AboutUs', component: () => import('@/pages/about-us.vue') },
+  { path: '/:pathMatch(.*)*', redirect: '/' },
 ];
 
 const router = createRouter({
-  history: createWebHistory(),
+  history: createWebHistory(import.meta.env.BASE_URL),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    if (savedPosition) {
+      return savedPosition;
+    }
+    if (to.hash) {
+      return { el: to.hash, behavior: 'smooth' };
+    }
+    return { top: 0, behavior: 'smooth' };
+  },
 });
 
 export default router;

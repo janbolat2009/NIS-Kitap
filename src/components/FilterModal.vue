@@ -1,36 +1,51 @@
 <template>
-  <div v-if="isOpen" class="filter-modal-backdrop" @click="close">
-    <div class="filter-modal-container" @click.stop>
-      <div class="filter-modal-header">
-        <h3>Фильтры</h3>
-        <button class="close-btn" @click="close">×</button>
+  <div v-if="modelValue" class="apple-modal-backdrop" @click="close">
+    <div class="apple-sheet-container" @click.stop>
+      <!-- Header -->
+      <div class="sheet-header">
+        <div class="sheet-handle"></div>
+        <div class="sheet-title-row">
+          <h3>Фильтры каталога</h3>
+          <button class="sheet-close-btn" @click="close">✕</button>
+        </div>
       </div>
 
-      <div class="filter-modal-body">
-        <div class="filter-group">
-          <h4>Жанры</h4>
-          <div class="filter-tags">
+      <!-- Body -->
+      <div class="sheet-body">
+        <!-- Genres -->
+        <div class="filter-section">
+          <div class="section-label">
+            <span>Жанр книги</span>
+            <span v-if="selectedGenre" class="active-badge">{{ selectedGenre }}</span>
+          </div>
+          <div class="tags-grid">
             <button
               v-for="genre in genres"
               :key="genre"
-              @click="toggleGenre(genre)"
+              type="button"
+              class="filter-tag-pill"
               :class="{ active: selectedGenre === genre }"
-              class="filter-tag"
+              @click="toggleGenre(genre)"
             >
               {{ genre }}
             </button>
           </div>
         </div>
 
-        <div class="filter-group">
-          <h4>Языки</h4>
-          <div class="filter-tags">
+        <!-- Languages -->
+        <div class="filter-section">
+          <div class="section-label">
+            <span>Язык издания</span>
+            <span v-if="selectedLanguage" class="active-badge">{{ selectedLanguage }}</span>
+          </div>
+          <div class="tags-grid">
             <button
               v-for="lang in languages"
               :key="lang"
-              @click="toggleLanguage(lang)"
+              type="button"
+              class="filter-tag-pill"
               :class="{ active: selectedLanguage === lang }"
-              class="filter-tag"
+              @click="toggleLanguage(lang)"
             >
               {{ lang }}
             </button>
@@ -38,9 +53,14 @@
         </div>
       </div>
 
-      <div class="filter-modal-footer">
-        <button class="btn-reset" @click="resetFilters">Сбросить</button>
-        <button class="btn-submit" @click="submitFilters">Применить</button>
+      <!-- Footer Buttons -->
+      <div class="sheet-footer">
+        <button type="button" class="btn-reset" @click="resetFilters">
+          Сбросить все
+        </button>
+        <button type="button" class="btn-apply" @click="submitFilters">
+          Применить фильтры
+        </button>
       </div>
     </div>
   </div>
@@ -56,250 +76,242 @@ export default {
     },
     genres: {
       type: Array,
-      default: () => ['Фантастика', 'Фэнтези', 'Детектив', 'Романтика', 'Биография', 'Приключения', 'Поэзия'],
+      default: () => ['Фантастика', 'Фэнтези', 'Детектив', 'Приключения', 'Биография', 'Романтика', 'Поэзия'],
     },
     languages: {
       type: Array,
       default: () => ['Русский', 'Казахский', 'Английский'],
     },
+    currentGenre: {
+      type: String,
+      default: '',
+    },
+    currentLanguage: {
+      type: String,
+      default: '',
+    },
   },
   emits: ['update:modelValue', 'submit', 'reset'],
   data() {
     return {
-      selectedGenre: '',
-      selectedLanguage: '',
+      selectedGenre: this.currentGenre || '',
+      selectedLanguage: this.currentLanguage || '',
     };
   },
-  computed: {
-    isOpen: {
-      get() {
-        return this.modelValue;
-      },
-      set(value) {
-        this.$emit('update:modelValue', value);
-      },
+  watch: {
+    currentGenre(val) {
+      this.selectedGenre = val;
+    },
+    currentLanguage(val) {
+      this.selectedLanguage = val;
     },
   },
   methods: {
-    toggleGenre(genre) {
-      this.selectedGenre = this.selectedGenre === genre ? '' : genre;
+    toggleGenre(g) {
+      this.selectedGenre = this.selectedGenre === g ? '' : g;
     },
-    toggleLanguage(lang) {
-      this.selectedLanguage = this.selectedLanguage === lang ? '' : lang;
+    toggleLanguage(l) {
+      this.selectedLanguage = this.selectedLanguage === l ? '' : l;
+    },
+    close() {
+      this.$emit('update:modelValue', false);
+    },
+    resetFilters() {
+      this.selectedGenre = '';
+      this.selectedLanguage = '';
+      this.$emit('reset');
+      this.close();
     },
     submitFilters() {
       this.$emit('submit', {
         genre: this.selectedGenre,
         language: this.selectedLanguage,
       });
-      this.isOpen = false;
-    },
-    resetFilters() {
-      this.selectedGenre = '';
-      this.selectedLanguage = '';
-      this.$emit('reset');
-    },
-    close() {
-      this.isOpen = false;
+      this.close();
     },
   },
 };
 </script>
 
 <style scoped>
-.filter-modal-backdrop {
+.apple-modal-backdrop {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: radial-gradient(circle, rgba(0, 48, 96, 0.4) 0%, rgba(0, 0, 0, 0.7) 100%);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 1200;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 9999;
-  animation: fadeIn 0.4s ease-out;
-  backdrop-filter: blur(4px);
+  padding: 20px;
 }
 
-.filter-modal-container {
-  width: 90%;
-  max-width: 500px;
-  background: linear-gradient(135deg, #f6eee1 0%, #e8dcd0 100%);
-  border-radius: 20px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3),
-              0 0 0 1px rgba(246, 238, 225, 0.4) inset;
-  overflow: hidden;
-  transform: scale(0.9);
-  opacity: 0;
-  animation: slideUpAndGrow 0.4s ease-out forwards;
-  position: relative;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideUpAndGrow {
-  0% {
-    opacity: 0;
-    transform: scale(0.8) translateY(30px);
-  }
-  70% {
-    transform: scale(1.02);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.filter-modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px 24px;
-  background: #003060;
-  color: #f6eee1;
-  font-weight: 600;
-  font-size: 1.2em;
-  border-bottom: 1px solid rgba(246, 238, 225, 0.2);
-}
-
-.close-btn {
-  background: transparent;
-  border: none;
-  font-size: 28px;
-  color: #f6eee1;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  line-height: 1;
-  position: relative;
-  top: -1px;
-  left: 1px;
-}
-
-.close-btn:hover {
-  transform: rotate(90deg) scale(1.1);
-  color: #ff6b6b;
-}
-
-.filter-modal-body {
+.apple-sheet-container {
+  width: 100%;
+  max-width: 480px;
+  background: rgba(14, 22, 38, 0.96);
+  backdrop-filter: blur(28px) saturate(190%);
+  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 24px;
   padding: 24px;
-  color: #003060;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  color: #FFFFFF;
 }
 
-.filter-group {
+.sheet-header {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 20px;
+}
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 9999px;
+  margin: 0 auto 12px;
+}
+
+.sheet-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.sheet-title-row h3 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.sheet-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.7);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+.sheet-close-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  color: #FFFFFF;
+}
+
+.sheet-body {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
   margin-bottom: 24px;
 }
 
-.filter-group h4 {
-  margin-bottom: 12px;
-  font-weight: 600;
-  color: #003060;
-  font-size: 1.1em;
-}
-
-.filter-tags {
+.filter-section {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 10px;
 }
 
-.filter-tag {
-  padding: 8px 16px;
-  background: rgba(0, 48, 96, 0.1);
-  border: 1px solid rgba(0, 48, 96, 0.2);
-  border-radius: 50px;
-  font-size: 0.9em;
-  cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  color: #003060;
-  white-space: nowrap;
-}
-
-.filter-tag:hover {
-  background: rgba(0, 48, 96, 0.2);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(0, 48, 96, 0.1);
-}
-
-.filter-tag.active {
-  background: #003060;
-  color: #f6eee1;
-  border-color: #003060;
-  transform: scale(1.05);
-  box-shadow: 0 5px 15px rgba(0, 48, 96, 0.2);
-}
-
-.filter-modal-footer {
+.section-label {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.active-badge {
+  font-size: 11px;
+  font-weight: 600;
+  background: rgba(0, 113, 227, 0.2);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  color: #38BDF8;
+  padding: 2px 8px;
+  border-radius: 9999px;
+}
+
+.tags-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-tag-pill {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.75);
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.filter-tag-pill:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+.filter-tag-pill.active {
+  background: #0071E3;
+  border-color: rgba(56, 189, 248, 0.6);
+  color: #FFFFFF;
+  font-weight: 600;
+  box-shadow: 0 4px 14px rgba(0, 113, 227, 0.4);
+}
+
+.sheet-footer {
+  display: flex;
+  align-items: center;
   gap: 12px;
-  padding: 16px 24px 24px;
-  border-top: 1px solid rgba(0, 48, 96, 0.1);
-  background: rgba(246, 238, 225, 0.4);
 }
 
 .btn-reset {
-  padding: 8px 16px;
-  background: transparent;
-  border: 1px solid #003060;
-  color: #003060;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 0.9em;
-  transition: all 0.3s ease;
-}
-
-.btn-reset:hover {
-  background: rgba(0, 48, 96, 0.1);
-  transform: scale(1.02);
-}
-
-.btn-submit {
-  padding: 8px 20px;
-  background: #003060;
-  color: #f6eee1;
-  border: none;
-  border-radius: 8px;
+  flex: 1;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.75);
+  padding: 12px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  box-shadow: 0 4px 12px rgba(0, 48, 96, 0.2);
+  transition: all 0.2s ease;
+}
+.btn-reset:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
 }
 
-.btn-submit:hover {
-  background: #004a8c;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 48, 96, 0.3);
+.btn-apply {
+  flex: 1.5;
+  background: linear-gradient(135deg, #0071E3 0%, #0056B3 100%);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #FFFFFF;
+  padding: 12px;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 113, 227, 0.35);
 }
-
-.btn-submit:active {
-  transform: translateY(0);
-}
-
-@media (max-width: 480px) {
-  .filter-modal-container {
-    width: 95%;
-    border-radius: 16px;
-  }
-
-  .filter-modal-header,
-  .filter-modal-body,
-  .filter-modal-footer {
-    padding: 16px;
-  }
-
-  .filter-tag {
-    font-size: 0.85em;
-    padding: 7px 12px;
-  }
-
-  .btn-submit, .btn-reset {
-    font-size: 0.85em;
-    padding: 7px 14px;
-  }
+.btn-apply:hover {
+  box-shadow: 0 6px 20px rgba(0, 113, 227, 0.5);
+  transform: translateY(-1px);
 }
 </style>
