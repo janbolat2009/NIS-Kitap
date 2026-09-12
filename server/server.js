@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 import openaiRouter from './routes/openai.js';
+import geminiRouter from './routes/gemini.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -79,6 +80,7 @@ function cosineSimilarity(vecA, vecB) {
 }
 
 app.use('/api/openai', openaiRouter);
+app.use('/api/gemini', geminiRouter);
 
 app.get('/', (req, res) => {
   res.json({
@@ -93,6 +95,8 @@ app.get('/', (req, res) => {
       'DELETE /api/books/:id',
       'GET /api/books/genre/:genre',
       'GET /api/books/search',
+      'POST /api/gemini/search',
+      'GET /api/gemini/test',
       'POST /api/openai/search',
       'GET /api/openai/test',
     ],

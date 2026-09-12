@@ -14,30 +14,30 @@
         <!-- Hero Header -->
         <div class="about-hero-section">
           <div class="hero-badge">
-            <span>✨ О школьной библиотеке</span>
+            <span>{{ t('aboutPage.badge') }}</span>
           </div>
           <h1 class="about-main-title">
-            Инновации для чтения. <br />
-            <span class="gradient-text">Создано учениками для школы.</span>
+            {{ t('aboutPage.titlePart1') }} <br />
+            <span class="gradient-text">{{ t('aboutPage.titlePart2') }}</span>
           </h1>
           <p class="about-lead">
-            NIS Kitap — это передовая цифровая библиотека Назарбаев Интеллектуальной Школы, призванная сделать чтение естественной, удобной и вдохновляющей частью каждого дня.
+            {{ t('aboutPage.lead') }}
           </p>
         </div>
 
         <!-- Visual Story Card -->
         <div class="story-glass-card glass-panel">
           <div class="story-text">
-            <h2 class="story-title">Наша миссия</h2>
+            <h2 class="story-title">{{ t('aboutPage.missionTitle') }}</h2>
             <p class="story-p">
-              Мы верим, что книга — это главный портал к критическому мышлению, научным открытиям и личному росту. Традиционный поиск книг на полках часто занимает много времени и не всегда позволяет быстро узнать о наличии нужного тома.
+              {{ t('aboutPage.missionP1') }}
             </p>
             <p class="story-p">
-              NIS Kitap решает эту задачу: весь фонд школьной библиотеки оцифрован и каталогизирован. Ученики могут найти книги по интересам с помощью умных алгоритмов и искусственного интеллекта, забронировать их онлайн за пару секунд и забрать на перемене без очередей.
+              {{ t('aboutPage.missionP2') }}
             </p>
             <div class="story-actions">
               <router-link to="/catalog" class="apple-btn-primary">
-                <span>Исследовать каталог</span>
+                <span>{{ t('aboutPage.exploreBtn') }}</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
@@ -51,41 +51,41 @@
 
         <!-- Value Cards Grid -->
         <div class="values-section">
-          <h2 class="section-title text-center">Почему именно NIS Kitap?</h2>
+          <h2 class="section-title text-center">{{ t('aboutPage.whyTitle') }}</h2>
           <p class="section-subtitle text-center">
-            Четыре столпа, на которых построена цифровая экосистема школьной библиотеки
+            {{ t('aboutPage.whySubtitle') }}
           </p>
 
           <div class="values-grid">
             <div class="value-card glass-card">
               <div class="value-icon">🤖</div>
-              <h3 class="value-title">Поиск с искусственным интеллектом</h3>
+              <h3 class="value-title">{{ t('aboutPage.valAiTitle') }}</h3>
               <p class="value-desc">
-                Не нужно помнить точное название или автора: введите идею, сюжет или эмоцию, и ИИ подберет точные соответствия из базы.
+                {{ t('aboutPage.valAiDesc') }}
               </p>
             </div>
 
             <div class="value-card glass-card">
               <div class="value-icon">⚡️</div>
-              <h3 class="value-title">Мгновенное онлайн-бронирование</h3>
+              <h3 class="value-title">{{ t('aboutPage.valBookingTitle') }}</h3>
               <p class="value-desc">
-                Забронируйте нужный экземпляр учебника или художественной литературы со смартфона прямо во время урока или дома.
+                {{ t('aboutPage.valBookingDesc') }}
               </p>
             </div>
 
             <div class="value-card glass-card">
               <div class="value-icon">🌍</div>
-              <h3 class="value-title">Триязычная коллекция</h3>
+              <h3 class="value-title">{{ t('aboutPage.valTrilingualTitle') }}</h3>
               <p class="value-desc">
-                Богатейший выбор произведений на казахском, русском и английском языках, включая ресурсы для олимпиад и экзаменов IELTS/SAT.
+                {{ t('aboutPage.valTrilingualDesc') }}
               </p>
             </div>
 
             <div class="value-card glass-card">
               <div class="value-icon">📱</div>
-              <h3 class="value-title">Дизайн в стиле Apple</h3>
+              <h3 class="value-title">{{ t('aboutPage.valAppleTitle') }}</h3>
               <p class="value-desc">
-                Минималистичный интерфейс, матовое стекло, адаптивность под любые устройства и поддержка работы без интернета.
+                {{ t('aboutPage.valAppleDesc') }}
               </p>
             </div>
           </div>
@@ -94,23 +94,23 @@
         <!-- Library Stats Bar -->
         <div class="stats-glass-bar glass-panel">
           <div class="stat-cell">
-            <span class="stat-number">2 000+</span>
-            <span class="stat-label">Книг в каталоге</span>
+            <span class="stat-number">{{ t('hero.booksCount') }}</span>
+            <span class="stat-label">{{ t('hero.inCatalog') }}</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-cell">
             <span class="stat-number">7</span>
-            <span class="stat-label">Жанровых направлений</span>
+            <span class="stat-label">{{ t('aboutTeaser.statGenres') }}</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-cell">
             <span class="stat-number">3</span>
-            <span class="stat-label">Языка обучения</span>
+            <span class="stat-label">{{ t('aboutTeaser.statLanguages') }}</span>
           </div>
           <div class="stat-divider"></div>
           <div class="stat-cell">
             <span class="stat-number">100%</span>
-            <span class="stat-label">Удобство для учащихся</span>
+            <span class="stat-label">{{ t('aboutPage.statConvenience') }}</span>
           </div>
         </div>
       </div>
@@ -146,6 +146,7 @@ import AppleNavbar from '@/components/AppleNavbar.vue';
 import AppleFooter from '@/components/AppleFooter.vue';
 import Register from '@/components/Register.vue';
 import Profile from '@/components/Profile.vue';
+import { t } from '@/i18n';
 
 export default {
   name: 'AboutUs',
@@ -219,6 +220,7 @@ export default {
       onLoggedIn,
       onProfileUpdated,
       onLoggedOut,
+      t,
     };
   },
 };

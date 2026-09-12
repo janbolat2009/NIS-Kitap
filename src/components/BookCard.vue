@@ -18,7 +18,7 @@
       <!-- Floating Availability Badge -->
       <div class="availability-badge" :class="book.copies > 0 ? 'available' : 'unavailable'">
         <span class="status-dot"></span>
-        <span>{{ book.copies > 0 ? `${book.copies} шт.` : 'Занята' }}</span>
+        <span>{{ book.copies > 0 ? `${book.copies} ${t('bookCard.available')}` : t('bookCard.busy') }}</span>
       </div>
     </div>
 
@@ -48,13 +48,15 @@
       <!-- Footer Info -->
       <div class="card-meta-row">
         <span class="meta-tag language-tag">{{ book.language }}</span>
-        <span class="meta-tag year-tag">{{ book.year }} г.</span>
+        <span class="meta-tag year-tag">{{ book.year }} {{ t('bookCard.yearSuffix') }}</span>
       </div>
     </div>
   </div>
 </template>
 
 <script>
+import { t } from '@/i18n';
+
 export default {
   name: 'BookCard',
   props: {
@@ -72,7 +74,7 @@ export default {
       if (typeof this.book.genre === 'string') {
         return [this.book.genre];
       }
-      return ['Книга'];
+      return [t('common.book') || 'Книга'];
     },
     coverGradientStyle() {
       // Генерация элегантного градиента на основе названия книги для эстетичного Apple-вида
@@ -96,6 +98,7 @@ export default {
     },
   },
   methods: {
+    t,
     handleClick() {
       this.$emit('select', this.book);
       if (this.book.title) {

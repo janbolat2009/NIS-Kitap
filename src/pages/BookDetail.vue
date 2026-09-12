@@ -17,30 +17,30 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
-            <span>Назад в каталог</span>
+            <span>{{ t('bookDetail.backToCatalog') }}</span>
           </button>
           <div class="breadcrumbs">
-            <router-link to="/">Главная</router-link>
+            <router-link to="/">{{ t('nav.home') }}</router-link>
             <span>/</span>
-            <router-link to="/catalog">Каталог</router-link>
+            <router-link to="/catalog">{{ t('nav.catalog') }}</router-link>
             <span>/</span>
-            <span class="curr-crumb">{{ book?.title || 'Книга' }}</span>
+            <span class="curr-crumb">{{ book?.title || t('common.book') }}</span>
           </div>
         </div>
 
         <!-- Loading State -->
         <div v-if="loading" class="detail-loading glass-panel">
           <div class="loading-spinner"></div>
-          <p>Загрузка данных книги...</p>
+          <p>{{ t('bookDetail.loading') }}</p>
         </div>
 
         <!-- Book Not Found -->
         <div v-else-if="!book" class="detail-not-found glass-panel">
           <div class="not-found-icon">📕</div>
-          <h2>Книга не найдена</h2>
-          <p>Книга «{{ decodedTitle }}» не обнаружена в базе библиотеки.</p>
+          <h2>{{ t('bookDetail.notFoundTitle') }}</h2>
+          <p>«{{ decodedTitle }}» {{ t('bookDetail.notFoundDesc') }}</p>
           <button class="apple-btn-primary" @click="$router.push('/catalog')">
-            Вернуться в каталог
+            {{ t('bookDetail.returnCatalog') }}
           </button>
         </div>
 
@@ -66,12 +66,12 @@
               <div class="status-left">
                 <span class="status-circle" :class="book.copies > 0 ? 'available' : 'busy'"></span>
                 <div>
-                  <strong v-if="book.copies > 0">Доступно для выдачи</strong>
-                  <strong v-else>Все копии на руках</strong>
-                  <p>{{ book.copies > 0 ? `${book.copies} экз. в хранилище` : 'Ожидается возврат читателями' }}</p>
+                  <strong v-if="book.copies > 0">{{ t('bookDetail.availableStatus') }}</strong>
+                  <strong v-else>{{ t('bookDetail.busyStatus') }}</strong>
+                  <p>{{ book.copies > 0 ? `${book.copies} ${t('bookDetail.storageCopies')}` : t('bookDetail.busyDesc') }}</p>
                 </div>
               </div>
-              <span class="copies-badge">{{ book.copies }} шт</span>
+              <span class="copies-badge">{{ book.copies }} {{ t('bookCard.available') }}</span>
             </div>
           </div>
 
@@ -98,30 +98,30 @@
             <!-- Specifications Tiles Grid -->
             <div class="specs-grid">
               <div class="spec-tile glass-card">
-                <span class="spec-label">Год издания</span>
+                <span class="spec-label">{{ t('bookDetail.yearLabel') }}</span>
                 <strong class="spec-value">{{ book.year || '—' }}</strong>
               </div>
               <div class="spec-tile glass-card">
-                <span class="spec-label">Язык</span>
+                <span class="spec-label">{{ t('bookDetail.langLabel') }}</span>
                 <strong class="spec-value">{{ book.language || 'Русский' }}</strong>
               </div>
               <div class="spec-tile glass-card">
-                <span class="spec-label">Доступность</span>
+                <span class="spec-label">{{ t('bookDetail.copiesLabel') }}</span>
                 <strong class="spec-value" :class="book.copies > 0 ? 'green' : 'red'">
-                  {{ book.copies > 0 ? `${book.copies} шт.` : 'Занята' }}
+                  {{ book.copies > 0 ? `${book.copies} ${t('bookCard.available')}` : t('bookCard.busy') }}
                 </strong>
               </div>
               <div class="spec-tile glass-card">
-                <span class="spec-label">Библиотека</span>
+                <span class="spec-label">{{ t('bookDetail.libraryLabel') }}</span>
                 <strong class="spec-value">NIS Digital</strong>
               </div>
             </div>
 
             <!-- Description -->
             <div class="book-description-section glass-panel">
-              <h3 class="desc-heading">Аннотация книги</h3>
+              <h3 class="desc-heading">{{ t('bookDetail.annotationHeading') }}</h3>
               <p class="desc-text">
-                {{ book.description || 'Описание для этой книги временно отсутствует в каталоге библиотеки.' }}
+                {{ book.description || t('bookDetail.noDesc') }}
               </p>
             </div>
 
@@ -136,24 +136,24 @@
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                   <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
                 </svg>
-                <span>{{ book.copies > 0 ? 'Забронировать книгу' : 'Нет доступных копий' }}</span>
+                <span>{{ book.copies > 0 ? t('bookDetail.reserveBtn') : t('bookDetail.noCopiesBtn') }}</span>
               </button>
 
               <button v-else class="reserved-success-btn" @click="$emit('open-profile')">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                   <polyline points="20 6 9 17 4 12"></polyline>
                 </svg>
-                <span>Книга забронирована вами</span>
+                <span>{{ t('bookDetail.alreadyReservedBtn') }}</span>
               </button>
 
               <button class="apple-btn-secondary fav-btn" :class="{ active: isFavorite }" @click="toggleFavorite">
                 <svg width="18" height="18" viewBox="0 0 24 24" :fill="isFavorite ? '#EF4444' : 'none'" :stroke="isFavorite ? '#EF4444' : 'currentColor'" stroke-width="2">
                   <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
                 </svg>
-                <span>{{ isFavorite ? 'В избранном' : 'В закладки' }}</span>
+                <span>{{ isFavorite ? t('bookDetail.inFavorites') : t('bookDetail.toFavorites') }}</span>
               </button>
 
-              <button class="apple-btn-secondary share-btn" @click="shareBook" title="Поделиться">
+              <button class="apple-btn-secondary share-btn" @click="shareBook" title="Share">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <circle cx="18" cy="5" r="3"></circle>
                   <circle cx="6" cy="12" r="3"></circle>
@@ -173,7 +173,7 @@
 
         <!-- Related Books Section -->
         <div v-if="relatedBooks.length" class="related-section">
-          <h2 class="section-title">Похожие книги из этой серии</h2>
+          <h2 class="section-title">{{ t('bookDetail.relatedTitle') }}</h2>
           <div class="related-grid">
             <BookCard 
               v-for="rel in relatedBooks" 
@@ -191,7 +191,7 @@
       <div class="reservation-modal-box glass-panel" @click.stop>
         <div class="modal-handle"></div>
         <div class="res-modal-header">
-          <h3>Бронирование школьной книги</h3>
+          <h3>{{ t('bookDetail.reserveModalTitle') }}</h3>
           <button class="sheet-close-btn" @click="showReservationModal = false">✕</button>
         </div>
 
@@ -205,7 +205,7 @@
           </div>
 
           <div class="duration-select-group">
-            <label class="duration-label">Срок бронирования:</label>
+            <label class="duration-label">{{ t('bookDetail.durationLabel') }}</label>
             <div class="duration-pills">
               <button 
                 v-for="days in [7, 14, 21]" 
@@ -214,24 +214,24 @@
                 :class="{ active: reservationDays === days }"
                 @click="reservationDays = days"
               >
-                {{ days }} дней
+                {{ days }} {{ t('bookDetail.daysWord') }}
               </button>
             </div>
             <p class="due-hint">
-              Дата возврата: <b>{{ calculatedDueDate }}</b>
+              {{ t('bookDetail.dueDateLabel') }} <b>{{ calculatedDueDate }}</b>
             </p>
           </div>
 
           <div class="nis-rules-notice">
             <span class="notice-icon">ℹ️</span>
-            <span>По правилам библиотеки NIS, книгу можно забрать в библиотечном кабинете в течение 2 дней после онлайн-брони.</span>
+            <span>{{ t('bookDetail.rulesNotice') }}</span>
           </div>
         </div>
 
         <div class="res-modal-footer">
-          <button class="btn-cancel" @click="showReservationModal = false">Отмена</button>
+          <button class="btn-cancel" @click="showReservationModal = false">{{ t('bookDetail.cancelBtn') }}</button>
           <button class="btn-confirm-reserve" @click="confirmReservation">
-            Подтвердить бронь
+            {{ t('bookDetail.confirmReserveBtn') }}
           </button>
         </div>
       </div>
@@ -272,6 +272,7 @@ import BookCard from '@/components/BookCard.vue';
 import Register from '@/components/Register.vue';
 import Profile from '@/components/Profile.vue';
 import { getBookByTitle, getBooks, reserveBook, isBookReserved } from '@/services/bookService';
+import { t, currentLocale } from '@/i18n';
 
 export default {
   name: 'BookDetail',
@@ -311,7 +312,7 @@ export default {
       if (!book.value) return [];
       if (Array.isArray(book.value.genre)) return book.value.genre;
       if (typeof book.value.genre === 'string') return [book.value.genre];
-      return ['Книга'];
+      return [t('common.book') || 'Книга'];
     });
 
     const coverGradientStyle = computed(() => {
@@ -330,7 +331,8 @@ export default {
 
     const calculatedDueDate = computed(() => {
       const d = new Date(Date.now() + reservationDays.value * 24 * 60 * 60 * 1000);
-      return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+      const loc = currentLocale.value === 'kz' ? 'kk-KZ' : currentLocale.value === 'en' ? 'en-US' : 'ru-RU';
+      return d.toLocaleDateString(loc, { day: 'numeric', month: 'long', year: 'numeric' });
     });
 
     const loadBookData = async () => {
@@ -383,7 +385,7 @@ export default {
       showReservationModal.value = false;
       if (res.success) {
         isReserved.value = true;
-        showToast('Книга успешно забронирована! Проверьте профиль.', 'success');
+        showToast(t('bookDetail.reservedSuccess'), 'success');
       } else {
         showToast(res.message, 'warn');
       }
@@ -391,17 +393,17 @@ export default {
 
     const toggleFavorite = () => {
       isFavorite.value = !isFavorite.value;
-      showToast(isFavorite.value ? 'Добавлено в закладки!' : 'Удалено из закладок');
+      showToast(isFavorite.value ? t('bookDetail.inFavorites') : t('bookDetail.toFavorites'));
     };
 
     const shareBook = () => {
       if (navigator.clipboard) {
         navigator.clipboard.writeText(window.location.href);
-        showToast('Ссылка на книгу скопирована в буфер обмена!');
+        showToast(t('bookDetail.shareToast'));
       }
     };
 
-    const showToast = (msg) => {
+    const showToast = (msg, type = '') => {
       toastMessage.value = msg;
       setTimeout(() => {
         toastMessage.value = '';
@@ -471,6 +473,7 @@ export default {
       onLoggedIn,
       onProfileUpdated,
       onLoggedOut,
+      t,
     };
   },
 };

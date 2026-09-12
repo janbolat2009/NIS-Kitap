@@ -3,8 +3,8 @@
     <!-- Header -->
     <div class="profile-header">
       <div class="profile-header-main">
-        <h2 class="profile-title">Личный кабинет</h2>
-        <span class="user-role-badge">Читатель NIS</span>
+        <h2 class="profile-title">{{ t('profile.title') }}</h2>
+        <span class="user-role-badge">{{ t('profile.badge') }}</span>
       </div>
       <button class="profile-close-btn" @click="$emit('back')">✕</button>
     </div>
@@ -16,14 +16,14 @@
         :class="{ active: currentTab === 'info' }"
         @click="currentTab = 'info'"
       >
-        <span>👤 Мой профиль</span>
+        <span>{{ t('profile.tabProfile') }}</span>
       </button>
       <button 
         class="tab-btn" 
         :class="{ active: currentTab === 'reservations' }"
         @click="currentTab = 'reservations'"
       >
-        <span>📚 Мои книги</span>
+        <span>{{ t('profile.tabBooks') }}</span>
         <span v-if="reservations.length" class="badge-counter">{{ reservations.length }}</span>
       </button>
     </div>
@@ -48,25 +48,25 @@
           </div>
         </div>
         <input type="file" ref="fileInput" @change="onAvatarFileChange" accept="image/*" class="hidden-input" />
-        <p class="avatar-hint">Нажмите на фото, чтобы изменить аватар</p>
+        <p class="avatar-hint">{{ t('profile.changePhotoHint') }}</p>
       </div>
 
       <!-- Form Details -->
       <div class="profile-fields">
         <div class="field-item">
-          <label>Имя и фамилия</label>
+          <label>{{ t('profile.nameLabel') }}</label>
           <input 
             v-model="userName" 
             type="text" 
             class="apple-input" 
-            placeholder="Введите ваше имя"
+            :placeholder="t('auth.namePlaceholder')"
           />
         </div>
 
         <div class="field-item">
-          <label>Школьная почта (Email)</label>
+          <label>{{ t('profile.emailLabel') }}</label>
           <input 
-            :value="email || 'Ученик NIS'" 
+            :value="email || t('nav.reader')" 
             type="email" 
             disabled 
             class="apple-input disabled"
@@ -74,11 +74,11 @@
         </div>
 
         <div class="field-item">
-          <label>Сменить пароль</label>
+          <label>{{ t('profile.passLabel') }}</label>
           <input 
             v-model="newPassword" 
             type="password" 
-            placeholder="Новый пароль (оставьте пустым, если не меняете)" 
+            :placeholder="t('profile.passPlaceholder')" 
             class="apple-input"
           />
         </div>
@@ -86,10 +86,10 @@
 
       <div class="profile-actions-row">
         <button class="apple-save-btn" @click="saveProfile">
-          Сохранить изменения
+          {{ t('profile.saveBtn') }}
         </button>
         <button class="apple-logout-btn" @click="logout">
-          Выйти из аккаунта
+          {{ t('profile.logoutBtn') }}
         </button>
       </div>
     </div>
@@ -98,10 +98,10 @@
     <div v-else class="reservations-content">
       <div v-if="reservations.length === 0" class="empty-reservations">
         <div class="empty-icon">📖</div>
-        <h3>У вас пока нет активных бронирований</h3>
-        <p>Найдите понравившуюся книгу в каталоге или через поиск с ИИ и нажмите «Забронировать».</p>
+        <h3>{{ t('profile.emptyReservationsTitle') }}</h3>
+        <p>{{ t('profile.emptyReservationsDesc') }}</p>
         <button class="go-catalog-btn" @click="$router.push('/catalog'); $emit('back')">
-          Перейти в каталог
+          {{ t('profile.goCatalogBtn') }}
         </button>
       </div>
 
@@ -113,13 +113,13 @@
               <h4 class="res-title">{{ res.title }}</h4>
               <p class="res-author">{{ res.author }} • {{ res.genre }}</p>
               <div class="res-date-badge">
-                <span>Срок сдачи: <b>{{ formatDate(res.dueDate) }}</b></span>
+                <span>{{ t('profile.dueDateBadge') }} <b>{{ formatDate(res.dueDate) }}</b></span>
               </div>
             </div>
           </div>
           <div class="res-card-right">
-            <button class="return-btn" @click="cancelRes(res.id)" title="Отметить книгу как сданную">
-              Вернуть книгу
+            <button class="return-btn" @click="cancelRes(res.id)" :title="t('profile.returnBookBtn')">
+              {{ t('profile.returnBookBtn') }}
             </button>
           </div>
         </div>
@@ -131,6 +131,7 @@
 <script>
 import { getAuth, updatePassword, updateProfile, signOut } from 'firebase/auth';
 import { getUserReservations, cancelReservation } from '@/services/bookService';
+import { t, currentLocale } from '@/i18n';
 
 export default {
   name: 'Profile',
@@ -169,6 +170,7 @@ export default {
     this.refreshReservations();
   },
   methods: {
+    t,
     loadUserData() {
       const local = localStorage.getItem('user');
       if (local) {
@@ -185,9 +187,10 @@ export default {
       this.reservations = getUserReservations();
     },
     formatDate(dateStr) {
-      if (!dateStr) return '14 дней';
+      if (!dateStr) return '14 d';
       const d = new Date(dateStr);
-      return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
+      const loc = currentLocale.value === 'kz' ? 'kk-KZ' : currentLocale.value === 'en' ? 'en-US' : 'ru-RU';
+      return d.toLocaleDateString(loc, { day: 'numeric', month: 'short', year: 'numeric' });
     },
     triggerFileInput() {
       this.$refs.fileInput?.click();
@@ -199,7 +202,7 @@ export default {
       reader.onload = (event) => {
         this.avatarUrl = event.target.result;
         this.saveAvatarLocal(this.avatarUrl);
-        this.showToast('Аватар успешно обновлен!', 'success');
+        this.showToast(t('profile.avatarToast'), 'success');
       };
       reader.readAsDataURL(file);
     },
@@ -229,13 +232,13 @@ export default {
       user.name = this.userName;
       localStorage.setItem('user', JSON.stringify(user));
 
-      this.showToast('Профиль успешно сохранен!', 'success');
+      this.showToast(t('profile.savedToast'), 'success');
       this.$emit('updated', { name: this.userName, avatar: this.avatarUrl });
     },
     cancelRes(id) {
       cancelReservation(id);
       this.refreshReservations();
-      this.showToast('Бронирование книги отменено / сдано в библиотеку', 'success');
+      this.showToast(t('profile.returnedToast'), 'success');
     },
     async logout() {
       try {

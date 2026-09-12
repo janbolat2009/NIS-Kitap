@@ -16,12 +16,12 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
-            <span>В каталог</span>
+            <span>{{ t('bookDetail.backToCatalog') }}</span>
           </button>
           <div class="breadcrumbs">
-            <router-link to="/">Главная</router-link>
+            <router-link to="/">{{ t('nav.home') }}</router-link>
             <span>/</span>
-            <router-link to="/catalog">Каталог</router-link>
+            <router-link to="/catalog">{{ t('nav.catalog') }}</router-link>
             <span>/</span>
             <span class="active-crumb">{{ genreTitle }}</span>
           </div>
@@ -35,14 +35,14 @@
               <span v-else class="big-icon-emoji">📖</span>
             </div>
             <div>
-              <div class="genre-type-badge">Жанровая коллекция</div>
+              <div class="genre-type-badge">{{ t('genres.title') }}</div>
               <h1 class="genre-heading">{{ genreTitle }}</h1>
               <p class="genre-description">{{ genreDesc }}</p>
             </div>
           </div>
 
           <div class="genre-stats-pill">
-            <span>Найдено книг:</span>
+            <span>{{ t('catalog.foundCount') }}</span>
             <strong>{{ filteredBooks.length }}</strong>
           </div>
         </div>
@@ -57,7 +57,7 @@
             <input 
               v-model="searchQuery" 
               type="text" 
-              :placeholder="`Поиск в жанре «${genreTitle}»...`"
+              :placeholder="t('catalog.searchPlaceholder')"
               class="genre-search-input"
             />
             <button v-if="searchQuery" class="clear-search" @click="searchQuery = ''">✕</button>
@@ -65,10 +65,10 @@
 
           <div class="sort-box">
             <select v-model="sortBy" class="apple-select">
-              <option value="default">Сортировка по умолчанию</option>
-              <option value="title">По названию (А-Я)</option>
-              <option value="year-desc">Сначала новые года</option>
-              <option value="copies-desc">По доступным копиям</option>
+              <option value="default">{{ t('catalog.sortDefault') }}</option>
+              <option value="title">{{ t('catalog.sortTitle') }}</option>
+              <option value="year-desc">{{ t('catalog.sortYearDesc') }}</option>
+              <option value="copies-desc">{{ t('catalog.sortCopiesDesc') }}</option>
             </select>
           </div>
         </div>
@@ -80,9 +80,9 @@
 
         <div v-else-if="filteredBooks.length === 0" class="empty-state glass-panel">
           <div class="empty-icon">📚</div>
-          <h3>Книги жанра «{{ genreTitle }}» не найдены</h3>
-          <p>Попробуйте сбросить поисковый запрос или посмотреть другие жанры в каталоге.</p>
-          <button class="apple-btn-primary" @click="searchQuery = ''">Сбросить поиск</button>
+          <h3>{{ t('catalog.emptyTitle') }}</h3>
+          <p>{{ t('catalog.emptyDesc') }}</p>
+          <button class="apple-btn-primary" @click="searchQuery = ''">{{ t('catalog.resetAll') }}</button>
         </div>
 
         <div v-else class="books-grid-wrapper">
@@ -131,6 +131,7 @@ import BookCard from '@/components/BookCard.vue';
 import Register from '@/components/Register.vue';
 import Profile from '@/components/Profile.vue';
 import { getBooksByGenre } from '@/services/bookService';
+import { t } from '@/i18n';
 
 export default {
   name: 'GenreBookView',
@@ -262,6 +263,7 @@ export default {
       onLoggedIn,
       onProfileUpdated,
       onLoggedOut,
+      t,
     };
   },
 };

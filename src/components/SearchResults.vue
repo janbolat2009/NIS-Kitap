@@ -8,9 +8,9 @@
         </svg>
       </div>
       <div>
-        <h3 class="results-title">Результаты умного поиска</h3>
+        <h3 class="results-title">{{ t('searchResults.title') }}</h3>
         <p class="results-subtitle">
-          Найдено рекомендаций: <b>{{ results.length }}</b>
+          {{ t('searchResults.foundCount') }} <b>{{ results.length }}</b>
         </p>
       </div>
     </div>
@@ -26,7 +26,7 @@
         <div class="item-info">
           <div class="item-meta-top">
             <span class="item-genre-pill">
-              {{ Array.isArray(book.genre) ? book.genre.join(', ') : (book.genre || 'Книга') }}
+              {{ Array.isArray(book.genre) ? book.genre.join(', ') : (book.genre || 'Book') }}
             </span>
             <span class="item-lang-pill">{{ book.language || 'RU' }}</span>
           </div>
@@ -54,12 +54,14 @@
     </div>
 
     <div v-else class="no-results-state">
-      <p class="no-results-text">По вашему запросу книги не найдены. Попробуйте изменить ключевые слова или тему.</p>
+      <p class="no-results-text">{{ t('searchResults.emptyText') }}</p>
     </div>
   </div>
 </template>
 
 <script>
+import { t } from '@/i18n';
+
 export default {
   name: 'SearchResults',
   props: {
@@ -69,6 +71,9 @@ export default {
     },
   },
   emits: ['book-click'],
+  methods: {
+    t,
+  },
 };
 </script>
 

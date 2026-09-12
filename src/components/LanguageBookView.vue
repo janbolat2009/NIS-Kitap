@@ -16,12 +16,12 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
-            <span>В каталог</span>
+            <span>{{ t('bookDetail.backToCatalog') }}</span>
           </button>
           <div class="breadcrumbs">
-            <router-link to="/">Главная</router-link>
+            <router-link to="/">{{ t('nav.home') }}</router-link>
             <span>/</span>
-            <router-link to="/catalog">Каталог</router-link>
+            <router-link to="/catalog">{{ t('nav.catalog') }}</router-link>
             <span>/</span>
             <span class="active-crumb">{{ languageDisplayName }}</span>
           </div>
@@ -34,14 +34,14 @@
               <span>{{ flagEmoji }}</span>
             </div>
             <div>
-              <div class="lang-badge">Языковое отделение</div>
+              <div class="lang-badge">{{ t('languages.title') }}</div>
               <h1 class="lang-heading">{{ languageDisplayName }}</h1>
               <p class="lang-description">{{ languageDesc }}</p>
             </div>
           </div>
 
           <div class="lang-stats-pill">
-            <span>Всего изданий:</span>
+            <span>{{ t('catalog.foundCount') }}</span>
             <strong>{{ filteredBooks.length }}</strong>
           </div>
         </div>
@@ -56,7 +56,7 @@
             <input 
               v-model="searchQuery" 
               type="text" 
-              placeholder="Поиск по названию или автору..." 
+              :placeholder="t('catalog.searchPlaceholder')" 
               class="lang-search-input"
             />
             <button v-if="searchQuery" class="clear-search" @click="searchQuery = ''">✕</button>
@@ -64,15 +64,15 @@
 
           <div class="filters-group">
             <select v-model="selectedGenre" class="apple-select">
-              <option value="">Все жанры</option>
+              <option value="">{{ t('filterModal.genresSection') }}</option>
               <option v-for="g in availableGenres" :key="g" :value="g">{{ g }}</option>
             </select>
 
             <select v-model="sortBy" class="apple-select">
-              <option value="default">Сортировка</option>
-              <option value="title">По названию (А-Я)</option>
-              <option value="year-desc">Сначала новые года</option>
-              <option value="copies-desc">По доступным копиям</option>
+              <option value="default">{{ t('catalog.sortDefault') }}</option>
+              <option value="title">{{ t('catalog.sortTitle') }}</option>
+              <option value="year-desc">{{ t('catalog.sortYearDesc') }}</option>
+              <option value="copies-desc">{{ t('catalog.sortCopiesDesc') }}</option>
             </select>
           </div>
         </div>
@@ -84,9 +84,9 @@
 
         <div v-else-if="filteredBooks.length === 0" class="empty-state glass-panel">
           <div class="empty-icon">🌍</div>
-          <h3>Книги не найдены</h3>
-          <p>В этой языковой секции по вашему запросу не нашлось совпадений.</p>
-          <button class="apple-btn-primary" @click="resetFilters">Сбросить фильтры</button>
+          <h3>{{ t('catalog.emptyTitle') }}</h3>
+          <p>{{ t('catalog.emptyDesc') }}</p>
+          <button class="apple-btn-primary" @click="resetFilters">{{ t('catalog.resetAll') }}</button>
         </div>
 
         <div v-else class="books-grid-wrapper">
@@ -131,10 +131,10 @@ import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import AppleNavbar from '@/components/AppleNavbar.vue';
 import AppleFooter from '@/components/AppleFooter.vue';
-import BookCard from '@/components/BookCard.vue';
 import Register from '@/components/Register.vue';
 import Profile from '@/components/Profile.vue';
-import { getBooksByLanguage } from '@/services/bookService';
+import { getBooksByLanguage, matchGenre } from '@/services/bookService';
+import { t } from '@/i18n';
 
 export default {
   name: 'LanguageBookView',
@@ -215,13 +215,7 @@ export default {
       let list = books.value;
 
       if (selectedGenre.value) {
-        const gTarget = selectedGenre.value.toLowerCase();
-        list = list.filter((b) => {
-          if (Array.isArray(b.genre)) {
-            return b.genre.some((g) => g.toLowerCase().includes(gTarget));
-          }
-          return (b.genre || '').toLowerCase().includes(gTarget);
-        });
+        list = list.filter((b) => matchGenre(b.genre, selectedGenre.value));
       }
 
       if (searchQuery.value.trim()) {
@@ -302,6 +296,7 @@ export default {
       onLoggedIn,
       onProfileUpdated,
       onLoggedOut,
+      t,
     };
   },
 };

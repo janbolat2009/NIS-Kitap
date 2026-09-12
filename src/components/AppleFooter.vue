@@ -9,46 +9,46 @@
             <span class="footer-brand-name">NIS Kitap</span>
           </div>
           <p class="brand-tagline">
-            Цифровая библиотека нового поколения для школы NIS. Читайте, исследуйте и бронируйте лучшие книги со всего мира.
+            {{ t('footer.tagline') }}
           </p>
           <div class="school-pill">
             <span class="dot"></span>
-            <span>Назарбаев Интеллектуальная Школа</span>
+            <span>{{ t('footer.schoolName') }}</span>
           </div>
         </div>
 
         <!-- Col 2: Navigation -->
         <div class="footer-links-col">
-          <h4 class="col-title">Навигация</h4>
+          <h4 class="col-title">{{ t('footer.navCol') }}</h4>
           <ul class="col-list">
-            <li><router-link to="/">Главная страница</router-link></li>
-            <li><router-link to="/catalog">Каталог книг</router-link></li>
-            <li><router-link to="/about-us">О библиотеке</router-link></li>
-            <li><a href="#ai-search-section">Поиск с ИИ</a></li>
+            <li><router-link to="/">{{ t('nav.home') }}</router-link></li>
+            <li><router-link to="/catalog">{{ t('nav.catalog') }}</router-link></li>
+            <li><router-link to="/about-us">{{ t('nav.about') }}</router-link></li>
+            <li><a href="#ai-search-section">{{ t('nav.searchAi') }}</a></li>
           </ul>
         </div>
 
         <!-- Col 3: Genres -->
         <div class="footer-links-col">
-          <h4 class="col-title">Жанры</h4>
+          <h4 class="col-title">{{ t('footer.genresCol') }}</h4>
           <ul class="col-list">
-            <li><router-link to="/fantastica">Фантастика</router-link></li>
-            <li><router-link to="/fantasy">Фэнтези</router-link></li>
-            <li><router-link to="/detective">Детектив</router-link></li>
-            <li><router-link to="/adventure">Приключения</router-link></li>
-            <li><router-link to="/biography">Биография</router-link></li>
-            <li><router-link to="/romantica">Романтика</router-link></li>
-            <li><router-link to="/poetry">Поэзия</router-link></li>
+            <li><router-link to="/fantastica">{{ t('genres.fantastica') }}</router-link></li>
+            <li><router-link to="/fantasy">{{ t('genres.fantasy') }}</router-link></li>
+            <li><router-link to="/detective">{{ t('genres.detective') }}</router-link></li>
+            <li><router-link to="/adventure">{{ t('genres.adventure') }}</router-link></li>
+            <li><router-link to="/biography">{{ t('genres.biography') }}</router-link></li>
+            <li><router-link to="/romantica">{{ t('genres.romantica') }}</router-link></li>
+            <li><router-link to="/poetry">{{ t('genres.poetry') }}</router-link></li>
           </ul>
         </div>
 
         <!-- Col 4: Languages & Contacts -->
         <div class="footer-links-col">
-          <h4 class="col-title">Языки & Связь</h4>
+          <h4 class="col-title">{{ t('footer.langCol') }}</h4>
           <ul class="col-list">
-            <li><router-link to="/kazakh">Қазақ тілінде</router-link></li>
-            <li><router-link to="/russian">На русском языке</router-link></li>
-            <li><router-link to="/english">In English</router-link></li>
+            <li><router-link to="/kazakh">{{ t('footer.kzLink') }}</router-link></li>
+            <li><router-link to="/russian">{{ t('footer.ruLink') }}</router-link></li>
+            <li><router-link to="/english">{{ t('footer.enLink') }}</router-link></li>
           </ul>
 
           <div class="contacts-box">
@@ -77,12 +77,13 @@
 
       <div class="footer-bottom">
         <p class="copyright">
-          © {{ currentYear }} NIS Kitap. Все права защищены. Разработано в стиле Apple.
+          © {{ currentYear }} NIS Kitap. {{ t('footer.rights') }}
         </p>
         <div class="footer-badges">
           <span class="tech-badge">Vue 3 + Vite</span>
           <span class="tech-badge">Glassmorphism</span>
-          <span class="tech-badge">AI Powered</span>
+          <span class="tech-badge">Gemini AI</span>
+          <span class="tech-badge">KZ • RU • EN</span>
         </div>
       </div>
     </div>
@@ -90,8 +91,13 @@
 </template>
 
 <script>
+import { t } from '@/i18n';
+
 export default {
   name: 'AppleFooter',
+  setup() {
+    return { t };
+  },
   data() {
     return {
       currentYear: new Date().getFullYear(),

@@ -16,13 +16,13 @@
         <!-- Page Header -->
         <div class="catalog-header">
           <div class="header-breadcrumbs">
-            <router-link to="/">Главная</router-link>
+            <router-link to="/">{{ t('nav.home') }}</router-link>
             <span>/</span>
-            <span class="current">Каталог</span>
+            <span class="current">{{ t('catalog.crumbCatalog') }}</span>
           </div>
-          <h1 class="catalog-title">Каталог школьных книг</h1>
+          <h1 class="catalog-title">{{ t('catalog.title') }}</h1>
           <p class="catalog-subtitle">
-            Исследуйте полную коллекцию школьной библиотеки NIS. Фильтруйте по жанрам, языкам и находите нужные издания.
+            {{ t('catalog.subtitle') }}
           </p>
         </div>
 
@@ -38,7 +38,7 @@
               ref="catalogSearchInput"
               v-model="searchQuery" 
               type="text" 
-              placeholder="Поиск по названию, автору или жанру..." 
+              :placeholder="t('catalog.searchPlaceholder')" 
               class="catalog-search"
             />
             <button v-if="searchQuery" class="clear-btn" @click="searchQuery = ''">✕</button>
@@ -49,17 +49,17 @@
             <!-- Sort dropdown -->
             <div class="select-wrapper">
               <select v-model="sortBy" class="apple-select">
-                <option value="default">По умолчанию</option>
-                <option value="title">По названию (А-Я)</option>
-                <option value="year-desc">Сначала новые года</option>
-                <option value="copies-desc">По доступным копиям</option>
+                <option value="default">{{ t('catalog.sortDefault') }}</option>
+                <option value="title">{{ t('catalog.sortTitle') }}</option>
+                <option value="year-desc">{{ t('catalog.sortYearDesc') }}</option>
+                <option value="copies-desc">{{ t('catalog.sortCopiesDesc') }}</option>
               </select>
             </div>
 
             <!-- Filter Modal Button -->
             <button class="filter-sheet-btn" @click="showFilterModal = true">
               <img src="@/img/filter-icon.png" alt="Filter" class="filter-svg" />
-              <span>Фильтры</span>
+              <span>{{ t('catalog.filtersBtn') }}</span>
               <span v-if="hasActiveFilters" class="filter-active-dot"></span>
             </button>
           </div>
@@ -73,51 +73,51 @@
             :class="{ active: !activeGenre && !activeLanguage }"
             @click="resetAllFilters"
           >
-            Все книги
+            {{ t('catalog.allBooksPill') }}
           </button>
 
           <!-- Genres -->
           <div class="pills-divider"></div>
           <button 
-            v-for="g in genres" 
-            :key="g"
+            v-for="g in genreList" 
+            :key="g.value"
             class="pill-btn"
-            :class="{ active: activeGenre === g }"
-            @click="toggleGenre(g)"
+            :class="{ active: activeGenre === g.value }"
+            @click="toggleGenre(g.value)"
           >
-            {{ g }}
+            {{ g.label }}
           </button>
 
           <!-- Languages -->
           <div class="pills-divider"></div>
           <button 
-            v-for="l in languages" 
-            :key="l"
+            v-for="l in languageList" 
+            :key="l.value"
             class="pill-btn lang-pill"
-            :class="{ active: activeLanguage === l }"
-            @click="toggleLanguage(l)"
+            :class="{ active: activeLanguage === l.value }"
+            @click="toggleLanguage(l.value)"
           >
-            {{ l }}
+            {{ l.label }}
           </button>
         </div>
 
         <!-- Active Filters Summary & Count -->
         <div class="catalog-summary-bar">
           <div class="results-count">
-            <span>Найдено: <b>{{ filteredBooks.length }}</b> книг</span>
+            <span>{{ t('catalog.foundCount') }} <b>{{ filteredBooks.length }}</b> {{ t('catalog.booksWord') }}</span>
             <span v-if="activeGenre || activeLanguage || searchQuery" class="filter-tag-hint">
-              (применены фильтры)
+              {{ t('catalog.filtersApplied') }}
             </span>
           </div>
 
           <div v-if="hasActiveFilters" class="active-chips">
             <span v-if="activeGenre" class="active-chip" @click="activeGenre = ''">
-              Жанр: {{ activeGenre }} ✕
+              {{ t('catalog.genreLabel') }} {{ getGenreLabel(activeGenre) }} ✕
             </span>
             <span v-if="activeLanguage" class="active-chip" @click="activeLanguage = ''">
-              Язык: {{ activeLanguage }} ✕
+              {{ t('catalog.langLabel') }} {{ getLanguageLabel(activeLanguage) }} ✕
             </span>
-            <button class="reset-all-link" @click="resetAllFilters">Сбросить всё</button>
+            <button class="reset-all-link" @click="resetAllFilters">{{ t('catalog.resetAll') }}</button>
           </div>
         </div>
 
@@ -128,9 +128,9 @@
 
         <div v-else-if="filteredBooks.length === 0" class="no-books-state glass-panel">
           <div class="no-books-icon">🔍</div>
-          <h3>Ничего не найдено</h3>
-          <p>По вашему запросу не нашлось подходящих книг. Попробуйте сбросить фильтры или изменить поисковый запрос.</p>
-          <button class="apple-btn-primary" @click="resetAllFilters">Сбросить все фильтры</button>
+          <h3>{{ t('catalog.emptyTitle') }}</h3>
+          <p>{{ t('catalog.emptyDesc') }}</p>
+          <button class="apple-btn-primary" @click="resetAllFilters">{{ t('catalog.resetAll') }}</button>
         </div>
 
         <div v-else class="books-grid-wrapper">
@@ -146,7 +146,7 @@
           <!-- Load More Button -->
           <div v-if="visibleBooks.length < filteredBooks.length" class="load-more-row">
             <button class="apple-btn-secondary load-more-btn" @click="loadMore">
-              <span>Показать ещё ({{ filteredBooks.length - visibleBooks.length }})</span>
+              <span>{{ t('catalog.loadMore') }} ({{ filteredBooks.length - visibleBooks.length }})</span>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                 <polyline points="6 9 12 15 18 9"></polyline>
               </svg>
@@ -160,8 +160,8 @@
     <!-- Filter Modal -->
     <FilterModal 
       v-model="showFilterModal"
-      :genres="genres"
-      :languages="languages"
+      :genres="genreList"
+      :languages="languageList"
       :current-genre="activeGenre"
       :current-language="activeLanguage"
       @submit="onFilterSubmit"
@@ -203,7 +203,8 @@ import BookCard from '@/components/BookCard.vue';
 import FilterModal from '@/components/FilterModal.vue';
 import Register from '@/components/Register.vue';
 import Profile from '@/components/Profile.vue';
-import { getBooks } from '@/services/bookService';
+import { getBooks, matchLanguage, matchGenre } from '@/services/bookService';
+import { t } from '@/i18n';
 
 export default {
   name: 'Catalog',
@@ -241,8 +242,33 @@ export default {
 
     const catalogSearchInput = ref(null);
 
-    const genres = ['Фантастика', 'Фэнтези', 'Детектив', 'Приключения', 'Биография', 'Романтика', 'Поэзия'];
-    const languages = ['Русский', 'Казахский', 'Английский'];
+    const genreList = computed(() => [
+      { value: 'Фантастика', label: t('genres.fantastica') },
+      { value: 'Фэнтези', label: t('genres.fantasy') },
+      { value: 'Детектив', label: t('genres.detective') },
+      { value: 'Приключения', label: t('genres.adventure') },
+      { value: 'Биография', label: t('genres.biography') },
+      { value: 'Романтика', label: t('genres.romantica') },
+      { value: 'Поэзия', label: t('genres.poetry') },
+    ]);
+
+    const languageList = computed(() => [
+      { value: 'Русский', label: t('catalog.langRu') },
+      { value: 'Қазақ', label: t('catalog.langKz') },
+      { value: 'English', label: t('catalog.langEn') },
+    ]);
+
+    const getGenreLabel = (val) => {
+      if (!val) return '';
+      const found = genreList.value.find((g) => g.value === val);
+      return found ? found.label : val;
+    };
+
+    const getLanguageLabel = (val) => {
+      if (!val) return '';
+      const found = languageList.value.find((l) => l.value === val);
+      return found ? found.label : val;
+    };
 
     onMounted(async () => {
       // 1. Чтение пользователя из localStorage
@@ -259,7 +285,7 @@ export default {
         }
       }
 
-      // 2. Чтение query-параметров роутера (например, если пришли с /catalog?genre=Фантастика)
+      // 2. Чтение query-параметров роутера
       if (route.query.genre) {
         activeGenre.value = route.query.genre;
       }
@@ -287,21 +313,14 @@ export default {
     const filteredBooks = computed(() => {
       let list = allBooks.value;
 
-      // Filter Genre
+      // Filter Genre with normalized multi-lingual stem matching
       if (activeGenre.value) {
-        const targetG = activeGenre.value.toLowerCase();
-        list = list.filter((b) => {
-          if (Array.isArray(b.genre)) {
-            return b.genre.some((g) => g.toLowerCase().includes(targetG));
-          }
-          return (b.genre || '').toLowerCase().includes(targetG);
-        });
+        list = list.filter((b) => matchGenre(b.genre, activeGenre.value));
       }
 
-      // Filter Language
+      // Filter Language with normalized KZ / RU / EN matching
       if (activeLanguage.value) {
-        const targetL = activeLanguage.value.toLowerCase();
-        list = list.filter((b) => (b.language || '').toLowerCase().includes(targetL));
+        list = list.filter((b) => matchLanguage(b.language, activeLanguage.value));
       }
 
       // Filter Search
@@ -407,8 +426,10 @@ export default {
       showProfile,
       showFilterModal,
       loading,
-      genres,
-      languages,
+      genreList,
+      languageList,
+      getGenreLabel,
+      getLanguageLabel,
       searchQuery,
       activeGenre,
       activeLanguage,
@@ -428,6 +449,7 @@ export default {
       onLoggedIn,
       onProfileUpdated,
       onLoggedOut,
+      t,
     };
   },
 };

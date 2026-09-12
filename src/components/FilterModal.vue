@@ -5,7 +5,7 @@
       <div class="sheet-header">
         <div class="sheet-handle"></div>
         <div class="sheet-title-row">
-          <h3>Фильтры каталога</h3>
+          <h3>{{ t('filterModal.title') }}</h3>
           <button class="sheet-close-btn" @click="close">✕</button>
         </div>
       </div>
@@ -15,19 +15,19 @@
         <!-- Genres -->
         <div class="filter-section">
           <div class="section-label">
-            <span>Жанр книги</span>
-            <span v-if="selectedGenre" class="active-badge">{{ selectedGenre }}</span>
+            <span>{{ t('filterModal.genresSection') }}</span>
+            <span v-if="selectedGenre" class="active-badge">{{ selectedGenreLabel }}</span>
           </div>
           <div class="tags-grid">
             <button
               v-for="genre in genres"
-              :key="genre"
+              :key="getVal(genre)"
               type="button"
               class="filter-tag-pill"
-              :class="{ active: selectedGenre === genre }"
-              @click="toggleGenre(genre)"
+              :class="{ active: selectedGenre === getVal(genre) }"
+              @click="toggleGenre(getVal(genre))"
             >
-              {{ genre }}
+              {{ getLabel(genre) }}
             </button>
           </div>
         </div>
@@ -35,19 +35,19 @@
         <!-- Languages -->
         <div class="filter-section">
           <div class="section-label">
-            <span>Язык издания</span>
-            <span v-if="selectedLanguage" class="active-badge">{{ selectedLanguage }}</span>
+            <span>{{ t('filterModal.languagesSection') }}</span>
+            <span v-if="selectedLanguage" class="active-badge">{{ selectedLanguageLabel }}</span>
           </div>
           <div class="tags-grid">
             <button
               v-for="lang in languages"
-              :key="lang"
+              :key="getVal(lang)"
               type="button"
               class="filter-tag-pill"
-              :class="{ active: selectedLanguage === lang }"
-              @click="toggleLanguage(lang)"
+              :class="{ active: selectedLanguage === getVal(lang) }"
+              @click="toggleLanguage(getVal(lang))"
             >
-              {{ lang }}
+              {{ getLabel(lang) }}
             </button>
           </div>
         </div>
@@ -56,10 +56,10 @@
       <!-- Footer Buttons -->
       <div class="sheet-footer">
         <button type="button" class="btn-reset" @click="resetFilters">
-          Сбросить все
+          {{ t('filterModal.resetBtn') }}
         </button>
         <button type="button" class="btn-apply" @click="submitFilters">
-          Применить фильтры
+          {{ t('filterModal.applyBtn') }}
         </button>
       </div>
     </div>
@@ -67,6 +67,8 @@
 </template>
 
 <script>
+import { t } from '@/i18n';
+
 export default {
   name: 'FilterModal',
   props: {
@@ -98,6 +100,18 @@ export default {
       selectedLanguage: this.currentLanguage || '',
     };
   },
+  computed: {
+    selectedGenreLabel() {
+      if (!this.selectedGenre) return '';
+      const found = this.genres.find((g) => this.getVal(g) === this.selectedGenre);
+      return found ? this.getLabel(found) : this.selectedGenre;
+    },
+    selectedLanguageLabel() {
+      if (!this.selectedLanguage) return '';
+      const found = this.languages.find((l) => this.getVal(l) === this.selectedLanguage);
+      return found ? this.getLabel(found) : this.selectedLanguage;
+    },
+  },
   watch: {
     currentGenre(val) {
       this.selectedGenre = val;
@@ -107,6 +121,13 @@ export default {
     },
   },
   methods: {
+    t,
+    getVal(item) {
+      return typeof item === 'object' && item !== null ? item.value : item;
+    },
+    getLabel(item) {
+      return typeof item === 'object' && item !== null ? item.label : item;
+    },
     toggleGenre(g) {
       this.selectedGenre = this.selectedGenre === g ? '' : g;
     },

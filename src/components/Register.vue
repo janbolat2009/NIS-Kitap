@@ -5,11 +5,11 @@
       <div class="auth-logo-badge">
         <img src="@/img/Logotype.svg" alt="NIS Kitap" class="auth-logo-img" />
       </div>
-      <h2 class="auth-title">{{ activeTab === 'login' ? 'Вход в аккаунт' : 'Создание аккаунта' }}</h2>
+      <h2 class="auth-title">{{ activeTab === 'login' ? t('auth.loginTitle') : t('auth.registerTitle') }}</h2>
       <p class="auth-subtitle">
         {{ activeTab === 'login' 
-          ? 'Введите свои данные для доступа к библиотеке NIS Kitap' 
-          : 'Зарегистрируйтесь для бронирования школьных книг онлайн' }}
+          ? t('auth.loginSubtitle') 
+          : t('auth.registerSubtitle') }}
       </p>
 
       <!-- Apple Segmented Control -->
@@ -20,7 +20,7 @@
           :class="{ active: activeTab === 'login' }"
           @click="activeTab = 'login'"
         >
-          Вход
+          {{ t('auth.loginTab') }}
         </button>
         <button 
           type="button"
@@ -28,7 +28,7 @@
           :class="{ active: activeTab === 'register' }"
           @click="activeTab = 'register'"
         >
-          Регистрация
+          {{ t('auth.registerTab') }}
         </button>
       </div>
     </div>
@@ -48,12 +48,12 @@
       <!-- Login Form -->
       <form v-if="activeTab === 'login'" @submit.prevent="handleLogin" class="auth-form">
         <div class="form-group">
-          <label class="form-label">Почта (Email)</label>
+          <label class="form-label">{{ t('auth.emailLabel') }}</label>
           <div class="input-container">
             <input 
               v-model="loginEmail" 
               type="email" 
-              placeholder="example@nis.edu.kz" 
+              :placeholder="t('auth.emailPlaceholder')" 
               required
               autocomplete="email"
               class="apple-input"
@@ -62,7 +62,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Пароль</label>
+          <label class="form-label">{{ t('auth.passwordLabel') }}</label>
           <div class="input-container">
             <input 
               v-model="loginPassword" 
@@ -76,24 +76,24 @@
         </div>
 
         <button type="submit" class="auth-submit-btn" :disabled="loading">
-          <span v-if="loading">Вход...</span>
-          <span v-else>Войти в систему</span>
+          <span v-if="loading">{{ t('auth.submittingLogin') }}</span>
+          <span v-else>{{ t('auth.loginSubmit') }}</span>
         </button>
 
         <div class="demo-mode-hint">
-          <span>💡 Нет аккаунта? Переключитесь на <b>Регистрацию</b> или введите любой email для демо-входа</span>
+          <span>💡 {{ t('auth.demoHint') }}</span>
         </div>
       </form>
 
       <!-- Register Form -->
       <form v-else @submit.prevent="handleRegister" class="auth-form">
         <div class="form-group">
-          <label class="form-label">ФИО / Имя</label>
+          <label class="form-label">{{ t('auth.nameLabel') }}</label>
           <div class="input-container">
             <input 
               v-model="name" 
               type="text" 
-              placeholder="Алихан Бокейхан" 
+              :placeholder="t('auth.namePlaceholder')" 
               required
               autocomplete="name"
               class="apple-input"
@@ -102,12 +102,12 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Почта (Email)</label>
+          <label class="form-label">{{ t('auth.emailLabel') }}</label>
           <div class="input-container">
             <input 
               v-model="email" 
               type="email" 
-              placeholder="example@nis.edu.kz" 
+              :placeholder="t('auth.emailPlaceholder')" 
               required
               autocomplete="email"
               class="apple-input"
@@ -116,12 +116,12 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Пароль</label>
+          <label class="form-label">{{ t('auth.passwordLabel') }}</label>
           <div class="input-container">
             <input 
               v-model="password" 
               type="password" 
-              placeholder="Минимум 6 символов" 
+              :placeholder="t('auth.passwordMin')" 
               required
               minlength="6"
               autocomplete="new-password"
@@ -131,12 +131,12 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Подтверждение пароля</label>
+          <label class="form-label">{{ t('auth.confirmPasswordLabel') }}</label>
           <div class="input-container">
             <input 
               v-model="confirmPassword" 
               type="password" 
-              placeholder="Повторите пароль" 
+              :placeholder="t('auth.confirmPasswordPlaceholder')" 
               required
               autocomplete="new-password"
               class="apple-input"
@@ -145,8 +145,8 @@
         </div>
 
         <button type="submit" class="auth-submit-btn" :disabled="loading">
-          <span v-if="loading">Создание...</span>
-          <span v-else>Зарегистрироваться</span>
+          <span v-if="loading">{{ t('auth.submittingRegister') }}</span>
+          <span v-else>{{ t('auth.registerSubmit') }}</span>
         </button>
       </form>
     </div>
@@ -157,6 +157,7 @@
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase';
+import { t } from '@/i18n';
 
 export default {
   name: 'Register',
@@ -175,6 +176,7 @@ export default {
     };
   },
   methods: {
+    t,
     async handleLogin() {
       this.errorMessage = '';
       this.loading = true;
@@ -194,7 +196,7 @@ export default {
         console.warn('Firebase login error, falling back to local session:', err.message);
         // Если ошибка Firebase (например, офлайн или неверный пароль), но для демо пользователь вводит данные:
         if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-          this.errorMessage = 'Неверная почта или пароль. Попробуйте снова или зарегистрируйтесь.';
+          this.errorMessage = t('auth.loginError');
           this.loading = false;
           return;
         }
@@ -204,7 +206,7 @@ export default {
       const demoName = this.loginEmail.split('@')[0];
       const payload = {
         email: this.loginEmail,
-        name: demoName ? demoName.charAt(0).toUpperCase() + demoName.slice(1) : 'Ученик NIS',
+        name: demoName ? demoName.charAt(0).toUpperCase() + demoName.slice(1) : t('nav.reader'),
       };
       this.$emit('loggedIn', payload);
       this.loading = false;
@@ -214,7 +216,7 @@ export default {
       this.errorMessage = '';
 
       if (this.password !== this.confirmPassword) {
-        this.errorMessage = 'Пароли не совпадают!';
+        this.errorMessage = t('auth.passMismatch');
         return;
       }
 

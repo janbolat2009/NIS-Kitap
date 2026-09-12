@@ -4,45 +4,60 @@
       <!-- Logo -->
       <div class="navbar-brand" @click="$router.push('/')">
         <img src="@/img/Logotype.svg" alt="NIS Kitap Logo" class="brand-logo" />
-        <div class="brand-badge">2.0</div>
+        <div class="brand-badge">{{ t('nav.badge') }}</div>
       </div>
 
       <!-- Desktop Navigation -->
       <nav class="desktop-nav">
-        <router-link to="/" class="nav-link" active-class="active" exact>Главная</router-link>
-        <router-link to="/catalog" class="nav-link" active-class="active">Каталог</router-link>
-        <router-link to="/about-us" class="nav-link" active-class="active">О нас</router-link>
+        <router-link to="/" class="nav-link" active-class="active" exact>{{ t('nav.home') }}</router-link>
+        <router-link to="/catalog" class="nav-link" active-class="active">{{ t('nav.catalog') }}</router-link>
+        <router-link to="/about-us" class="nav-link" active-class="active">{{ t('nav.about') }}</router-link>
       </nav>
 
       <!-- Right Action Controls -->
       <div class="navbar-actions">
+        <!-- Trilingual Switcher (Apple Segmented Pill) -->
+        <div class="lang-switcher">
+          <button 
+            v-for="l in availableLocales" 
+            :key="l.code"
+            class="lang-btn"
+            :class="{ active: currentLocale === l.code }"
+            :title="l.name"
+            @click="switchLang(l.code)"
+          >
+            <span class="lang-flag">{{ l.flag }}</span>
+            <span class="lang-code">{{ l.label }}</span>
+          </button>
+        </div>
+
         <!-- Quick Search Button -->
-        <button class="nav-search-btn" @click="$emit('open-search')" title="Быстрый поиск">
+        <button class="nav-search-btn" @click="$emit('open-search')" :title="t('nav.search')">
           <svg class="search-svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <span class="search-text">Поиск</span>
+          <span class="search-text">{{ t('nav.search') }}</span>
           <kbd class="kbd-shortcut">⌘K</kbd>
         </button>
 
         <!-- Auth / Profile -->
         <div v-if="!isLoggedIn" class="auth-btn-wrapper">
           <button class="nav-register-btn" @click="$emit('open-register')">
-            <span>Войти</span>
+            <span>{{ t('nav.login') }}</span>
           </button>
         </div>
 
-        <div v-else class="profile-pill" @click="$emit('open-profile')" title="Открыть профиль">
+        <div v-else class="profile-pill" @click="$emit('open-profile')" :title="t('nav.profile')">
           <div class="profile-avatar-mini">
             <span v-if="!userAvatar">{{ userInitials }}</span>
             <img v-else :src="userAvatar" alt="Avatar" />
           </div>
-          <span class="profile-name-mini">{{ userName || 'Профиль' }}</span>
+          <span class="profile-name-mini">{{ userName || t('nav.profile') }}</span>
         </div>
 
         <!-- Mobile Burger Button -->
-        <button class="burger-btn" @click="toggleMobileMenu" :aria-label="isMenuOpen ? 'Закрыть меню' : 'Открыть меню'">
+        <button class="burger-btn" @click="toggleMobileMenu" :aria-label="isMenuOpen ? 'Close menu' : 'Open menu'">
           <div class="burger-lines" :class="{ 'open': isMenuOpen }">
             <span></span>
             <span></span>
@@ -55,17 +70,33 @@
     <transition name="apple-sheet">
       <div v-if="isMenuOpen" class="mobile-sheet">
         <div class="mobile-sheet-content">
+          <!-- Mobile Language Selector -->
+          <div class="mobile-lang-row">
+            <button 
+              v-for="l in availableLocales" 
+              :key="l.code"
+              class="mobile-lang-chip"
+              :class="{ active: currentLocale === l.code }"
+              @click="switchLang(l.code)"
+            >
+              <span>{{ l.flag }}</span>
+              <span>{{ l.name }}</span>
+            </button>
+          </div>
+
+          <div class="mobile-divider"></div>
+
           <router-link to="/" class="mobile-nav-item" @click="closeMobileMenu">
             <span class="item-icon">🏠</span>
-            <span class="item-title">Главная</span>
+            <span class="item-title">{{ t('nav.home') }}</span>
           </router-link>
           <router-link to="/catalog" class="mobile-nav-item" @click="closeMobileMenu">
             <span class="item-icon">📚</span>
-            <span class="item-title">Каталог книг</span>
+            <span class="item-title">{{ t('nav.catalog') }}</span>
           </router-link>
           <router-link to="/about-us" class="mobile-nav-item" @click="closeMobileMenu">
             <span class="item-icon">✨</span>
-            <span class="item-title">О библиотеке</span>
+            <span class="item-title">{{ t('nav.about') }}</span>
           </router-link>
 
           <div class="mobile-divider"></div>
@@ -76,14 +107,14 @@
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
-              <span>Поиск с ИИ</span>
+              <span>{{ t('nav.searchAi') }}</span>
             </button>
 
             <button v-if="!isLoggedIn" class="mobile-auth-btn" @click="$emit('open-register'); closeMobileMenu()">
-              Войти в аккаунт
+              {{ t('nav.openAccount') }}
             </button>
             <button v-else class="mobile-profile-btn" @click="$emit('open-profile'); closeMobileMenu()">
-              👤 Мой профиль ({{ userName || 'Читатель' }})
+              👤 {{ t('nav.myProfile') }} ({{ userName || t('nav.reader') }})
             </button>
           </div>
         </div>
@@ -93,6 +124,8 @@
 </template>
 
 <script>
+import { currentLocale, setLocale, t } from '@/i18n';
+
 export default {
   name: 'AppleNavbar',
   props: {
@@ -110,10 +143,21 @@ export default {
     },
   },
   emits: ['open-register', 'open-profile', 'open-search'],
+  setup() {
+    return {
+      currentLocale,
+      t,
+    };
+  },
   data() {
     return {
       isScrolled: false,
       isMenuOpen: false,
+      availableLocales: [
+        { code: 'kz', label: 'KZ', flag: '🇰🇿', name: 'Қазақша' },
+        { code: 'ru', label: 'RU', flag: '🇷🇺', name: 'Русский' },
+        { code: 'en', label: 'EN', flag: '🇬🇧', name: 'English' },
+      ],
     };
   },
   computed: {
@@ -135,6 +179,9 @@ export default {
     window.removeEventListener('keydown', this.handleKeydown);
   },
   methods: {
+    switchLang(code) {
+      setLocale(code);
+    },
     handleScroll() {
       this.isScrolled = window.scrollY > 15;
     },
@@ -251,6 +298,49 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+/* Language Switcher */
+.lang-switcher {
+  display: flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 9999px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.lang-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 5px 9px;
+  border-radius: 9999px;
+  font-family: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.lang-btn:hover {
+  color: #FFFFFF;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.lang-btn.active {
+  background: #0071E3;
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(0, 113, 227, 0.4);
+}
+
+.lang-flag {
+  font-size: 13px;
+  line-height: 1;
 }
 
 .nav-search-btn {
@@ -412,6 +502,35 @@ export default {
   gap: 8px;
 }
 
+.mobile-lang-row {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.mobile-lang-chip {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  padding: 8px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+.mobile-lang-chip.active {
+  background: #0071E3;
+  border-color: rgba(56, 189, 248, 0.4);
+  font-weight: 600;
+}
+
 .mobile-nav-item {
   display: flex;
   align-items: center;
@@ -437,7 +556,7 @@ export default {
 .mobile-divider {
   height: 1px;
   background: rgba(255, 255, 255, 0.08);
-  margin: 10px 0;
+  margin: 8px 0;
 }
 
 .mobile-quick-actions {
@@ -496,7 +615,7 @@ export default {
 }
 
 /* Media Queries */
-@media (max-width: 860px) {
+@media (max-width: 960px) {
   .desktop-nav {
     display: none;
   }

@@ -8,6 +8,11 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
+      '/api/gemini': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
+      },
       '/api/openai': {
         target: 'http://localhost:3001',
         changeOrigin: true,

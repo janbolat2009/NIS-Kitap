@@ -22,24 +22,24 @@
           <div class="hero-text-content">
             <div class="hero-tag">
               <span class="pulse-dot"></span>
-              <span>Интеллектуальная библиотека NIS</span>
+              <span>{{ t('hero.schoolTag') }}</span>
             </div>
             <h1 class="hero-headline">
-              Открывай знания. <br />
-              <span class="gradient-headline">Читай с удовольствием.</span>
+              {{ t('hero.headlinePart1') }} <br />
+              <span class="gradient-headline">{{ t('hero.headlinePart2') }}</span>
             </h1>
             <p class="hero-subheadline">
-              Все книги школы в одном цифровом пространстве. Умный поиск с искусственным интеллектом, мгновенное онлайн-бронирование и персональные рекомендации.
+              {{ t('hero.subheadline') }}
             </p>
             <div class="hero-cta-group">
               <a href="#ai-search-section" class="apple-btn-primary">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                   <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
                 </svg>
-                <span>Найти книгу с ИИ</span>
+                <span>{{ t('hero.findWithAi') }}</span>
               </a>
               <router-link to="/catalog" class="apple-btn-secondary">
-                <span>Каталог книг</span>
+                <span>{{ t('hero.catalogBtn') }}</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
@@ -54,15 +54,15 @@
               <div class="floating-chip chip-books">
                 <span class="chip-icon">📖</span>
                 <div>
-                  <strong>2 000+</strong>
-                  <small>Книг в каталоге</small>
+                  <strong>{{ t('hero.booksCount') }}</strong>
+                  <small>{{ t('hero.inCatalog') }}</small>
                 </div>
               </div>
               <div class="floating-chip chip-ai">
                 <span class="chip-icon">✨</span>
                 <div>
-                  <strong>AI Search</strong>
-                  <small>Умный подбор</small>
+                  <strong>{{ t('hero.aiSearch') }}</strong>
+                  <small>{{ t('hero.smartPick') }}</small>
                 </div>
               </div>
             </div>
@@ -78,11 +78,11 @@
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
               </svg>
-              <span>Интеллектуальный помощник</span>
+              <span>{{ t('aiSearch.assistantTag') }}</span>
             </div>
-            <h2 class="section-title">Умный поиск по смыслу</h2>
+            <h2 class="section-title">{{ t('aiSearch.title') }}</h2>
             <p class="section-subtitle">
-              Опишите своими словами тему, эмоцию или сюжет, и наш ИИ найдет наиболее подходящие книги
+              {{ t('aiSearch.subtitle') }}
             </p>
           </div>
 
@@ -97,7 +97,7 @@
                 ref="searchInput"
                 v-model="searchQuery" 
                 type="text" 
-                placeholder="Например: хочу захватывающую книгу про космические путешествия или антиутопию" 
+                :placeholder="t('aiSearch.placeholder')" 
                 class="ai-search-input"
                 @keyup.enter="handleAiSearch"
               />
@@ -105,20 +105,20 @@
                 v-if="searchQuery" 
                 class="clear-input-btn" 
                 @click="searchQuery = ''"
-                title="Очистить"
+                :title="t('aiSearch.clear')"
               >
                 ✕
               </button>
             </div>
             <button class="ai-submit-btn" :disabled="isSearching" @click="handleAiSearch">
               <span v-if="isSearching" class="btn-spinner"></span>
-              <span v-else>Найти с ИИ</span>
+              <span v-else>{{ t('aiSearch.submit') }}</span>
             </button>
           </div>
 
           <!-- Suggestion Chips -->
           <div class="suggestion-chips-row">
-            <span class="chips-label">Быстрые идеи:</span>
+            <span class="chips-label">{{ t('aiSearch.ideas') }}</span>
             <button 
               v-for="prompt in suggestionPrompts" 
               :key="prompt"
@@ -136,11 +136,11 @@
         <div class="section-container">
           <div class="section-header-flex">
             <div>
-              <h2 class="section-title">Жанры книг</h2>
-              <p class="section-subtitle">Выберите интересующее направление для изучения коллекции</p>
+              <h2 class="section-title">{{ t('genres.title') }}</h2>
+              <p class="section-subtitle">{{ t('genres.subtitle') }}</p>
             </div>
             <router-link to="/catalog" class="view-all-link">
-              <span>Все в каталоге</span>
+              <span>{{ t('genres.viewAll') }}</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
@@ -177,8 +177,8 @@
         <div class="section-container">
           <div class="section-header-flex">
             <div>
-              <h2 class="section-title">Языковые отделения</h2>
-              <p class="section-subtitle">Литература на трех основных языках нашей школы</p>
+              <h2 class="section-title">{{ t('languages.title') }}</h2>
+              <p class="section-subtitle">{{ t('languages.subtitle') }}</p>
             </div>
           </div>
 
@@ -187,11 +187,11 @@
             <div class="lang-apple-card" @click="$router.push('/kazakh')">
               <div class="lang-card-bg kz-bg"></div>
               <div class="lang-content">
-                <div class="lang-flag-pill">🇰🇿 Қазақстан</div>
-                <h3 class="lang-title">Қазақ тілі</h3>
-                <p class="lang-desc">Классикалық қазақ әдебиеті, тарихи романдар мен заманауи шығармалар</p>
+                <div class="lang-flag-pill">{{ t('languages.kzTag') }}</div>
+                <h3 class="lang-title">{{ t('languages.kzTitle') }}</h3>
+                <p class="lang-desc">{{ t('languages.kzDesc') }}</p>
                 <div class="lang-action">
-                  <span>Кітаптарды қарау</span>
+                  <span>{{ t('languages.kzBtn') }}</span>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                     <polyline points="9 18 15 12 9 6"></polyline>
                   </svg>
@@ -203,11 +203,11 @@
             <div class="lang-apple-card" @click="$router.push('/russian')">
               <div class="lang-card-bg ru-bg"></div>
               <div class="lang-content">
-                <div class="lang-flag-pill">🇷🇺 Классика и современность</div>
-                <h3 class="lang-title">Русский язык</h3>
-                <p class="lang-desc">Мировая художественная классика, научная фантастика и публицистика</p>
+                <div class="lang-flag-pill">{{ t('languages.ruTag') }}</div>
+                <h3 class="lang-title">{{ t('languages.ruTitle') }}</h3>
+                <p class="lang-desc">{{ t('languages.ruDesc') }}</p>
                 <div class="lang-action">
-                  <span>Смотреть книги</span>
+                  <span>{{ t('languages.ruBtn') }}</span>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                     <polyline points="9 18 15 12 9 6"></polyline>
                   </svg>
@@ -219,11 +219,11 @@
             <div class="lang-apple-card" @click="$router.push('/english')">
               <div class="lang-card-bg en-bg"></div>
               <div class="lang-content">
-                <div class="lang-flag-pill">🇬🇧 World Literature</div>
-                <h3 class="lang-title">English Books</h3>
-                <p class="lang-desc">Original editions, bestselling fiction, academic and IELTS resources</p>
+                <div class="lang-flag-pill">{{ t('languages.enTag') }}</div>
+                <h3 class="lang-title">{{ t('languages.enTitle') }}</h3>
+                <p class="lang-desc">{{ t('languages.enDesc') }}</p>
                 <div class="lang-action">
-                  <span>Explore books</span>
+                  <span>{{ t('languages.enBtn') }}</span>
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
                     <polyline points="9 18 15 12 9 6"></polyline>
                   </svg>
@@ -240,13 +240,13 @@
           <div class="section-header-flex">
             <div>
               <div class="section-mini-badge">
-                <span>🔥 Популярное среди учеников</span>
+                <span>{{ t('bestsellers.popularTag') }}</span>
               </div>
-              <h2 class="section-title">Бестселлеры библиотеки</h2>
-              <p class="section-subtitle">Книги, которые читают прямо сейчас</p>
+              <h2 class="section-title">{{ t('bestsellers.title') }}</h2>
+              <p class="section-subtitle">{{ t('bestsellers.subtitle') }}</p>
             </div>
             <router-link to="/catalog" class="view-all-link">
-              <span>Смотреть все</span>
+              <span>{{ t('bestsellers.viewAll') }}</span>
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
@@ -273,27 +273,27 @@
         <div class="section-container">
           <div class="about-glass-box glass-panel">
             <div class="about-text-side">
-              <span class="about-badge">О проекте NIS Kitap</span>
-              <h2 class="about-title">Создано учениками для учеников</h2>
+              <span class="about-badge">{{ t('aboutTeaser.badge') }}</span>
+              <h2 class="about-title">{{ t('aboutTeaser.title') }}</h2>
               <p class="about-description">
-                NIS Kitap — это не просто каталог, а экосистема удобного чтения. Мы объединили тысячи томов школьной библиотеки в современном цифровом интерфейсе, чтобы поиск нужной литературы занимал считанные секунды.
+                {{ t('aboutTeaser.desc') }}
               </p>
               <div class="about-stats-row">
                 <div class="stat-item">
-                  <strong>2 000+</strong>
-                  <span>Школьных книг</span>
+                  <strong>{{ t('hero.booksCount') }}</strong>
+                  <span>{{ t('aboutTeaser.statBooks') }}</span>
                 </div>
                 <div class="stat-item">
                   <strong>7</strong>
-                  <span>Жанровых секций</span>
+                  <span>{{ t('aboutTeaser.statGenres') }}</span>
                 </div>
                 <div class="stat-item">
                   <strong>3</strong>
-                  <span>Языка обучения</span>
+                  <span>{{ t('aboutTeaser.statLanguages') }}</span>
                 </div>
               </div>
               <router-link to="/about-us" class="apple-btn-secondary about-cta">
-                <span>Узнать больше о нас</span>
+                <span>{{ t('aboutTeaser.moreBtn') }}</span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="9 18 15 12 9 6"></polyline>
                 </svg>
@@ -343,7 +343,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { getAuth, onAuthStateChanged } from 'firebase/auth';
 import AppleNavbar from '@/components/AppleNavbar.vue';
@@ -353,6 +353,7 @@ import Register from '@/components/Register.vue';
 import Profile from '@/components/Profile.vue';
 import SearchResults from '@/components/SearchResults.vue';
 import { getBooks, searchAi } from '@/services/bookService';
+import { t } from '@/i18n';
 
 // Images
 import fantasticIcon from '@/img/Fantastic.png';
@@ -392,23 +393,24 @@ export default {
     const bestsellers = ref([]);
     const loadingBestsellers = ref(true);
 
-    const suggestionPrompts = [
-      'Антиутопия и цензура',
-      'Космическая фантастика',
-      'Қазақ тарихы',
-      'Психология и саморазвитие',
-      'Шерлок Холмс и детективы',
-    ];
+    const suggestionPrompts = computed(() => [
+      t('aiSearch.chipDystopia'),
+      t('aiSearch.chipSpace'),
+      t('aiSearch.chipHistory'),
+      t('aiSearch.chipPsychology'),
+      t('aiSearch.chipDetective'),
+      t('aiSearch.chipEnglish'),
+    ]);
 
-    const genreCards = [
-      { name: 'Фантастика', desc: 'Будущее, технологии и космос', route: '/fantastica', icon: fantasticIcon, accent: '#38BDF8' },
-      { name: 'Фэнтези', desc: 'Магия, миры и древние мифы', route: '/fantasy', icon: fantasyIcon, accent: '#818CF8' },
-      { name: 'Детектив', desc: 'Загадки, расследования и логика', route: '/detective', icon: detectiveIcon, accent: '#F59E0B' },
-      { name: 'Приключения', desc: 'Путешествия и опасные экспедиции', route: '/adventure', icon: adventureIcon, accent: '#10B981' },
-      { name: 'Биография', desc: 'Истории великих личностей', route: '/biography', icon: biographyIcon, accent: '#EC4899' },
-      { name: 'Романтика', desc: 'Чувства, переживания и судьбы', route: '/romantica', icon: romanticaIcon, accent: '#F43F5E' },
-      { name: 'Поэзия', desc: 'Стихи и поэтические сборники', route: '/poetry', icon: poetryIcon, accent: '#6366F1' },
-    ];
+    const genreCards = computed(() => [
+      { name: t('genres.fantastica'), desc: t('genres.fantasticaDesc'), route: '/fantastica', icon: fantasticIcon, accent: '#38BDF8' },
+      { name: t('genres.fantasy'), desc: t('genres.fantasyDesc'), route: '/fantasy', icon: fantasyIcon, accent: '#818CF8' },
+      { name: t('genres.detective'), desc: t('genres.detectiveDesc'), route: '/detective', icon: detectiveIcon, accent: '#F59E0B' },
+      { name: t('genres.adventure'), desc: t('genres.adventureDesc'), route: '/adventure', icon: adventureIcon, accent: '#10B981' },
+      { name: t('genres.biography'), desc: t('genres.biographyDesc'), route: '/biography', icon: biographyIcon, accent: '#EC4899' },
+      { name: t('genres.romantica'), desc: t('genres.romanticaDesc'), route: '/romantica', icon: romanticaIcon, accent: '#F43F5E' },
+      { name: t('genres.poetry'), desc: t('genres.poetryDesc'), route: '/poetry', icon: poetryIcon, accent: '#6366F1' },
+    ]);
 
     onMounted(async () => {
       // 1. Проверка авторизации из localStorage
@@ -552,6 +554,7 @@ export default {
       onLoggedIn,
       onProfileUpdated,
       onLoggedOut,
+      t,
     };
   },
 };
