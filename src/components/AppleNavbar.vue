@@ -1,21 +1,21 @@
 <template>
-  <header class="apple-navbar" :class="{ 'scrolled': isScrolled }">
+  <header class="apple-navbar" :class="{ 'scrolled': isScrolled, 'menu-open': isMenuOpen }">
     <div class="navbar-container">
       <!-- Logo -->
-      <div class="navbar-brand" @click="$router.push('/')">
+      <div class="navbar-brand" @click="handleLogoClick">
         <img src="@/img/Logotype.svg" alt="NIS Kitap Logo" class="brand-logo" />
         <div class="brand-badge">{{ t('nav.badge') }}</div>
       </div>
 
-      <!-- Desktop Navigation -->
+      <!-- Desktop Navigation Links -->
       <nav class="desktop-nav">
         <router-link to="/" class="nav-link" active-class="active" exact>{{ t('nav.home') }}</router-link>
         <router-link to="/catalog" class="nav-link" active-class="active">{{ t('nav.catalog') }}</router-link>
         <router-link to="/about-us" class="nav-link" active-class="active">{{ t('nav.about') }}</router-link>
       </nav>
 
-      <!-- Right Action Controls -->
-      <div class="navbar-actions">
+      <!-- Desktop Actions (Hidden on Mobile) -->
+      <div class="navbar-actions desktop-actions">
         <!-- Trilingual Switcher (Apple Segmented Pill) -->
         <div class="lang-switcher">
           <button 
@@ -55,68 +55,124 @@
           </div>
           <span class="profile-name-mini">{{ userName || t('nav.profile') }}</span>
         </div>
+      </div>
 
-        <!-- Mobile Burger Button -->
-        <button class="burger-btn" @click="toggleMobileMenu" :aria-label="isMenuOpen ? 'Close menu' : 'Open menu'">
-          <div class="burger-lines" :class="{ 'open': isMenuOpen }">
-            <span></span>
-            <span></span>
-          </div>
+      <!-- Mobile Top Bar Controls (Clean & Compact: Search + Burger) -->
+      <div class="mobile-top-controls">
+        <button class="mobile-icon-btn" @click="$emit('open-search')" :aria-label="t('nav.search')">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </button>
+
+        <button 
+          class="burger-btn" 
+          :class="{ 'is-active': isMenuOpen }"
+          @click="toggleMobileMenu" 
+          :aria-label="isMenuOpen ? 'Close menu' : 'Open menu'"
+        >
+          <span class="burger-bar top"></span>
+          <span class="burger-bar bottom"></span>
         </button>
       </div>
     </div>
 
-    <!-- Mobile Slide-Down Sheet -->
-    <transition name="apple-sheet">
-      <div v-if="isMenuOpen" class="mobile-sheet">
-        <div class="mobile-sheet-content">
-          <!-- Mobile Language Selector -->
-          <div class="mobile-lang-row">
-            <button 
-              v-for="l in availableLocales" 
-              :key="l.code"
-              class="mobile-lang-chip"
-              :class="{ active: currentLocale === l.code }"
-              @click="switchLang(l.code)"
-            >
-              <span>{{ l.flag }}</span>
-              <span>{{ l.name }}</span>
-            </button>
-          </div>
+    <!-- Apple-style Mobile Dropdown Sheet & Backdrop -->
+    <transition name="apple-fade">
+      <div v-if="isMenuOpen" class="mobile-backdrop" @click="closeMobileMenu"></div>
+    </transition>
 
-          <div class="mobile-divider"></div>
+    <transition name="apple-slide">
+      <div v-if="isMenuOpen" class="mobile-menu-drawer">
+        <div class="mobile-menu-inner">
+          
+          <!-- User Profile or Sign-in Card -->
+          <div class="menu-section user-section">
+            <div v-if="isLoggedIn" class="mobile-user-card" @click="$emit('open-profile'); closeMobileMenu()">
+              <div class="user-card-avatar">
+                <span v-if="!userAvatar">{{ userInitials }}</span>
+                <img v-else :src="userAvatar" alt="Avatar" />
+              </div>
+              <div class="user-card-info">
+                <span class="user-card-name">{{ userName || t('nav.reader') }}</span>
+                <span class="user-card-status">{{ t('nav.myProfile') }} &rarr;</span>
+              </div>
+            </div>
 
-          <router-link to="/" class="mobile-nav-item" @click="closeMobileMenu">
-            <span class="item-icon">🏠</span>
-            <span class="item-title">{{ t('nav.home') }}</span>
-          </router-link>
-          <router-link to="/catalog" class="mobile-nav-item" @click="closeMobileMenu">
-            <span class="item-icon">📚</span>
-            <span class="item-title">{{ t('nav.catalog') }}</span>
-          </router-link>
-          <router-link to="/about-us" class="mobile-nav-item" @click="closeMobileMenu">
-            <span class="item-icon">✨</span>
-            <span class="item-title">{{ t('nav.about') }}</span>
-          </router-link>
-
-          <div class="mobile-divider"></div>
-
-          <div class="mobile-quick-actions">
-            <button class="mobile-search-btn" @click="$emit('open-search'); closeMobileMenu()">
+            <button v-else class="mobile-login-full-btn" @click="$emit('open-register'); closeMobileMenu()">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path>
+                <polyline points="10 17 15 12 10 7"></polyline>
+                <line x1="15" y1="12" x2="3" y2="12"></line>
               </svg>
-              <span>{{ t('nav.searchAi') }}</span>
-            </button>
-
-            <button v-if="!isLoggedIn" class="mobile-auth-btn" @click="$emit('open-register'); closeMobileMenu()">
-              {{ t('nav.openAccount') }}
-            </button>
-            <button v-else class="mobile-profile-btn" @click="$emit('open-profile'); closeMobileMenu()">
-              👤 {{ t('nav.myProfile') }} ({{ userName || t('nav.reader') }})
+              <span>{{ t('nav.openAccount') }}</span>
             </button>
           </div>
+
+          <!-- Language Selector Segmented Control -->
+          <div class="menu-section">
+            <div class="section-label">{{ currentLocale === 'kz' ? 'Тілді таңдау' : (currentLocale === 'en' ? 'Select Language' : 'Язык интерфейса') }}</div>
+            <div class="mobile-lang-segmented">
+              <button 
+                v-for="l in availableLocales" 
+                :key="l.code"
+                class="mobile-lang-btn"
+                :class="{ active: currentLocale === l.code }"
+                @click="switchLang(l.code)"
+              >
+                <span class="lang-flag">{{ l.flag }}</span>
+                <span class="lang-text">{{ l.name }}</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Navigation Links -->
+          <div class="menu-section">
+            <div class="section-label">{{ currentLocale === 'kz' ? 'Бөлімдер' : (currentLocale === 'en' ? 'Navigation' : 'Разделы') }}</div>
+            <div class="mobile-nav-list">
+              <router-link to="/" class="mobile-nav-link" @click="closeMobileMenu">
+                <div class="link-left">
+                  <span class="link-icon">🏠</span>
+                  <span class="link-title">{{ t('nav.home') }}</span>
+                </div>
+                <span class="link-arrow">&rsaquo;</span>
+              </router-link>
+
+              <router-link to="/catalog" class="mobile-nav-link" @click="closeMobileMenu">
+                <div class="link-left">
+                  <span class="link-icon">📚</span>
+                  <span class="link-title">{{ t('nav.catalog') }}</span>
+                </div>
+                <span class="link-arrow">&rsaquo;</span>
+              </router-link>
+
+              <router-link to="/about-us" class="mobile-nav-link" @click="closeMobileMenu">
+                <div class="link-left">
+                  <span class="link-icon">✨</span>
+                  <span class="link-title">{{ t('nav.about') }}</span>
+                </div>
+                <span class="link-arrow">&rsaquo;</span>
+              </router-link>
+            </div>
+          </div>
+
+          <!-- AI Search Quick Button -->
+          <div class="menu-section">
+            <button class="mobile-ai-search-card" @click="$emit('open-search'); closeMobileMenu()">
+              <div class="ai-sparkle-badge">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+                </svg>
+              </div>
+              <div class="ai-card-content">
+                <span class="ai-card-title">{{ t('nav.searchAi') }}</span>
+                <span class="ai-card-sub">Gemini 2.5 Flash</span>
+              </div>
+              <span class="ai-card-cta">&rarr;</span>
+            </button>
+          </div>
+
         </div>
       </div>
     </transition>
@@ -191,11 +247,21 @@ export default {
         this.$emit('open-search');
       }
     },
+    handleLogoClick() {
+      this.closeMobileMenu();
+      this.$router.push('/');
+    },
     toggleMobileMenu() {
       this.isMenuOpen = !this.isMenuOpen;
+      if (this.isMenuOpen) {
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.body.style.overflow = '';
+      }
     },
     closeMobileMenu() {
       this.isMenuOpen = false;
+      document.body.style.overflow = '';
     },
   },
 };
@@ -209,15 +275,15 @@ export default {
   right: 0;
   z-index: 1000;
   padding: 12px 24px;
-  background: rgba(6, 11, 20, 0.4);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  background: rgba(6, 11, 20, 0.45);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .apple-navbar.scrolled {
-  background: rgba(6, 11, 20, 0.82);
+  background: rgba(6, 11, 20, 0.88);
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
   padding: 9px 24px;
@@ -293,7 +359,7 @@ export default {
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
 }
 
-/* Actions */
+/* Desktop Actions */
 .navbar-actions {
   display: flex;
   align-items: center;
@@ -442,192 +508,354 @@ export default {
   white-space: nowrap;
 }
 
-/* Burger Button */
-.burger-btn {
+/* Mobile Top Controls */
+.mobile-top-controls {
   display: none;
+  align-items: center;
+  gap: 10px;
+}
+
+.mobile-icon-btn {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.12);
-  width: 40px;
-  height: 40px;
+  color: #38BDF8;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
-  cursor: pointer;
+  display: flex;
   align-items: center;
   justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.mobile-icon-btn:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Apple Animated Burger Button */
+.burger-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   padding: 0;
   transition: all 0.25s ease;
 }
-.burger-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+.burger-btn:active {
+  transform: scale(0.92);
 }
-.burger-lines {
-  width: 18px;
-  height: 12px;
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-.burger-lines span {
+.burger-bar {
   display: block;
+  width: 17px;
   height: 2px;
-  width: 100%;
-  background: #FFFFFF;
+  background-color: #FFFFFF;
   border-radius: 2px;
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease;
+  transform-origin: center;
 }
-.burger-lines.open span:first-child {
-  transform: translateY(5px) rotate(45deg);
+.burger-btn.is-active .burger-bar.top {
+  transform: translateY(3.5px) rotate(45deg);
 }
-.burger-lines.open span:last-child {
-  transform: translateY(-5px) rotate(-45deg);
+.burger-btn.is-active .burger-bar.bottom {
+  transform: translateY(-3.5px) rotate(-45deg);
 }
 
-/* Mobile Sheet */
-.mobile-sheet {
+/* Mobile Backdrop */
+.mobile-backdrop {
+  position: fixed;
+  top: 62px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 998;
+}
+
+/* Mobile Menu Drawer */
+.mobile-menu-drawer {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
-  background: rgba(7, 13, 24, 0.94);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
+  max-height: calc(100vh - 65px);
+  overflow-y: auto;
+  background: rgba(8, 14, 26, 0.96);
+  backdrop-filter: blur(32px) saturate(190%);
+  -webkit-backdrop-filter: blur(32px) saturate(190%);
   border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-  padding: 18px 24px 28px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+  z-index: 999;
 }
 
-.mobile-sheet-content {
+.mobile-menu-inner {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.menu-section {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.mobile-lang-row {
-  display: flex;
-  gap: 8px;
-  justify-content: center;
-  margin-bottom: 4px;
+.section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: rgba(255, 255, 255, 0.45);
+  margin-left: 4px;
 }
 
-.mobile-lang-chip {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #FFFFFF;
-  padding: 8px;
-  border-radius: 12px;
-  font-size: 13px;
-  font-family: inherit;
-  font-weight: 500;
-  cursor: pointer;
-}
-.mobile-lang-chip.active {
-  background: #0071E3;
-  border-color: rgba(56, 189, 248, 0.4);
-  font-weight: 600;
-}
-
-.mobile-nav-item {
+/* Mobile User Card */
+.mobile-user-card {
   display: flex;
   align-items: center;
   gap: 14px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 16px;
   padding: 12px 16px;
-  border-radius: 14px;
-  color: #FFFFFF;
-  text-decoration: none;
-  font-size: 16px;
-  font-weight: 500;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  cursor: pointer;
   transition: all 0.2s ease;
 }
-.mobile-nav-item:hover, .mobile-nav-item.router-link-exact-active {
-  background: rgba(0, 113, 227, 0.15);
-  border-color: rgba(56, 189, 248, 0.3);
+.mobile-user-card:active {
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(0.98);
 }
-.item-icon {
-  font-size: 20px;
+.user-card-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #0071E3, #818CF8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: #FFFFFF;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 113, 227, 0.35);
 }
-
-.mobile-divider {
-  height: 1px;
-  background: rgba(255, 255, 255, 0.08);
-  margin: 8px 0;
+.user-card-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
-
-.mobile-quick-actions {
+.user-card-info {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 2px;
+}
+.user-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.user-card-status {
+  font-size: 13px;
+  color: #38BDF8;
+  font-weight: 500;
 }
 
-.mobile-search-btn {
+.mobile-login-full-btn {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #FFFFFF;
-  padding: 12px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-family: inherit;
-  font-weight: 500;
-  cursor: pointer;
-}
-
-.mobile-auth-btn {
   background: linear-gradient(135deg, #0071E3 0%, #0056B3 100%);
   color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 16px;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 18px rgba(0, 113, 227, 0.4);
+  transition: all 0.2s ease;
+}
+.mobile-login-full-btn:active {
+  transform: scale(0.98);
+  box-shadow: 0 2px 10px rgba(0, 113, 227, 0.3);
+}
+
+/* Mobile Language Segmented */
+.mobile-lang-segmented {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 4px;
+  border-radius: 14px;
+}
+.mobile-lang-btn {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: transparent;
   border: none;
-  padding: 13px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
+  border-radius: 10px;
+  padding: 10px 4px;
+  color: rgba(255, 255, 255, 0.7);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+.mobile-lang-btn.active {
+  background: #0071E3;
+  color: #FFFFFF;
+  font-weight: 600;
+  box-shadow: 0 2px 10px rgba(0, 113, 227, 0.4);
+}
+.mobile-lang-btn:active {
+  transform: scale(0.96);
 }
 
-.mobile-profile-btn {
-  background: rgba(255, 255, 255, 0.09);
-  border: 1px solid rgba(56, 189, 248, 0.3);
+/* Navigation List */
+.mobile-nav-list {
+  display: flex;
+  flex-direction: column;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.mobile-nav-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 18px;
+  color: rgba(255, 255, 255, 0.9);
+  text-decoration: none;
+  font-size: 15.5px;
+  font-weight: 500;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+.mobile-nav-link:last-child {
+  border-bottom: none;
+}
+.mobile-nav-link:active,
+.mobile-nav-link.router-link-exact-active {
+  background: rgba(0, 113, 227, 0.15);
   color: #38BDF8;
-  padding: 13px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
+}
+.link-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.link-icon {
+  font-size: 18px;
+}
+.link-arrow {
+  font-size: 20px;
+  color: rgba(255, 255, 255, 0.3);
 }
 
-/* Animations */
-.apple-sheet-enter-active,
-.apple-sheet-leave-active {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+/* AI Search Card in Menu */
+.mobile-ai-search-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: linear-gradient(135deg, rgba(0, 113, 227, 0.15) 0%, rgba(129, 140, 248, 0.15) 100%);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 16px;
+  padding: 14px 16px;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.2s ease;
 }
-.apple-sheet-enter-from,
-.apple-sheet-leave-to {
+.mobile-ai-search-card:active {
+  transform: scale(0.98);
+  background: linear-gradient(135deg, rgba(0, 113, 227, 0.25) 0%, rgba(129, 140, 248, 0.25) 100%);
+}
+.ai-sparkle-badge {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #0071E3, #818CF8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  flex-shrink: 0;
+}
+.ai-card-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+.ai-card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.ai-card-sub {
+  font-size: 12px;
+  color: #38BDF8;
+  font-weight: 500;
+}
+.ai-card-cta {
+  font-size: 18px;
+  color: #38BDF8;
+  font-weight: 600;
+}
+
+/* Transitions */
+.apple-slide-enter-active,
+.apple-slide-leave-active {
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.apple-slide-enter-from,
+.apple-slide-leave-to {
   opacity: 0;
-  transform: translateY(-10px);
+  transform: translateY(-12px);
+}
+
+.apple-fade-enter-active,
+.apple-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.apple-fade-enter-from,
+.apple-fade-leave-to {
+  opacity: 0;
 }
 
 /* Media Queries */
 @media (max-width: 960px) {
-  .desktop-nav {
-    display: none;
+  .desktop-nav,
+  .desktop-actions {
+    display: none !important;
   }
-  .nav-search-btn .search-text,
-  .nav-search-btn .kbd-shortcut {
-    display: none;
-  }
-  .burger-btn {
+  .mobile-top-controls {
     display: flex;
   }
-  .profile-name-mini {
-    display: none;
+  .apple-navbar {
+    padding: 10px 16px;
+  }
+  .brand-logo {
+    height: 32px;
   }
 }
 </style>
+
