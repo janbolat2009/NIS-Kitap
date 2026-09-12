@@ -515,19 +515,18 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 16px;
   padding: 12px 18px;
   margin-bottom: 20px;
   border-radius: 20px;
-  flex-wrap: wrap;
 }
 
 .search-input-field {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex: 1 1 280px;
-  min-width: 200px;
+  flex: 1;
+  min-width: 0;
   color: #38BDF8;
 }
 
@@ -558,8 +557,8 @@ export default {
 .toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .select-wrapper {
@@ -572,7 +571,7 @@ export default {
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: #FFFFFF;
-  padding: 9px 32px 9px 14px;
+  padding: 9px 14px;
   border-radius: 12px;
   font-family: inherit;
   font-size: 13.5px;
