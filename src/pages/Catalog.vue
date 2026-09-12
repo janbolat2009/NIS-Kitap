@@ -515,7 +515,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
+  gap: 14px;
   padding: 12px 18px;
   margin-bottom: 20px;
   border-radius: 20px;
@@ -526,8 +526,8 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex: 1;
-  min-width: 280px;
+  flex: 1 1 280px;
+  min-width: 200px;
   color: #38BDF8;
 }
 
@@ -558,19 +558,29 @@ export default {
 .toolbar-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.select-wrapper {
+  max-width: 220px;
 }
 
 .apple-select {
+  width: 100%;
+  max-width: 220px;
   background: rgba(255, 255, 255, 0.08);
   border: 1px solid rgba(255, 255, 255, 0.14);
   color: #FFFFFF;
-  padding: 9px 14px;
+  padding: 9px 32px 9px 14px;
   border-radius: 12px;
   font-family: inherit;
   font-size: 13.5px;
   outline: none;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .apple-select option {
   background: #0e1626;
@@ -590,7 +600,9 @@ export default {
   font-size: 13.5px;
   font-weight: 500;
   cursor: pointer;
+  white-space: nowrap;
   transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 .filter-sheet-btn:hover {
   background: rgba(255, 255, 255, 0.14);
