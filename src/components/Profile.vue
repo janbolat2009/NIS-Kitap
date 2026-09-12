@@ -6,16 +6,25 @@
         <h2 class="profile-title">{{ t('profile.title') }}</h2>
         <span class="user-role-badge">{{ t('profile.badge') }}</span>
       </div>
-      <button class="profile-close-btn" @click="$emit('back')">✕</button>
+      <button class="profile-close-btn" @click="$emit('back')" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
     </div>
 
-    <!-- Profile Nav Tabs -->
+    <!-- Profile Nav Segmented Tabs -->
     <div class="profile-tabs">
       <button 
         class="tab-btn" 
         :class="{ active: currentTab === 'info' }"
         @click="currentTab = 'info'"
       >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+          <circle cx="12" cy="7" r="4"></circle>
+        </svg>
         <span>{{ t('profile.tabProfile') }}</span>
       </button>
       <button 
@@ -23,6 +32,10 @@
         :class="{ active: currentTab === 'reservations' }"
         @click="currentTab = 'reservations'"
       >
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+        </svg>
         <span>{{ t('profile.tabBooks') }}</span>
         <span v-if="reservations.length" class="badge-counter">{{ reservations.length }}</span>
       </button>
@@ -55,32 +68,38 @@
       <div class="profile-fields">
         <div class="field-item">
           <label>{{ t('profile.nameLabel') }}</label>
-          <input 
-            v-model="userName" 
-            type="text" 
-            class="apple-input" 
-            :placeholder="t('auth.namePlaceholder')"
-          />
+          <div class="input-wrapper">
+            <input 
+              v-model="userName" 
+              type="text" 
+              class="apple-input" 
+              :placeholder="t('auth.namePlaceholder')"
+            />
+          </div>
         </div>
 
         <div class="field-item">
           <label>{{ t('profile.emailLabel') }}</label>
-          <input 
-            :value="email || t('nav.reader')" 
-            type="email" 
-            disabled 
-            class="apple-input disabled"
-          />
+          <div class="input-wrapper">
+            <input 
+              :value="email || t('nav.reader')" 
+              type="email" 
+              disabled 
+              class="apple-input disabled"
+            />
+          </div>
         </div>
 
         <div class="field-item">
           <label>{{ t('profile.passLabel') }}</label>
-          <input 
-            v-model="newPassword" 
-            type="password" 
-            :placeholder="t('profile.passPlaceholder')" 
-            class="apple-input"
-          />
+          <div class="input-wrapper">
+            <input 
+              v-model="newPassword" 
+              type="password" 
+              :placeholder="t('profile.passPlaceholder')" 
+              class="apple-input"
+            />
+          </div>
         </div>
       </div>
 
@@ -97,7 +116,12 @@
     <!-- Tab 2: Reservations -->
     <div v-else class="reservations-content">
       <div v-if="reservations.length === 0" class="empty-reservations">
-        <div class="empty-icon">📖</div>
+        <div class="empty-svg-wrapper">
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+          </svg>
+        </div>
         <h3>{{ t('profile.emptyReservationsTitle') }}</h3>
         <p>{{ t('profile.emptyReservationsDesc') }}</p>
         <button class="go-catalog-btn" @click="$router.push('/catalog'); $emit('back')">
@@ -267,14 +291,14 @@ export default {
 <style scoped>
 .apple-profile-modal {
   width: 100%;
-  max-width: 520px;
-  background: rgba(14, 22, 38, 0.96);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  max-width: 500px;
+  background: rgba(10, 17, 30, 0.96);
+  backdrop-filter: blur(32px) saturate(190%);
+  -webkit-backdrop-filter: blur(32px) saturate(190%);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 24px;
-  padding: 28px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  padding: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
   color: #FFFFFF;
 }
 
@@ -282,7 +306,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 20px;
+  margin-bottom: 18px;
 }
 
 .profile-header-main {
@@ -293,7 +317,7 @@ export default {
 
 .profile-title {
   margin: 0;
-  font-size: 22px;
+  font-size: 20px;
   font-weight: 700;
   letter-spacing: -0.01em;
 }
@@ -301,10 +325,10 @@ export default {
 .user-role-badge {
   font-size: 11px;
   font-weight: 600;
-  background: rgba(0, 113, 227, 0.2);
+  background: rgba(0, 113, 227, 0.18);
   border: 1px solid rgba(56, 189, 248, 0.35);
   color: #38BDF8;
-  padding: 2px 8px;
+  padding: 2px 9px;
   border-radius: 9999px;
 }
 
@@ -319,7 +343,6 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
   transition: all 0.2s ease;
 }
 .profile-close-btn:hover {
@@ -329,25 +352,26 @@ export default {
 
 /* Tabs */
 .profile-tabs {
-  display: flex;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 14px;
   padding: 4px;
   margin-bottom: 20px;
 }
 
 .tab-btn {
-  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.7);
-  padding: 8px 14px;
-  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 9px 12px;
+  border-radius: 10px;
   font-family: inherit;
   font-size: 13.5px;
   font-weight: 500;
@@ -358,6 +382,7 @@ export default {
   background: #0071E3;
   color: #FFFFFF;
   font-weight: 600;
+  box-shadow: 0 2px 10px rgba(0, 113, 227, 0.4);
 }
 
 .badge-counter {
@@ -377,8 +402,8 @@ export default {
   margin-bottom: 16px;
 }
 .apple-status-toast.success {
-  background: rgba(16, 185, 129, 0.2);
-  border: 1px solid rgba(16, 185, 129, 0.4);
+  background: rgba(16, 185, 129, 0.18);
+  border: 1px solid rgba(16, 185, 129, 0.35);
   color: #6EE7B7;
 }
 
@@ -396,7 +421,7 @@ export default {
   height: 76px;
   border-radius: 50%;
   background: linear-gradient(135deg, #0071E3, #818CF8);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.18);
   position: relative;
   display: flex;
   align-items: center;
@@ -421,12 +446,13 @@ export default {
 .avatar-hover-overlay {
   position: absolute;
   inset: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.55);
   display: flex;
   align-items: center;
   justify-content: center;
   opacity: 0;
   transition: opacity 0.2s ease;
+  color: #FFFFFF;
 }
 .avatar-circle:hover .avatar-hover-overlay {
   opacity: 1;
@@ -446,7 +472,7 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 14px;
-  margin-bottom: 24px;
+  margin-bottom: 22px;
 }
 
 .field-item {
@@ -457,31 +483,33 @@ export default {
 }
 
 .field-item label {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(255, 255, 255, 0.7);
+  letter-spacing: 0.02em;
 }
 
 .apple-input {
   width: 100%;
   background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 12px;
-  padding: 10px 14px;
+  padding: 11px 14px;
   font-size: 14px;
   color: #FFFFFF;
   font-family: inherit;
   outline: none;
-  transition: all 0.25s ease;
+  transition: all 0.2s ease;
 }
 
 .apple-input:focus {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.09);
   border-color: #38BDF8;
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15);
 }
 
 .apple-input.disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
@@ -494,7 +522,7 @@ export default {
   flex: 1;
   background: linear-gradient(135deg, #0071E3 0%, #0056B3 100%);
   color: #FFFFFF;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   border-radius: 12px;
   padding: 12px;
   font-size: 14px;
@@ -502,13 +530,15 @@ export default {
   font-family: inherit;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 113, 227, 0.35);
 }
 .apple-save-btn:hover {
-  box-shadow: 0 4px 16px rgba(0, 113, 227, 0.4);
+  box-shadow: 0 6px 20px rgba(0, 113, 227, 0.5);
+  transform: translateY(-1px);
 }
 
 .apple-logout-btn {
-  background: rgba(239, 68, 68, 0.15);
+  background: rgba(239, 68, 68, 0.12);
   border: 1px solid rgba(239, 68, 68, 0.3);
   color: #F87171;
   border-radius: 12px;
@@ -520,55 +550,70 @@ export default {
   transition: all 0.2s ease;
 }
 .apple-logout-btn:hover {
-  background: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.22);
 }
 
-/* Reservations tab */
+/* Reservations tab empty state */
 .empty-reservations {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: 30px 10px;
+  padding: 32px 16px;
 }
-.empty-icon {
-  font-size: 40px;
-  margin-bottom: 12px;
+.empty-svg-wrapper {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #38BDF8;
+  margin-bottom: 14px;
 }
 .empty-reservations h3 {
   margin: 0 0 6px;
-  font-size: 17px;
+  font-size: 16.5px;
+  font-weight: 600;
   color: #FFFFFF;
 }
 .empty-reservations p {
   font-size: 13.5px;
-  color: rgba(255, 255, 255, 0.6);
-  max-width: 320px;
-  margin: 0 0 16px;
+  color: rgba(255, 255, 255, 0.55);
+  max-width: 310px;
+  margin: 0 0 18px;
+  line-height: 1.45;
 }
 .go-catalog-btn {
   background: #0071E3;
   color: #FFFFFF;
   border: none;
-  padding: 10px 20px;
+  padding: 10px 22px;
   border-radius: 9999px;
   font-size: 13.5px;
   font-weight: 600;
   cursor: pointer;
+  transition: all 0.2s ease;
+}
+.go-catalog-btn:hover {
+  background: #007BF5;
+  box-shadow: 0 4px 14px rgba(0, 113, 227, 0.4);
 }
 
 .reservations-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  max-height: 380px;
+  gap: 10px;
+  max-height: 360px;
   overflow-y: auto;
   padding-right: 4px;
 }
 
 .res-card {
   background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 14px;
   padding: 12px 16px;
   display: flex;
@@ -584,23 +629,23 @@ export default {
 }
 
 .res-book-spine {
-  width: 6px;
-  height: 48px;
-  border-radius: 3px;
+  width: 4px;
+  height: 44px;
+  border-radius: 2px;
   background: linear-gradient(to bottom, #0071E3, #818CF8);
 }
 
 .res-title {
-  margin: 0 0 4px;
+  margin: 0 0 3px;
   font-size: 14px;
   font-weight: 600;
   color: #FFFFFF;
 }
 
 .res-author {
-  margin: 0 0 4px;
+  margin: 0 0 3px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: rgba(255, 255, 255, 0.55);
 }
 
 .res-date-badge {
@@ -609,8 +654,8 @@ export default {
 }
 
 .return-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.85);
   padding: 7px 12px;
   border-radius: 8px;
@@ -622,7 +667,7 @@ export default {
 }
 .return-btn:hover {
   background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.4);
+  border-color: rgba(239, 68, 68, 0.35);
   color: #FCA5A5;
 }
 </style>

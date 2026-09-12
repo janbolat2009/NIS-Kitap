@@ -26,7 +26,6 @@
             :title="l.name"
             @click="switchLang(l.code)"
           >
-            <span class="lang-flag">{{ l.flag }}</span>
             <span class="lang-code">{{ l.label }}</span>
           </button>
         </div>
@@ -121,7 +120,6 @@
                 :class="{ active: currentLocale === l.code }"
                 @click="switchLang(l.code)"
               >
-                <span class="lang-flag">{{ l.flag }}</span>
                 <span class="lang-text">{{ l.name }}</span>
               </button>
             </div>
@@ -133,7 +131,6 @@
             <div class="mobile-nav-list">
               <router-link to="/" class="mobile-nav-link" @click="closeMobileMenu">
                 <div class="link-left">
-                  <span class="link-icon">🏠</span>
                   <span class="link-title">{{ t('nav.home') }}</span>
                 </div>
                 <span class="link-arrow">&rsaquo;</span>
@@ -141,7 +138,6 @@
 
               <router-link to="/catalog" class="mobile-nav-link" @click="closeMobileMenu">
                 <div class="link-left">
-                  <span class="link-icon">📚</span>
                   <span class="link-title">{{ t('nav.catalog') }}</span>
                 </div>
                 <span class="link-arrow">&rsaquo;</span>
@@ -149,7 +145,6 @@
 
               <router-link to="/about-us" class="mobile-nav-link" @click="closeMobileMenu">
                 <div class="link-left">
-                  <span class="link-icon">✨</span>
                   <span class="link-title">{{ t('nav.about') }}</span>
                 </div>
                 <span class="link-arrow">&rsaquo;</span>
@@ -210,9 +205,9 @@ export default {
       isScrolled: false,
       isMenuOpen: false,
       availableLocales: [
-        { code: 'kz', label: 'KZ', flag: '🇰🇿', name: 'Қазақша' },
-        { code: 'ru', label: 'RU', flag: '🇷🇺', name: 'Русский' },
-        { code: 'en', label: 'EN', flag: '🇬🇧', name: 'English' },
+        { code: 'kz', label: 'KZ', name: 'Қазақша' },
+        { code: 'ru', label: 'RU', name: 'Русский' },
+        { code: 'en', label: 'EN', name: 'English' },
       ],
     };
   },
