@@ -331,9 +331,8 @@
 
     <!-- AI Search Results Modal -->
     <div v-if="showSearchResults" class="apple-modal-overlay" @click="showSearchResults = false">
-      <div class="modal-wrapper" @click.stop>
-        <button class="modal-close-icon" @click="showSearchResults = false">✕</button>
-        <SearchResults :results="searchResults" @book-click="goToBookDetail" />
+      <div class="modal-wrapper search-modal-wrapper" @click.stop>
+        <SearchResults :results="searchResults" @book-click="goToBookDetail" @close="showSearchResults = false" />
       </div>
     </div>
 
@@ -434,7 +433,8 @@ export default {
           if (user) {
             isLoggedIn.value = true;
             userEmail.value = user.email || '';
-            userName.value = user.displayName || userName.value || user.email.split('@')[0];
+            userName.value = user.displayName || userName.value || user.email?.split('@')[0];
+            userAvatar.value = user.photoURL || userAvatar.value || '';
             localStorage.setItem('user', JSON.stringify({
               email: userEmail.value,
               name: userName.value,
@@ -502,19 +502,21 @@ export default {
     const onRegistered = (payload) => {
       userEmail.value = payload.email;
       userName.value = payload.name;
+      userAvatar.value = payload.avatar || '';
       isLoggedIn.value = true;
       showRegister.value = false;
       showProfile.value = true;
-      localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: '' }));
+      localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: userAvatar.value }));
       localStorage.setItem('isLoggedIn', 'true');
     };
 
     const onLoggedIn = (payload) => {
       userEmail.value = payload.email;
       userName.value = payload.name;
+      userAvatar.value = payload.avatar || '';
       isLoggedIn.value = true;
       showRegister.value = false;
-      localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: '' }));
+      localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: userAvatar.value }));
       localStorage.setItem('isLoggedIn', 'true');
     };
 

@@ -1,18 +1,34 @@
 <template>
   <div class="apple-search-results">
     <div class="results-header">
-      <div class="header-icon">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"></circle>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+      <div class="header-left">
+        <div class="header-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </div>
+        <div class="header-text">
+          <h3 class="results-title">{{ t('searchResults.title') }}</h3>
+          <p class="results-subtitle">
+            {{ t('searchResults.foundCount') }} <b>{{ results.length }}</b>
+          </p>
+        </div>
+      </div>
+
+      <!-- Integrated Apple-Styled Close Button -->
+      <button 
+        type="button"
+        class="modal-close-btn" 
+        @click="$emit('close')" 
+        :title="t('searchResults.closeBtn')"
+        :aria-label="t('searchResults.closeBtn')"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
         </svg>
-      </div>
-      <div>
-        <h3 class="results-title">{{ t('searchResults.title') }}</h3>
-        <p class="results-subtitle">
-          {{ t('searchResults.foundCount') }} <b>{{ results.length }}</b>
-        </p>
-      </div>
+      </button>
     </div>
 
     <div v-if="results.length" class="results-container">
@@ -70,9 +86,20 @@ export default {
       default: () => [],
     },
   },
-  emits: ['book-click'],
+  emits: ['book-click', 'close'],
+  mounted() {
+    window.addEventListener('keydown', this.handleKeydown);
+  },
+  beforeUnmount() {
+    window.removeEventListener('keydown', this.handleKeydown);
+  },
   methods: {
     t,
+    handleKeydown(e) {
+      if (e.key === 'Escape') {
+        this.$emit('close');
+      }
+    },
   },
 };
 </script>
@@ -80,24 +107,35 @@ export default {
 <style scoped>
 .apple-search-results {
   width: 100%;
-  max-width: 640px;
+  max-width: 660px;
   background: rgba(14, 22, 38, 0.96);
   backdrop-filter: blur(28px) saturate(190%);
   -webkit-backdrop-filter: blur(28px) saturate(190%);
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 24px;
   padding: 24px 26px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65);
   color: #FFFFFF;
+  position: relative;
+  box-sizing: border-box;
 }
 
 .results-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 14px;
   margin-bottom: 20px;
   padding-bottom: 16px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  flex: 1;
 }
 
 .header-icon {
@@ -109,6 +147,11 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+}
+
+.header-text {
+  min-width: 0;
 }
 
 .results-title {
@@ -116,6 +159,7 @@ export default {
   font-size: 19px;
   font-weight: 700;
   letter-spacing: -0.01em;
+  color: #FFFFFF;
 }
 
 .results-subtitle {
@@ -127,6 +171,37 @@ export default {
   color: #38BDF8;
 }
 
+/* Apple-style Close Button */
+.modal-close-btn {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.75);
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  outline: none;
+}
+
+.modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.18);
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #FFFFFF;
+  transform: scale(1.06);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.modal-close-btn:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.12);
+}
+
 .results-container {
   max-height: 60vh;
   overflow-y: auto;
@@ -134,6 +209,20 @@ export default {
   flex-direction: column;
   gap: 12px;
   padding-right: 4px;
+}
+
+.results-container::-webkit-scrollbar {
+  width: 6px;
+}
+.results-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.results-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+.results-container::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
 }
 
 .result-item-card {
@@ -242,5 +331,28 @@ export default {
 .no-results-text {
   color: rgba(255, 255, 255, 0.6);
   font-size: 14px;
+}
+
+@media (max-width: 640px) {
+  .apple-search-results {
+    padding: 18px 16px;
+    border-radius: 20px;
+  }
+  .results-header {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+  }
+  .header-icon {
+    width: 38px;
+    height: 38px;
+  }
+  .results-title {
+    font-size: 17px;
+  }
+  .modal-close-btn {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+  }
 }
 </style>

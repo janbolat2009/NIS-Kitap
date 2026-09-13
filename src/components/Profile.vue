@@ -189,6 +189,11 @@ export default {
       return this.userName.slice(0, 2).toUpperCase();
     },
   },
+  watch: {
+    name(newVal) {
+      if (newVal) this.userName = newVal;
+    },
+  },
   mounted() {
     this.loadUserData();
     this.refreshReservations();
@@ -196,6 +201,16 @@ export default {
   methods: {
     t,
     loadUserData() {
+      try {
+        const auth = getAuth();
+        if (auth?.currentUser) {
+          if (auth.currentUser.displayName && !this.userName) this.userName = auth.currentUser.displayName;
+          if (auth.currentUser.photoURL && !this.avatarUrl) this.avatarUrl = auth.currentUser.photoURL;
+        }
+      } catch {
+        // ignore
+      }
+
       const local = localStorage.getItem('user');
       if (local) {
         try {

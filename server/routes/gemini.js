@@ -39,24 +39,43 @@ router.post('/search', async (req, res) => {
   try {
     console.log('🔍 [Gemini Search] запрос:', cleanPrompt);
 
-    // 1. Попытка использовать Gemini для извлечения смысловых категорий и ключевых понятий
+    // 1. Попытка использовать Gemini для извлечения смысловых категорий и ключевых понятий на 3-х языках (KZ, RU, EN)
     let aiExpandedKeywords = [];
     if (ai) {
       try {
         const response = await ai.models.generateContent({
           model: 'gemini-2.5-flash',
-          contents: `Ты интеллектуальный помощник школьной библиотеки NIS Kitap.
-Пользователь ищет книгу по запросу: "${cleanPrompt}".
-Извлеки из запроса 3-7 ключевых слов и тем для поиска (на русском, казахском и английском языках, включая возможные жанры: фантастика, фэнтези, детектив, приключения, биография, романтика, поэзия).
-Ответь ТОЛЬКО списком слов через запятую без лишнего текста. Например: космос, ғарыш, space, планеты, фантастика, sci-fi`,
+          contents: `You are the expert multilingual AI librarian for NIS Kitap (Nazarbayev Intellectual Schools digital library).
+The user is searching for library books in English, Kazakh (Қазақша), Russian (Русский), or a mix of these languages.
+User query: "${cleanPrompt}"
+
+Task:
+1. Deeply understand the user's intent, plot summary, concepts, themes, mood, and genre regardless of input language.
+2. Generate comprehensive search terms, synonyms, and translations in ALL THREE LANGUAGES simultaneously (Kazakh, Russian, English).
+3. Include Kazakh Cyrillic and Latin transliterations (e.g., ғарыш/garysh, Абай жолы/Abay zholy, шытырман/shytyrman).
+4. Identify matching canonical genres:
+   - Фантастика / Sci-Fi / Ғылыми фантастика
+   - Фэнтези / Fantasy / Қиял-ғажайып
+   - Детектив / Detective / Қылмыстық / Тергеу
+   - Приключения / Adventure / Шытырман оқиғалар / Саяхат
+   - Биография / Biography / Өмірбаян / Тұлғалар
+   - Романтика / Romance / Махаббат / Сезім
+   - Поэзия / Poetry / Өлең / Жыр
+   - Психология / Psychology / Тұлғалық даму / Саморазвитие
+   - Тарих / History / Исторические романы
+   - Оқулықтар / Academic / IELTS / SAT / English Learning
+
+Format output STRICTLY as a comma-separated list of keywords and tokens in lowercase, without markdown or commentary.
+Example:
+космос, ғарыш, space, galaxy, планеты, фантастика, sci-fi, ғылыми фантастика, жұлдыздар, universe, азимов, брэдбери`,
         });
 
         const textOutput = response.text || '';
         aiExpandedKeywords = textOutput
           .split(/[,;\n]+/)
-          .map((s) => s.trim().toLowerCase())
-          .filter((s) => s.length > 2);
-        console.log('✨ [Gemini AI] Расширенные ключевые слова:', aiExpandedKeywords);
+          .map((s) => s.replace(/^[-*•]\s*/, '').trim().toLowerCase())
+          .filter((s) => s.length >= 2);
+        console.log('✨ [Gemini Multilingual AI] Расширенные ключевые слова (KZ/RU/EN):', aiExpandedKeywords);
       } catch (geminiErr) {
         console.warn('⚠️ Ошибка вызова Gemini API (продолжаем с эвристическим поиском):', geminiErr.message);
       }
@@ -67,7 +86,7 @@ router.post('/search', async (req, res) => {
       .toLowerCase()
       .replace(/[.,/#!$%^&*;:{}=\-_`~()«»"']/g, ' ')
       .split(/\s+/)
-      .filter((w) => w.length > 2);
+      .filter((w) => w.length >= 2);
 
     const allKeywords = Array.from(new Set([...userTokens, ...aiExpandedKeywords]));
 
@@ -85,7 +104,7 @@ router.post('/search', async (req, res) => {
         }));
 
         if (orConditions.length > 0) {
-          books = await Book.find({ $or: orConditions }).lean().limit(30);
+          books = await Book.find({ $or: orConditions }).lean().limit(40);
         }
       }
     } catch (dbErr) {
@@ -103,16 +122,16 @@ router.post('/search', async (req, res) => {
           const genre = (Array.isArray(b.genre) ? b.genre.join(' ') : (b.genre || '')).toLowerCase();
 
           allKeywords.forEach((kw) => {
-            if (title.includes(kw)) score += 10;
-            if (genre.includes(kw)) score += 8;
-            if (author.includes(kw)) score += 6;
-            if (desc.includes(kw)) score += 3;
+            if (title.includes(kw)) score += 15;
+            if (genre.includes(kw)) score += 10;
+            if (author.includes(kw)) score += 8;
+            if (desc.includes(kw)) score += 4;
           });
 
           return { ...b, matchScore: score };
         })
         .sort((a, b) => b.matchScore - a.matchScore)
-        .slice(0, 15);
+        .slice(0, 20);
     }
 
     return res.json({

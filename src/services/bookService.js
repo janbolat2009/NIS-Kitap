@@ -138,8 +138,9 @@ export async function getBooks(forceReload = false) {
 
     try {
       // 2. Fallback: загрузка локального JSON из public/data/books.json
-      const baseUrl = import.meta.env.BASE_URL || './';
+      const baseUrl = import.meta.env?.BASE_URL || './';
       const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+
       const staticRes = await axios.get(`${cleanBase}data/books.json`, { timeout: 10000 });
       if (Array.isArray(staticRes.data)) {
         cachedBooks = staticRes.data.map((b, idx) => ({
@@ -155,7 +156,6 @@ export async function getBooks(forceReload = false) {
         return cachedBooks;
       }
     } catch (staticErr) {
-      console.warn('Не удалось загрузить books.json по основному пути, пробуем прямой /data/books.json', staticErr);
       try {
         const fallbackRes = await axios.get('/data/books.json', { timeout: 10000 });
         if (Array.isArray(fallbackRes.data)) {
@@ -171,8 +171,8 @@ export async function getBooks(forceReload = false) {
           }));
           return cachedBooks;
         }
-      } catch (finalErr) {
-        console.error('Ошибка загрузки данных книг:', finalErr);
+      } catch {
+        // ignore
       }
     }
 
@@ -260,32 +260,45 @@ export async function searchAi(prompt) {
     }
   }
 
-  // 2. Интеллектуальный клиентский матчинг (семантический скоринг для RU, KZ, EN)
+  // 2. Интеллектуальный клиентский матчинг (семантический скоринг для KZ, RU, EN)
   const books = await getBooks();
-  const tokens = prompt
-    .toLowerCase()
+  const rawPrompt = prompt.toLowerCase().trim();
+  const tokens = rawPrompt
     .replace(/[.,/#!$%^&*;:{}=\-_`~()«»"']/g, ' ')
     .split(/\s+/)
-    .filter((w) => w.length > 2);
+    .filter((w) => w.length >= 2);
 
   if (tokens.length === 0) return books.slice(0, 10);
 
-  // Семантические синонимы на трех языках
+  // Снятие распространенных окончаний в казахском языке для точного стемминга
+  const stemKazakh = (word) => {
+    return word.replace(/(ның|нің|дың|дің|тың|тің|ға|ге|қа|ке|да|де|та|те|тан|тен|нан|нен|дан|ден|пен|бен|мен|лар|лер|дар|дер|тар|тер|лық|лік|дық|дік|тық|тік|ы|і|сы|сі)$/i, '');
+  };
+
+  const stemmedTokens = tokens.map((t) => (t.length > 4 ? stemKazakh(t) : t));
+
+  // Семантические синонимы на трех языках (KZ, RU, EN)
   const conceptMap = {
-    space: ['космос', 'ғарыш', 'планет', 'жұлдыз', 'марсиан', 'галактик', 'space', 'universe', 'alien'],
-    dystopia: ['антиутопи', 'фаренгейт', 'брэдбери', 'оруэлл', 'цензур', 'тиран', 'dystopia', 'тоталитар'],
-    detective: ['детектив', 'холмс', 'агата', 'кристи', 'пуаро', 'қылмыс', 'тергеу', 'sherlock', 'crime', 'mystery'],
-    history: ['тарих', 'абай', 'мұхтар', 'жүсіп', 'казах', 'қазақ', 'хан', 'батыр', 'history', 'тарихи', 'алаш'],
-    psychology: ['психолог', 'саморазвит', 'мотиваци', 'табыс', 'өмір', 'ақыл', 'mindset', 'habits', 'успех'],
-    adventure: ['приключен', 'саяхат', 'экспедици', 'робинзон', 'верн', 'дюма', 'adventure', 'остров'],
-    romance: ['романтик', 'махаббат', 'сезім', 'любов', 'сүйіспеншілік', 'love', 'drama'],
-    ielts: ['ielts', 'sat', 'english', 'grammar', 'toefl', 'vocabulary', 'dictionary', 'ағылшын'],
+    space: ['космос', 'ғарыш', 'garysh', 'планет', 'жұлдыз', 'марсиан', 'галактик', 'space', 'universe', 'alien', 'sci-fi', 'scifi', 'фантастик', 'азимов', 'брэдбери', 'жұлдызаралық'],
+    dystopia: ['антиутопи', 'фаренгейт', 'брэдбери', 'оруэлл', 'цензур', 'тиран', 'dystopia', 'тоталитар', '1984', 'хаксли', 'диктатура', 'болашақ', 'жасанды'],
+    fantasy: ['фэнтези', 'магия', 'сиқыр', 'сиқыршы', 'эльф', 'айдаһар', 'дракон', 'поттер', 'роулинг', 'толкин', 'хоббит', 'сақина', 'гарри', 'fantasy', 'wizard', 'dragon', 'witch', 'қиял-ғажайып'],
+    detective: ['детектив', 'холмс', 'агата', 'кристи', 'пуаро', 'қылмыс', 'тергеу', 'sherlock', 'crime', 'mystery', 'расследован', 'убийств', 'тергеуші', 'тыңшы', 'загадк'],
+    history: ['тарих', 'абай', 'abay', 'мұхтар', 'жүсіп', 'казах', 'қазақ', 'хан', 'батыр', 'history', 'тарихи', 'алаш', 'әуезов', 'көшпенділер', 'есенберлин', 'мағжан', 'шәкәрім', 'соқпақбаев'],
+    psychology: ['психолог', 'саморазвит', 'мотиваци', 'табыс', 'өмір', 'ақыл', 'mindset', 'habits', 'успех', 'даму', 'күш', 'мақсат', 'әдет', 'атомдық', 'клир', 'карнеги', 'франкл', 'лидер'],
+    adventure: ['приключен', 'саяхат', 'экспедици', 'робинзон', 'верн', 'дюма', 'adventure', 'остров', 'шытырман', 'теңіз', 'джунгли', 'қазына', 'сокровищ', 'treasure', 'саяхатшы'],
+    romance: ['романтик', 'махаббат', 'сезім', 'любов', 'сүйіспеншілік', 'love', 'drama', 'ғашық', 'остин', 'романтикалық', 'сезімдер'],
+    poetry: ['поэзи', 'стих', 'стихотворен', 'өлең', 'жыр', 'дастан', 'ақын', 'poetry', 'poem', 'verse', 'пушкин', 'лермонтов', 'мұқағали', 'мақатаев', 'қасым'],
+    ielts: ['ielts', 'sat', 'english', 'grammar', 'toefl', 'vocabulary', 'dictionary', 'ағылшын', 'оқулық', 'учебник', 'грамматика', 'reading', 'writing', 'speaking'],
+    science: ['ғылым', 'физика', 'химия', 'биология', 'математика', 'science', 'physics', 'chemistry', 'biology', 'наука', 'энциклопедия', 'алгебра'],
   };
 
   // Расширяем токены найденными синонимами
-  const expandedTokens = new Set(tokens);
+  const expandedTokens = new Set([...tokens, ...stemmedTokens]);
   for (const [, synonyms] of Object.entries(conceptMap)) {
-    if (tokens.some((t) => synonyms.some((syn) => syn.includes(t) || t.includes(syn)))) {
+    const matchedConcept = tokens.some((t) =>
+      synonyms.some((syn) => syn.includes(t) || t.includes(syn) || syn.startsWith(t.slice(0, 3)))
+    );
+    if (matchedConcept) {
       synonyms.forEach((syn) => expandedTokens.add(syn));
     }
   }
@@ -298,12 +311,14 @@ export async function searchAi(prompt) {
     const author = (b.author || '').toLowerCase();
     const desc = (b.description || '').toLowerCase();
     const genre = (Array.isArray(b.genre) ? b.genre.join(' ') : (b.genre || '')).toLowerCase();
+    const lang = (b.language || '').toLowerCase();
 
     tokenList.forEach((token) => {
-      if (title.includes(token)) score += 12;
-      if (genre.includes(token)) score += 9;
-      if (author.includes(token)) score += 7;
+      if (title.includes(token)) score += 15;
+      if (genre.includes(token)) score += 10;
+      if (author.includes(token)) score += 8;
       if (desc.includes(token)) score += 4;
+      if (lang.includes(token)) score += 3;
     });
 
     return { ...b, matchScore: score };

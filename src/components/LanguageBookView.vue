@@ -252,19 +252,21 @@ export default {
     const onRegistered = (payload) => {
       userEmail.value = payload.email;
       userName.value = payload.name;
+      userAvatar.value = payload.avatar || '';
       isLoggedIn.value = true;
       showRegister.value = false;
       showProfile.value = true;
-      localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: '' }));
+      localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: userAvatar.value }));
       localStorage.setItem('isLoggedIn', 'true');
     };
 
     const onLoggedIn = (payload) => {
       userEmail.value = payload.email;
       userName.value = payload.name;
+      userAvatar.value = payload.avatar || '';
       isLoggedIn.value = true;
       showRegister.value = false;
-      localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: '' }));
+      localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: userAvatar.value }));
       localStorage.setItem('isLoggedIn', 'true');
     };
 

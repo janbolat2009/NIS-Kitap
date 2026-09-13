@@ -225,6 +225,9 @@ export const translations = {
       passMismatch: 'Пароли не совпадают!',
       loginError: 'Неверная почта или пароль. Попробуйте снова или зарегистрируйтесь.',
       emailInUse: 'Пользователь с такой почтой уже существует. Пожалуйста, войдите.',
+      googleBtn: 'Продолжить с Google',
+      orDivider: 'или',
+      googleError: 'Не удалось войти через Google. Попробуйте снова.',
     },
     // Profile Modal
     profile: {
@@ -261,6 +264,7 @@ export const translations = {
       title: 'Результаты поиска Gemini AI',
       foundCount: 'Найдено рекомендаций:',
       emptyText: 'По вашему запросу книги не найдены. Попробуйте изменить ключевые слова или тему.',
+      closeBtn: 'Закрыть',
     },
     // Footer
     footer: {
@@ -474,6 +478,9 @@ export const translations = {
       passMismatch: 'Құпия сөздер сәйкес келмейді!',
       loginError: 'Қате пошта немесе құпия сөз. Қайталап көріңіз немесе тіркеліңіз.',
       emailInUse: 'Бұл поштамен қолданушы тіркелген. Жүйеге кіріңіз.',
+      googleBtn: 'Google арқылы жалғастыру',
+      orDivider: 'немесе',
+      googleError: 'Google арқылы кіру сәтсіз аяқталды. Қайталап көріңіз.',
     },
     profile: {
       title: 'Жеке кабинет',
@@ -507,6 +514,7 @@ export const translations = {
       title: 'Gemini AI іздеу нәтижелері',
       foundCount: 'Табылған ұсыныстар:',
       emptyText: 'Сұранысыңыз бойынша кітап табылмады. Кілт сөздерді өзгертіп көріңіз.',
+      closeBtn: 'Жабу',
     },
     footer: {
       tagline: 'NIS мектебіне арналған жаңа буын цифрлық кітапханасы. Әлемнің ең үздік кітаптарын оқыңыз және брондаңыз.',
@@ -719,6 +727,9 @@ export const translations = {
       passMismatch: 'Passwords do not match!',
       loginError: 'Incorrect email or password. Please try again or register.',
       emailInUse: 'An account with this email already exists. Please sign in.',
+      googleBtn: 'Continue with Google',
+      orDivider: 'or',
+      googleError: 'Failed to sign in with Google. Please try again.',
     },
     profile: {
       title: 'Reader Account',
@@ -752,6 +763,7 @@ export const translations = {
       title: 'Gemini AI Search Results',
       foundCount: 'Recommendations found:',
       emptyText: 'No books found matching your query. Try different keywords or ideas.',
+      closeBtn: 'Close',
     },
     footer: {
       tagline: 'Next-generation digital library for NIS students and teachers. Read, explore, and reserve world-class literature.',
