@@ -242,6 +242,7 @@ export async function getBookByTitle(title) {
  */
 export async function searchAi(prompt) {
   if (!prompt || !prompt.trim()) return [];
+  const cleanPrompt = prompt.trim();
 
   // 1. Запрос к серверному Gemini эндпоинту
   const endpoints = [`${API_BASE}/gemini/search`, `${API_BASE}/ai/search`, `${API_BASE}/openai/search`];
@@ -249,38 +250,56 @@ export async function searchAi(prompt) {
     try {
       const res = await axios.post(
         ep,
-        { prompt: prompt.trim() },
-        { headers: { 'Content-Type': 'application/json' }, timeout: 9000 }
+        { prompt: cleanPrompt },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 12000 }
       );
-      if (res.data?.books && res.data.books.length > 0) {
+      if (res.data && Array.isArray(res.data.books)) {
         return res.data.books;
       }
     } catch {
-      // Переход к следующему эндпоинту или fallback
+      // Переход к следующему эндпоинту или клиенто-ориентированному алгоритму
     }
   }
 
   // 2. Интеллектуальный клиентский матчинг (семантический скоринг для KZ, RU, EN)
   const books = await getBooks();
-  const rawPrompt = prompt.toLowerCase().trim();
-  const tokens = rawPrompt
+  if (!books || books.length === 0) return [];
+
+  const STOP_WORDS = new Set([
+    'туралы', 'жайлы', 'кітап', 'кітаптар', 'кітаптары', 'кітабы', 'көркем', 'оқу', 'оқығым',
+    'келеді', 'келетін', 'қандай', 'бар', 'маған', 'маган', 'керек', 'бойынша', 'үшін', 'үшин',
+    'арналған', 'арналган', 'мен', 'бен', 'пен', 'және', 'жане', 'немесе', 'тауып', 'бер', 'берші',
+    'көрсет', 'көрсетші', 'жақсы', 'үздік', 'уздик', 'ең', 'ен', 'қызықты', 'кызыкты', 'қазақша',
+    'орысша', 'ағылшынша', 'тілінде', 'тіліндегі', 'болсын', 'болса', 'туралысын', 'шығарма', 'шығармалар',
+    'про', 'о', 'об', 'обо', 'книга', 'книги', 'книгу', 'книжек', 'книжка', 'книгах', 'книге',
+    'посоветуй', 'порекомендуй', 'найди', 'хочу', 'почитать', 'какие', 'какой', 'какую', 'какие-нибудь',
+    'есть', 'мне', 'для', 'прочитать', 'лучшие', 'хорошие', 'самые', 'что', 'как', 'где', 'или',
+    'и', 'в', 'во', 'на', 'с', 'со', 'по', 'под', 'над', 'из', 'от', 'до', 'к', 'ко', 'у',
+    'литература', 'произведение', 'роман', 'повесть', 'рассказ', 'сборник', 'том',
+    'about', 'book', 'books', 'recommend', 'find', 'show', 'search', 'give', 'me', 'want',
+    'to', 'read', 'reading', 'best', 'good', 'great', 'like', 'similar', 'the', 'a', 'an',
+    'of', 'in', 'for', 'on', 'with', 'by', 'and', 'or', 'any', 'some', 'please', 'which'
+  ]);
+
+  const rawTokens = cleanPrompt
+    .toLowerCase()
     .replace(/[.,/#!$%^&*;:{}=\-_`~()«»"']/g, ' ')
     .split(/\s+/)
+    .map((w) => w.trim())
     .filter((w) => w.length >= 2);
 
-  if (tokens.length === 0) return books.slice(0, 10);
+  const meaningfulTokens = rawTokens.filter((w) => !STOP_WORDS.has(w));
+  const tokensToUse = meaningfulTokens.length > 0 ? meaningfulTokens : rawTokens;
 
-  // Снятие распространенных окончаний в казахском языке для точного стемминга
   const stemKazakh = (word) => {
     return word.replace(/(ның|нің|дың|дің|тың|тің|ға|ге|қа|ке|да|де|та|те|тан|тен|нан|нен|дан|ден|пен|бен|мен|лар|лер|дар|дер|тар|тер|лық|лік|дық|дік|тық|тік|ы|і|сы|сі)$/i, '');
   };
 
-  const stemmedTokens = tokens.map((t) => (t.length > 4 ? stemKazakh(t) : t));
+  const stemmedTokens = tokensToUse.map((t) => (t.length > 4 ? stemKazakh(t) : t));
 
-  // Семантические синонимы на трех языках (KZ, RU, EN)
   const conceptMap = {
-    space: ['космос', 'ғарыш', 'garysh', 'планет', 'жұлдыз', 'марсиан', 'галактик', 'space', 'universe', 'alien', 'sci-fi', 'scifi', 'фантастик', 'азимов', 'брэдбери', 'жұлдызаралық'],
-    dystopia: ['антиутопи', 'фаренгейт', 'брэдбери', 'оруэлл', 'цензур', 'тиран', 'dystopia', 'тоталитар', '1984', 'хаксли', 'диктатура', 'болашақ', 'жасанды'],
+    space: ['космос', 'ғарыш', 'garysh', 'планет', 'жұлдыз', 'марсиан', 'галактик', 'space', 'universe', 'alien', 'sci-fi', 'scifi', 'фантастик', 'азимов', 'брэдбери', 'жұлдызаралық', 'марс'],
+    dystopia: ['антиутопи', 'фаренгейт', 'брэдбери', 'оруэлл', 'цензур', 'тиран', 'dystopia', 'тоталитар', '1984', 'хаксли', 'диктатура', 'болашақ', 'жасанды', 'замятин'],
     fantasy: ['фэнтези', 'магия', 'сиқыр', 'сиқыршы', 'эльф', 'айдаһар', 'дракон', 'поттер', 'роулинг', 'толкин', 'хоббит', 'сақина', 'гарри', 'fantasy', 'wizard', 'dragon', 'witch', 'қиял-ғажайып'],
     detective: ['детектив', 'холмс', 'агата', 'кристи', 'пуаро', 'қылмыс', 'тергеу', 'sherlock', 'crime', 'mystery', 'расследован', 'убийств', 'тергеуші', 'тыңшы', 'загадк'],
     history: ['тарих', 'абай', 'abay', 'мұхтар', 'жүсіп', 'казах', 'қазақ', 'хан', 'батыр', 'history', 'тарихи', 'алаш', 'әуезов', 'көшпенділер', 'есенберлин', 'мағжан', 'шәкәрім', 'соқпақбаев'],
@@ -292,10 +311,9 @@ export async function searchAi(prompt) {
     science: ['ғылым', 'физика', 'химия', 'биология', 'математика', 'science', 'physics', 'chemistry', 'biology', 'наука', 'энциклопедия', 'алгебра'],
   };
 
-  // Расширяем токены найденными синонимами
-  const expandedTokens = new Set([...tokens, ...stemmedTokens]);
+  const expandedTokens = new Set([...tokensToUse, ...stemmedTokens]);
   for (const [, synonyms] of Object.entries(conceptMap)) {
-    const matchedConcept = tokens.some((t) =>
+    const matchedConcept = tokensToUse.some((t) =>
       synonyms.some((syn) => syn.includes(t) || t.includes(syn) || syn.startsWith(t.slice(0, 3)))
     );
     if (matchedConcept) {
@@ -304,6 +322,7 @@ export async function searchAi(prompt) {
   }
 
   const tokenList = Array.from(expandedTokens);
+  const lowerPrompt = cleanPrompt.toLowerCase();
 
   const scored = books.map((b) => {
     let score = 0;
@@ -313,26 +332,40 @@ export async function searchAi(prompt) {
     const genre = (Array.isArray(b.genre) ? b.genre.join(' ') : (b.genre || '')).toLowerCase();
     const lang = (b.language || '').toLowerCase();
 
-    tokenList.forEach((token) => {
-      if (title.includes(token)) score += 15;
-      if (genre.includes(token)) score += 10;
-      if (author.includes(token)) score += 8;
-      if (desc.includes(token)) score += 4;
-      if (lang.includes(token)) score += 3;
-    });
+    if (title === lowerPrompt || title.includes(lowerPrompt)) score += 100;
 
-    return { ...b, matchScore: score };
+    for (const t of tokensToUse) {
+      if (title.includes(t)) score += 30;
+      if (genre.includes(t)) score += 25;
+      if (author.includes(t)) score += 20;
+      if (desc.includes(t)) score += 12;
+    }
+
+    for (const token of tokenList) {
+      if (title.includes(token)) score += 12;
+      if (genre.includes(token)) score += 15;
+      if (author.includes(token)) score += 8;
+      if (desc.includes(token)) score += 6;
+      if (lang.includes(token)) score += 3;
+    }
+
+    let aiReason = '';
+    const bookGenre = Array.isArray(b.genre) ? b.genre[0] : (b.genre || 'Книга');
+    aiReason = `Совпадение по ключевым словам и жанру «${bookGenre}»`;
+
+    return { ...b, matchScore: Math.min(98, Math.max(65, Math.round(score))), aiReason, _rawScore: score };
   });
 
   const matched = scored
-    .filter((b) => b.matchScore > 0)
-    .sort((a, b) => b.matchScore - a.matchScore);
+    .filter((b) => b._rawScore > 0)
+    .sort((a, b) => b._rawScore - a._rawScore);
 
   if (matched.length > 0) {
     return matched.slice(0, 20);
   }
 
-  return books.slice(0, 8);
+  // Если ничего не найдено — возвращаем пустой список (без случайных заглушек!)
+  return [];
 }
 
 /**

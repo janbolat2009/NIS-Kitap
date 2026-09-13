@@ -45,6 +45,9 @@
               {{ Array.isArray(book.genre) ? book.genre.join(', ') : (book.genre || 'Book') }}
             </span>
             <span class="item-lang-pill">{{ book.language || 'RU' }}</span>
+            <span v-if="book.matchScore" class="item-match-pill">
+              {{ book.matchScore }}% {{ currentLocale === 'kz' ? 'сәйкестік' : (currentLocale === 'en' ? 'match' : 'совпадение') }}
+            </span>
           </div>
 
           <h4 class="item-title">{{ book.title }}</h4>
@@ -56,7 +59,15 @@
             <span>{{ book.author }}</span>
           </p>
 
-          <p v-if="book.description" class="item-desc">
+          <!-- AI Insight / Reason -->
+          <div v-if="book.aiReason" class="item-ai-insight">
+            <svg class="ai-sparkle-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+            </svg>
+            <span class="ai-reason-text">{{ book.aiReason }}</span>
+          </div>
+
+          <p v-else-if="book.description" class="item-desc">
             {{ book.description }}
           </p>
         </div>
@@ -70,13 +81,22 @@
     </div>
 
     <div v-else class="no-results-state">
-      <p class="no-results-text">{{ t('searchResults.emptyText') }}</p>
+      <div class="empty-icon-circle">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </div>
+      <p class="no-results-title">{{ t('searchResults.emptyText') }}</p>
+      <p class="no-results-subtitle">
+        {{ currentLocale === 'kz' ? 'Басқа сөздерді, жанр немесе автор есімін енгізіп көріңіз' : (currentLocale === 'en' ? 'Try searching with different keywords, genre or author name' : 'Попробуйте изменить формулировку, ввести жанр или имя автора') }}
+      </p>
     </div>
   </div>
 </template>
 
 <script>
-import { t } from '@/i18n';
+import { t, currentLocale } from '@/i18n';
 
 export default {
   name: 'SearchResults',
@@ -87,6 +107,12 @@ export default {
     },
   },
   emits: ['book-click', 'close'],
+  setup() {
+    return {
+      t,
+      currentLocale,
+    };
+  },
   mounted() {
     window.addEventListener('keydown', this.handleKeydown);
   },
@@ -94,7 +120,6 @@ export default {
     window.removeEventListener('keydown', this.handleKeydown);
   },
   methods: {
-    t,
     handleKeydown(e) {
       if (e.key === 'Escape') {
         this.$emit('close');
@@ -141,29 +166,25 @@ export default {
 .header-icon {
   width: 44px;
   height: 44px;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
   border-radius: 12px;
-  background: rgba(0, 113, 227, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.3);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.header-text {
-  min-width: 0;
-}
-
 .results-title {
-  margin: 0 0 4px;
+  margin: 0;
   font-size: 19px;
   font-weight: 700;
-  letter-spacing: -0.01em;
   color: #FFFFFF;
+  letter-spacing: -0.3px;
 }
 
 .results-subtitle {
-  margin: 0;
+  margin: 3px 0 0;
   font-size: 13px;
   color: rgba(255, 255, 255, 0.6);
 }
@@ -171,30 +192,30 @@ export default {
   color: #38BDF8;
 }
 
-/* Apple-style Close Button */
+/* Polished Close Button */
 .modal-close-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.75);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 36px;
   height: 36px;
   min-width: 36px;
   border-radius: 50%;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.85);
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   outline: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0;
+  flex-shrink: 0;
 }
 
 .modal-close-btn:hover {
   background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.35);
   color: #FFFFFF;
   transform: scale(1.06);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .modal-close-btn:active {
@@ -266,6 +287,7 @@ export default {
 .item-meta-top {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 4px;
 }
@@ -282,6 +304,17 @@ export default {
 .item-lang-pill {
   font-size: 10.5px;
   color: rgba(255, 255, 255, 0.5);
+}
+
+.item-match-pill {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #38BDF8;
+  background: rgba(56, 189, 248, 0.14);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 1px 7px;
+  border-radius: 9999px;
+  letter-spacing: 0.2px;
 }
 
 .item-title {
@@ -301,6 +334,29 @@ export default {
   display: flex;
   align-items: center;
   gap: 5px;
+}
+
+.item-ai-insight {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-top: 5px;
+  padding: 6px 10px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-radius: 10px;
+  font-size: 12px;
+  color: #BAE6FD;
+  line-height: 1.35;
+}
+
+.ai-sparkle-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.ai-reason-text {
+  flex: 1;
 }
 
 .item-desc {
@@ -326,11 +382,35 @@ export default {
 
 .no-results-state {
   text-align: center;
-  padding: 30px 10px;
+  padding: 36px 16px;
 }
-.no-results-text {
-  color: rgba(255, 255, 255, 0.6);
-  font-size: 14px;
+
+.empty-icon-circle {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 14px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.no-results-title {
+  color: #FFFFFF;
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 6px;
+}
+
+.no-results-subtitle {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 13px;
+  margin: 0;
+  max-width: 420px;
+  margin-inline: auto;
+  line-height: 1.4;
 }
 
 @media (max-width: 640px) {
