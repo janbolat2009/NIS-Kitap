@@ -55,7 +55,9 @@ dist/
 
 *.local
 *.backup
+*.backup.json
 *.bak
+__pycache__/
 
 tmp/
 temp/
