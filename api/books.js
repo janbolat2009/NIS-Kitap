@@ -2,28 +2,32 @@ import fs from 'fs';
 import path from 'path';
 
 let cachedBooks = null;
+let lastMtime = 0;
 
 function loadBooks() {
-  if (cachedBooks) return cachedBooks;
   try {
     const candidates = [
       path.join(process.cwd(), 'public', 'data', 'books.json'),
-      path.join(process.cwd(), 'data', 'books.json'),
       path.join(process.cwd(), 'server', 'data', 'books.json'),
+      path.join(process.cwd(), 'data', 'books.json'),
       path.join(process.cwd(), 'dist', 'data', 'books.json'),
     ];
 
     for (const p of candidates) {
       if (fs.existsSync(p)) {
-        const raw = fs.readFileSync(p, 'utf-8');
-        cachedBooks = JSON.parse(raw);
+        const stats = fs.statSync(p);
+        if (!cachedBooks || stats.mtimeMs > lastMtime) {
+          const raw = fs.readFileSync(p, 'utf-8');
+          cachedBooks = JSON.parse(raw);
+          lastMtime = stats.mtimeMs;
+        }
         return cachedBooks;
       }
     }
   } catch (err) {
     console.warn('⚠️ Error reading books.json:', err.message);
   }
-  cachedBooks = [];
+  if (!cachedBooks) cachedBooks = [];
   return cachedBooks;
 }
 

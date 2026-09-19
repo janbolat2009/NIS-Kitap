@@ -70,6 +70,87 @@ export function matchLanguage(bookLang, targetLang) {
   return String(bookLang || '').toLowerCase().includes(String(targetLang).toLowerCase());
 }
 
+export const CANONICAL_GENRE_MAP = {
+  adventure: {
+    key: 'adventure',
+    canonical: 'Приключения',
+    keywords: ['приключен', 'adventure', 'шытырман', 'саяхат'],
+    color: '#10B981',
+  },
+  fantastica: {
+    key: 'fantastica',
+    canonical: 'Фантастика',
+    keywords: ['фантастик', 'sci-fi', 'scifi', 'ғылыми фантастика'],
+    color: '#38BDF8',
+  },
+  fantasy: {
+    key: 'fantasy',
+    canonical: 'Фэнтези',
+    keywords: ['фэнтези', 'fantasy', 'қиял-ғажайып'],
+    color: '#818CF8',
+  },
+  detective: {
+    key: 'detective',
+    canonical: 'Детектив',
+    keywords: ['детектив', 'detective', 'тыңшы', 'триллер'],
+    color: '#F59E0B',
+  },
+  biography: {
+    key: 'biography',
+    canonical: 'Биография',
+    keywords: ['биограф', 'biograph', 'өмірбаян', 'мемуар'],
+    color: '#EC4899',
+  },
+  romantica: {
+    key: 'romantica',
+    canonical: 'Романтика',
+    keywords: ['романтик', 'romanc', 'махаббат', 'сүйіспеншілік'],
+    color: '#F43F5E',
+  },
+  poetry: {
+    key: 'poetry',
+    canonical: 'Поэзия',
+    keywords: ['поэзи', 'стих', 'poet', 'poem', 'өлең', 'жыр', 'лирик'],
+    color: '#6366F1',
+  },
+  encyclopedia: {
+    key: 'encyclopedia',
+    canonical: 'Энциклопедии',
+    keywords: ['энциклопед', 'encyclopedia'],
+    color: '#0284C7',
+  },
+  textbooks: {
+    key: 'textbooks',
+    canonical: 'Учебники',
+    keywords: ['учебник', 'textbook', 'оқулық'],
+    color: '#F97316',
+  },
+  teacherGuides: {
+    key: 'teacherGuides',
+    canonical: 'Методические пособия',
+    keywords: ['методическ', 'teacher', 'әдістемелік', 'пособие'],
+    color: '#14B8A6',
+  },
+  classics: {
+    key: 'classics',
+    canonical: 'Классика',
+    keywords: ['классик', 'проза', 'повест', 'fiction'],
+    color: '#EAB308',
+  },
+  drama: {
+    key: 'drama',
+    canonical: 'Драма',
+    keywords: ['драма', 'трагедия'],
+    color: '#EF4444',
+  },
+  fairyTales: {
+    key: 'fairyTales',
+    canonical: 'Сказки',
+    keywords: ['сказк', 'ертегі', 'fairy', 'детская литература'],
+    color: '#A855F7',
+  },
+};
+
 /**
  * Нормализация жанра с учетом форм единственного/множественного числа и трех языков
  */
@@ -77,20 +158,13 @@ export function matchGenre(bookGenres, targetGenre) {
   if (!targetGenre) return true;
   const target = String(targetGenre).toLowerCase().trim();
 
-  const genreKeywords = {
-    adventure: ['приключен', 'adventure', 'шытырман', 'саяхат'],
-    fantastica: ['фантастик', 'sci-fi', 'scifi', 'ғылыми фантастика'],
-    fantasy: ['фэнтези', 'fantasy', 'қиял-ғажайып'],
-    detective: ['детектив', 'detective', 'тыңшы'],
-    biography: ['биограф', 'biograph', 'өмірбаян'],
-    romantica: ['романтик', 'romanc', 'махаббат', 'сүйіспеншілік'],
-    poetry: ['поэзи', 'стих', 'poet', 'poem', 'өлең', 'жыр'],
-  };
-
-  // Определение канонической группы для targetGenre
+  // 1. Определение канонической группы для targetGenre
   let matchedGroup = null;
-  for (const [group, patterns] of Object.entries(genreKeywords)) {
-    if (patterns.some((p) => target.includes(p) || p.includes(target))) {
+  for (const [group, info] of Object.entries(CANONICAL_GENRE_MAP)) {
+    if (
+      info.canonical.toLowerCase() === target ||
+      info.keywords.some((p) => target.includes(p) || p.includes(target))
+    ) {
       matchedGroup = group;
       break;
     }
@@ -100,16 +174,101 @@ export function matchGenre(bookGenres, targetGenre) {
 
   return list.some((bg) => {
     const b = String(bg).toLowerCase().trim();
+    if (!b) return false;
+
     if (matchedGroup) {
-      const patterns = genreKeywords[matchedGroup];
+      const patterns = CANONICAL_GENRE_MAP[matchedGroup].keywords;
       if (patterns.some((p) => b.includes(p) || p.includes(b))) {
         return true;
       }
+      if (CANONICAL_GENRE_MAP[matchedGroup].canonical.toLowerCase() === b) {
+        return true;
+      }
     }
-    // Fallback: подстрока или совпадение основы слова
+
+    // Прямое или подстрочное совпадение
+    if (b === target || b.includes(target) || target.includes(b)) {
+      return true;
+    }
+
     const stem = target.length > 5 ? target.slice(0, 5) : target;
-    return b.includes(target) || target.includes(b) || b.startsWith(stem);
+    return b.startsWith(stem) || stem.includes(b);
   });
+}
+
+/**
+ * Динамическое извлечение всех уникальных жанров и точных количеств книг из базы данных
+ */
+export function getUniqueGenres(books) {
+  if (!Array.isArray(books) || books.length === 0) return [];
+
+  const groupCounts = {};
+  const ungroupedCounts = {};
+
+  for (const b of books) {
+    const rawGenres = Array.isArray(b.genre) ? b.genre : [b.genre || ''];
+    const matchedKeys = new Set();
+
+    for (const g of rawGenres) {
+      const clean = String(g).trim();
+      if (!clean) continue;
+      const lower = clean.toLowerCase();
+
+      let matchedKey = null;
+      for (const [key, info] of Object.entries(CANONICAL_GENRE_MAP)) {
+        if (
+          info.canonical.toLowerCase() === lower ||
+          info.keywords.some((p) => lower.includes(p) || p.includes(lower))
+        ) {
+          matchedKey = key;
+          break;
+        }
+      }
+
+      if (matchedKey) {
+        matchedKeys.add(matchedKey);
+      } else {
+        ungroupedCounts[clean] = (ungroupedCounts[clean] || 0) + 1;
+      }
+    }
+
+    for (const key of matchedKeys) {
+      groupCounts[key] = (groupCounts[key] || 0) + 1;
+    }
+  }
+
+  const result = [];
+
+  // 1. Добавление канонических групп с ненулевым количеством книг
+  for (const [key, info] of Object.entries(CANONICAL_GENRE_MAP)) {
+    const count = groupCounts[key] || 0;
+    if (count > 0) {
+      result.push({
+        key,
+        value: info.canonical,
+        label: info.canonical,
+        count,
+        color: info.color,
+      });
+    }
+  }
+
+  // 2. Добавление любых новых динамических жанров из будущих импортов
+  for (const [name, count] of Object.entries(ungroupedCounts)) {
+    if (count >= 5) {
+      result.push({
+        key: name.toLowerCase(),
+        value: name,
+        label: name,
+        count,
+        color: '#64748B',
+      });
+    }
+  }
+
+  // Сортировка по количеству книг (по убыванию)
+  result.sort((a, b) => b.count - a.count);
+  return result;
 }
 
 /**

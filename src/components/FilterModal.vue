@@ -82,7 +82,7 @@ export default {
     },
     languages: {
       type: Array,
-      default: () => ['Русский', 'Казахский', 'Английский'],
+      default: () => ['Русский', 'Қазақ', 'English'],
     },
     currentGenre: {
       type: String,

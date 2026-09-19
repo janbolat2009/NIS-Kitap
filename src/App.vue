@@ -284,7 +284,7 @@
                   <span>{{ t('aboutTeaser.statBooks') }}</span>
                 </div>
                 <div class="stat-item">
-                  <strong>7</strong>
+                  <strong>{{ genreCards.length || 7 }}</strong>
                   <span>{{ t('aboutTeaser.statGenres') }}</span>
                 </div>
                 <div class="stat-item">
@@ -351,7 +351,7 @@ import BookCard from '@/components/BookCard.vue';
 import Register from '@/components/Register.vue';
 import Profile from '@/components/Profile.vue';
 import SearchResults from '@/components/SearchResults.vue';
-import { getBooks, searchAi } from '@/services/bookService';
+import { getBooks, searchAi, getUniqueGenres } from '@/services/bookService';
 import { t } from '@/i18n';
 
 // Images
@@ -362,6 +362,33 @@ import adventureIcon from '@/img/icons8_adventures.png';
 import biographyIcon from '@/img/mdi_biography.png';
 import romanticaIcon from '@/img/devicon-plain_love2d.png';
 import poetryIcon from '@/img/streamline-ultimate_playlist-songs-bold.png';
+import defaultBookIcon from '@/img/tabler_books.png';
+
+const GENRE_ICON_MAP = {
+  fantastica: fantasticIcon,
+  fantasy: fantasyIcon,
+  detective: detectiveIcon,
+  adventure: adventureIcon,
+  biography: biographyIcon,
+  romantica: romanticaIcon,
+  poetry: poetryIcon,
+  encyclopedia: defaultBookIcon,
+  textbooks: defaultBookIcon,
+  teacherGuides: defaultBookIcon,
+  classics: defaultBookIcon,
+  drama: defaultBookIcon,
+  fairyTales: fantasyIcon,
+};
+
+const GENRE_ROUTE_MAP = {
+  fantastica: '/fantastica',
+  fantasy: '/fantasy',
+  detective: '/detective',
+  adventure: '/adventure',
+  biography: '/biography',
+  romantica: '/romantica',
+  poetry: '/poetry',
+};
 
 export default {
   name: 'App',
@@ -389,6 +416,7 @@ export default {
     const searchResults = ref([]);
     const searchInput = ref(null);
 
+    const allBooks = ref([]);
     const bestsellers = ref([]);
     const loadingBestsellers = ref(true);
 
@@ -401,15 +429,45 @@ export default {
       t('aiSearch.chipEnglish'),
     ]);
 
-    const genreCards = computed(() => [
-      { name: t('genres.fantastica'), desc: t('genres.fantasticaDesc'), route: '/fantastica', icon: fantasticIcon, accent: '#38BDF8' },
-      { name: t('genres.fantasy'), desc: t('genres.fantasyDesc'), route: '/fantasy', icon: fantasyIcon, accent: '#818CF8' },
-      { name: t('genres.detective'), desc: t('genres.detectiveDesc'), route: '/detective', icon: detectiveIcon, accent: '#F59E0B' },
-      { name: t('genres.adventure'), desc: t('genres.adventureDesc'), route: '/adventure', icon: adventureIcon, accent: '#10B981' },
-      { name: t('genres.biography'), desc: t('genres.biographyDesc'), route: '/biography', icon: biographyIcon, accent: '#EC4899' },
-      { name: t('genres.romantica'), desc: t('genres.romanticaDesc'), route: '/romantica', icon: romanticaIcon, accent: '#F43F5E' },
-      { name: t('genres.poetry'), desc: t('genres.poetryDesc'), route: '/poetry', icon: poetryIcon, accent: '#6366F1' },
-    ]);
+    const genreCards = computed(() => {
+      const dynamicGenres = getUniqueGenres(allBooks.value);
+      if (!dynamicGenres || dynamicGenres.length === 0) {
+        return [
+          { name: t('genres.fantastica'), desc: t('genres.fantasticaDesc'), route: '/fantastica', icon: fantasticIcon, accent: '#38BDF8' },
+          { name: t('genres.fantasy'), desc: t('genres.fantasyDesc'), route: '/fantasy', icon: fantasyIcon, accent: '#818CF8' },
+          { name: t('genres.detective'), desc: t('genres.detectiveDesc'), route: '/detective', icon: detectiveIcon, accent: '#F59E0B' },
+          { name: t('genres.adventure'), desc: t('genres.adventureDesc'), route: '/adventure', icon: adventureIcon, accent: '#10B981' },
+          { name: t('genres.biography'), desc: t('genres.biographyDesc'), route: '/biography', icon: biographyIcon, accent: '#EC4899' },
+          { name: t('genres.romantica'), desc: t('genres.romanticaDesc'), route: '/romantica', icon: romanticaIcon, accent: '#F43F5E' },
+          { name: t('genres.poetry'), desc: t('genres.poetryDesc'), route: '/poetry', icon: poetryIcon, accent: '#6366F1' },
+        ];
+      }
+
+      return dynamicGenres.map((g) => {
+        let name = g.label;
+        let desc = `${g.count} книг`;
+        if (g.key && t(`genres.${g.key}`)) {
+          const locName = t(`genres.${g.key}`);
+          if (locName && !locName.startsWith('genres.')) name = locName;
+        }
+        if (g.key && t(`genres.${g.key}Desc`)) {
+          const locDesc = t(`genres.${g.key}Desc`);
+          if (locDesc && !locDesc.startsWith('genres.')) desc = locDesc;
+        }
+
+        const route = GENRE_ROUTE_MAP[g.key] || `/catalog?genre=${encodeURIComponent(g.value)}`;
+        const icon = GENRE_ICON_MAP[g.key] || defaultBookIcon;
+
+        return {
+          name,
+          desc,
+          route,
+          icon,
+          accent: g.color || '#38BDF8',
+          count: g.count,
+        };
+      });
+    });
 
     onMounted(async () => {
       // 1. Проверка авторизации из localStorage
@@ -447,11 +505,11 @@ export default {
         console.warn('Firebase init:', err);
       }
 
-      // 3. Загрузка бестселлеров через bookService
+      // 3. Загрузка книг и бестселлеров через bookService
       try {
         const all = await getBooks();
         if (all && all.length > 0) {
-          // Выбираем интересные книги с высоким рейтингом / копиями для витрины
+          allBooks.value = all;
           bestsellers.value = all.slice(0, 8);
         }
       } catch (err) {

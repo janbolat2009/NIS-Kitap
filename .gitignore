@@ -56,6 +56,7 @@ dist/
 *.local
 *.backup
 *.backup.json
+*.audit_backup.json
 *.bak
 __pycache__/
 

@@ -203,7 +203,7 @@ import BookCard from '@/components/BookCard.vue';
 import FilterModal from '@/components/FilterModal.vue';
 import Register from '@/components/Register.vue';
 import Profile from '@/components/Profile.vue';
-import { getBooks, matchLanguage, matchGenre } from '@/services/bookService';
+import { getBooks, matchLanguage, matchGenre, getUniqueGenres } from '@/services/bookService';
 import { t } from '@/i18n';
 
 export default {
@@ -242,15 +242,36 @@ export default {
 
     const catalogSearchInput = ref(null);
 
-    const genreList = computed(() => [
-      { value: 'Фантастика', label: t('genres.fantastica') },
-      { value: 'Фэнтези', label: t('genres.fantasy') },
-      { value: 'Детектив', label: t('genres.detective') },
-      { value: 'Приключения', label: t('genres.adventure') },
-      { value: 'Биография', label: t('genres.biography') },
-      { value: 'Романтика', label: t('genres.romantica') },
-      { value: 'Поэзия', label: t('genres.poetry') },
-    ]);
+    const genreList = computed(() => {
+      const dynamicGenres = getUniqueGenres(allBooks.value);
+      if (!dynamicGenres || dynamicGenres.length === 0) {
+        return [
+          { value: 'Фантастика', label: t('genres.fantastica'), count: 0 },
+          { value: 'Фэнтези', label: t('genres.fantasy'), count: 0 },
+          { value: 'Детектив', label: t('genres.detective'), count: 0 },
+          { value: 'Приключения', label: t('genres.adventure'), count: 0 },
+          { value: 'Биография', label: t('genres.biography'), count: 0 },
+          { value: 'Романтика', label: t('genres.romantica'), count: 0 },
+          { value: 'Поэзия', label: t('genres.poetry'), count: 0 },
+        ];
+      }
+
+      return dynamicGenres.map((g) => {
+        let localized = g.label;
+        if (g.key && t(`genres.${g.key}`)) {
+          const loc = t(`genres.${g.key}`);
+          if (loc && !loc.startsWith('genres.')) {
+            localized = loc;
+          }
+        }
+        return {
+          key: g.key,
+          value: g.value,
+          label: localized,
+          count: g.count,
+        };
+      });
+    });
 
     const languageList = computed(() => [
       { value: 'Русский', label: t('catalog.langRu') },
