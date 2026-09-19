@@ -31,11 +31,7 @@
         <div class="genre-hero glass-panel">
           <div class="genre-hero-left">
             <div class="genre-big-icon-box">
-              <img v-if="genreIcon" :src="genreIcon" :alt="genreTitle" class="big-icon-img" />
-              <svg v-else width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
-                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
-              </svg>
+              <GenreIcon :genre-name="genreTitle" :size="38" />
             </div>
             <div>
               <div class="genre-type-badge">{{ t('genres.title') }}</div>
@@ -133,6 +129,7 @@ import AppleFooter from '@/components/AppleFooter.vue';
 import BookCard from '@/components/BookCard.vue';
 import Register from '@/components/Register.vue';
 import Profile from '@/components/Profile.vue';
+import GenreIcon from '@/components/GenreIcon.vue';
 import { getBooksByGenre } from '@/services/bookService';
 import { t } from '@/i18n';
 
@@ -144,6 +141,7 @@ export default {
     BookCard,
     Register,
     Profile,
+    GenreIcon,
   },
   props: {
     genreTitle: {

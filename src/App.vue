@@ -156,7 +156,12 @@
               @click="$router.push(genre.route)"
             >
               <div class="genre-icon-box">
-                <img :src="genre.icon" :alt="genre.name" class="genre-icon-img" />
+                <GenreIcon 
+                  :genre-key="genre.key" 
+                  :genre-name="genre.name" 
+                  :color="genre.accent" 
+                  :size="28" 
+                />
               </div>
               <div class="genre-info">
                 <h3 class="genre-title">{{ genre.name }}</h3>
@@ -351,6 +356,7 @@ import BookCard from '@/components/BookCard.vue';
 import Register from '@/components/Register.vue';
 import Profile from '@/components/Profile.vue';
 import SearchResults from '@/components/SearchResults.vue';
+import GenreIcon from '@/components/GenreIcon.vue';
 import { getBooks, searchAi, getUniqueGenres } from '@/services/bookService';
 import { t } from '@/i18n';
 
@@ -399,6 +405,7 @@ export default {
     Register,
     Profile,
     SearchResults,
+    GenreIcon,
   },
   setup() {
     const router = useRouter();
@@ -433,13 +440,14 @@ export default {
       const dynamicGenres = getUniqueGenres(allBooks.value);
       if (!dynamicGenres || dynamicGenres.length === 0) {
         return [
-          { name: t('genres.fantastica'), desc: t('genres.fantasticaDesc'), route: '/fantastica', icon: fantasticIcon, accent: '#38BDF8' },
-          { name: t('genres.fantasy'), desc: t('genres.fantasyDesc'), route: '/fantasy', icon: fantasyIcon, accent: '#818CF8' },
-          { name: t('genres.detective'), desc: t('genres.detectiveDesc'), route: '/detective', icon: detectiveIcon, accent: '#F59E0B' },
-          { name: t('genres.adventure'), desc: t('genres.adventureDesc'), route: '/adventure', icon: adventureIcon, accent: '#10B981' },
-          { name: t('genres.biography'), desc: t('genres.biographyDesc'), route: '/biography', icon: biographyIcon, accent: '#EC4899' },
-          { name: t('genres.romantica'), desc: t('genres.romanticaDesc'), route: '/romantica', icon: romanticaIcon, accent: '#F43F5E' },
-          { name: t('genres.poetry'), desc: t('genres.poetryDesc'), route: '/poetry', icon: poetryIcon, accent: '#6366F1' },
+          { key: 'selfDevelopment', name: t('genres.selfDevelopment'), desc: t('genres.selfDevelopmentDesc'), route: '/catalog?genre=' + encodeURIComponent('Саморазвитие'), accent: '#10B981' },
+          { key: 'adventure', name: t('genres.adventure'), desc: t('genres.adventureDesc'), route: '/adventure', accent: '#10B981' },
+          { key: 'fantastica', name: t('genres.fantastica'), desc: t('genres.fantasticaDesc'), route: '/fantastica', accent: '#38BDF8' },
+          { key: 'fantasy', name: t('genres.fantasy'), desc: t('genres.fantasyDesc'), route: '/fantasy', accent: '#818CF8' },
+          { key: 'detective', name: t('genres.detective'), desc: t('genres.detectiveDesc'), route: '/detective', accent: '#F59E0B' },
+          { key: 'biography', name: t('genres.biography'), desc: t('genres.biographyDesc'), route: '/biography', accent: '#EC4899' },
+          { key: 'romantica', name: t('genres.romantica'), desc: t('genres.romanticaDesc'), route: '/romantica', accent: '#F43F5E' },
+          { key: 'poetry', name: t('genres.poetry'), desc: t('genres.poetryDesc'), route: '/poetry', accent: '#6366F1' },
         ];
       }
 
@@ -455,15 +463,14 @@ export default {
           if (locDesc && !locDesc.startsWith('genres.')) desc = locDesc;
         }
 
-        const route = GENRE_ROUTE_MAP[g.key] || `/catalog?genre=${encodeURIComponent(g.value)}`;
-        const icon = GENRE_ICON_MAP[g.key] || defaultBookIcon;
+        const route = GENRE_ROUTE_MAP[g.key] || g.route || `/catalog?genre=${encodeURIComponent(g.value)}`;
 
         return {
+          key: g.key,
           name,
           desc,
           route,
-          icon,
-          accent: g.color || '#38BDF8',
+          accent: g.accent || g.color || '#38BDF8',
           count: g.count,
         };
       });

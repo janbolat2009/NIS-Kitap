@@ -91,6 +91,8 @@ export const translations = {
       dramaDesc: 'Драматические произведения и пьесы',
       fairyTales: 'Сказки и фольклор',
       fairyTalesDesc: 'Народные предания и детские сказки',
+      selfDevelopment: 'Саморазвитие',
+      selfDevelopmentDesc: 'Личностный рост, психология, лидерство и мотивация',
     },
     // Languages
     languages: {
@@ -364,6 +366,8 @@ export const translations = {
       dramaDesc: 'Драмалық туындылар мен пьесалар',
       fairyTales: 'Ертегілер мен аңыздар',
       fairyTalesDesc: 'Халық мұрасы мен балалар ертегілері',
+      selfDevelopment: 'Өзін-өзі дамыту',
+      selfDevelopmentDesc: 'Жеке өсу, психология, көшбасшылық және мотивация',
     },
     languages: {
       title: 'Тіл бөлімдері',
@@ -625,6 +629,8 @@ export const translations = {
       dramaDesc: 'Dramatic literature and theatrical plays',
       fairyTales: 'Fairy Tales & Lore',
       fairyTalesDesc: 'Traditional folklore and children tales',
+      selfDevelopment: 'Self-development',
+      selfDevelopmentDesc: 'Personal growth, psychology, leadership, and motivation',
     },
     languages: {
       title: 'Language Divisions',

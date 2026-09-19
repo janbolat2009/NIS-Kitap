@@ -246,10 +246,11 @@ export default {
       const dynamicGenres = getUniqueGenres(allBooks.value);
       if (!dynamicGenres || dynamicGenres.length === 0) {
         return [
+          { value: 'Саморазвитие', label: t('genres.selfDevelopment'), count: 0 },
+          { value: 'Приключения', label: t('genres.adventure'), count: 0 },
           { value: 'Фантастика', label: t('genres.fantastica'), count: 0 },
           { value: 'Фэнтези', label: t('genres.fantasy'), count: 0 },
           { value: 'Детектив', label: t('genres.detective'), count: 0 },
-          { value: 'Приключения', label: t('genres.adventure'), count: 0 },
           { value: 'Биография', label: t('genres.biography'), count: 0 },
           { value: 'Романтика', label: t('genres.romantica'), count: 0 },
           { value: 'Поэзия', label: t('genres.poetry'), count: 0 },
