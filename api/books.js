@@ -41,5 +41,8 @@ export default function handler(req, res) {
   }
 
   const books = loadBooks();
-  return res.status(200).json(books);
+  const includeHidden = req.query?.all === 'true';
+  const visibleBooks = includeHidden ? books : books.filter((b) => b.visible !== false);
+  return res.status(200).json(visibleBooks);
 }
+

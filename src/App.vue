@@ -99,7 +99,8 @@
                 type="text" 
                 :placeholder="t('aiSearch.placeholder')" 
                 class="ai-search-input"
-                @keyup.enter="handleAiSearch"
+                @input="onSearchInput"
+                @keyup.enter="handleAiSearch(true)"
               />
               <button 
                 v-if="searchQuery" 
@@ -536,24 +537,43 @@ export default {
       }
     };
 
-    const applyPrompt = (promptText) => {
-      searchQuery.value = promptText;
-      handleAiSearch();
+    let searchDebounceTimer = null;
+
+    const onSearchInput = () => {
+      clearTimeout(searchDebounceTimer);
+      const q = searchQuery.value?.trim() || '';
+      if (q.length >= 3) {
+        searchDebounceTimer = setTimeout(() => {
+          handleAiSearch();
+        }, 500);
+      }
     };
 
-    const handleAiSearch = async () => {
-      if (!searchQuery.value || !searchQuery.value.trim()) {
+    const applyPrompt = (promptText) => {
+      searchQuery.value = promptText;
+      handleAiSearch(true);
+    };
+
+    const handleAiSearch = async (force = false) => {
+      clearTimeout(searchDebounceTimer);
+      const q = searchQuery.value?.trim() || '';
+      if (!q) {
         focusSearchInput();
+        return;
+      }
+      if (q.length < 2) {
         return;
       }
 
       isSearching.value = true;
       try {
-        const results = await searchAi(searchQuery.value);
-        searchResults.value = results;
+        const results = await searchAi(q);
+        searchResults.value = results || [];
         showSearchResults.value = true;
       } catch (err) {
-        console.error('Ошибка поиска ИИ:', err);
+        console.warn('AI search notice:', err);
+        searchResults.value = [];
+        showSearchResults.value = true;
       } finally {
         isSearching.value = false;
       }
@@ -614,6 +634,7 @@ export default {
       suggestionPrompts,
       genreCards,
       focusSearchInput,
+      onSearchInput,
       applyPrompt,
       handleAiSearch,
       goToBookDetail,

@@ -39,6 +39,13 @@
         @click="$emit('book-click', book)"
       >
         <div class="item-rank-badge">#{{ index + 1 }}</div>
+
+        <!-- Book Mini Cover Mockup -->
+        <div class="item-mini-cover" :style="getMiniCoverStyle(book.title)">
+          <div class="mini-cover-spine"></div>
+          <span class="mini-cover-letter">{{ (book.title || 'B').charAt(0).toUpperCase() }}</span>
+        </div>
+
         <div class="item-info">
           <div class="item-meta-top">
             <span class="item-genre-pill">
@@ -59,6 +66,10 @@
             <span>{{ book.author }}</span>
           </p>
 
+          <p v-if="book.description" class="item-desc">
+            {{ book.description }}
+          </p>
+
           <!-- AI Insight / Reason -->
           <div v-if="book.aiReason" class="item-ai-insight">
             <svg class="ai-sparkle-icon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2">
@@ -66,10 +77,6 @@
             </svg>
             <span class="ai-reason-text">{{ book.aiReason }}</span>
           </div>
-
-          <p v-else-if="book.description" class="item-desc">
-            {{ book.description }}
-          </p>
         </div>
 
         <div class="item-arrow">
@@ -124,6 +131,25 @@ export default {
       if (e.key === 'Escape') {
         this.$emit('close');
       }
+    },
+    getMiniCoverStyle(title) {
+      const gradients = [
+        'linear-gradient(145deg, #1e3c72 0%, #2a5298 100%)',
+        'linear-gradient(145deg, #09203f 0%, #537895 100%)',
+        'linear-gradient(145deg, #141e30 0%, #243b55 100%)',
+        'linear-gradient(145deg, #134e5e 0%, #71b280 100%)',
+        'linear-gradient(145deg, #2c3e50 0%, #3498db 100%)',
+        'linear-gradient(145deg, #200122 0%, #6f0000 100%)',
+        'linear-gradient(145deg, #3a1c71 0%, #d76d77 100%)',
+        'linear-gradient(145deg, #000428 0%, #004e92 100%)',
+      ];
+      let hash = 0;
+      const str = title || 'Book';
+      for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      const index = Math.abs(hash) % gradients.length;
+      return { background: gradients[index] };
     },
   },
 };
@@ -277,6 +303,36 @@ export default {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+}
+
+.item-mini-cover {
+  width: 40px;
+  height: 54px;
+  border-radius: 6px;
+  flex-shrink: 0;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  overflow: hidden;
+}
+
+.mini-cover-spine {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: rgba(255, 255, 255, 0.22);
+}
+
+.mini-cover-letter {
+  font-size: 15px;
+  font-weight: 800;
+  color: rgba(255, 255, 255, 0.92);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
 .item-info {

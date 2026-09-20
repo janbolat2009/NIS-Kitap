@@ -77,24 +77,42 @@ export {
   getGenreMeta,
 } from '@/config/genres';
 
+function mapBookRecord(b, idx) {
+  return {
+    _id: b._id || `local-${idx}`,
+    title: b.title || 'Без названия',
+    author: b.author || 'Не указан',
+    genre: Array.isArray(b.genre) ? b.genre : (b.genre ? [b.genre] : ['Другое']),
+    description: b.description || '',
+    year: String(b.year || ''),
+    copies: Number(b.copies ?? 1),
+    language: b.language || 'Русский',
+    cover_image: b.cover_image || '',
+    status: b.status || 'available',
+    isbn: b.isbn || '',
+    visible: b.visible !== false,
+  };
+}
+
 /**
  * Загрузка книг: сначала проверяется бэкенд, при недоступности — статический fallback из public/data/books.json
  */
-export async function getBooks(forceReload = false) {
+export async function getBooks(forceReload = false, includeHidden = false) {
   if (cachedBooks && !forceReload) {
-    return cachedBooks;
+    return includeHidden ? cachedBooks : cachedBooks.filter((b) => b.visible !== false);
   }
 
   if (loadPromise && !forceReload) {
-    return loadPromise;
+    const list = await loadPromise;
+    return includeHidden ? list : list.filter((b) => b.visible !== false);
   }
 
   loadPromise = (async () => {
     try {
       // 1. Попытка загрузить с бэкенда
-      const res = await axios.get(`${API_BASE}/books`, { timeout: 2500 });
+      const res = await axios.get(`${API_BASE}/books?all=true`, { timeout: 2500 });
       if (Array.isArray(res.data) && res.data.length > 0) {
-        cachedBooks = res.data;
+        cachedBooks = res.data.map(mapBookRecord);
         return cachedBooks;
       }
     } catch {
@@ -108,32 +126,14 @@ export async function getBooks(forceReload = false) {
 
       const staticRes = await axios.get(`${cleanBase}data/books.json`, { timeout: 10000 });
       if (Array.isArray(staticRes.data)) {
-        cachedBooks = staticRes.data.map((b, idx) => ({
-          _id: b._id || `local-${idx}`,
-          title: b.title || 'Без названия',
-          author: b.author || 'Не указан',
-          genre: Array.isArray(b.genre) ? b.genre : (b.genre ? [b.genre] : ['Другое']),
-          description: b.description || '',
-          year: String(b.year || ''),
-          copies: Number(b.copies ?? 1),
-          language: b.language || 'Русский',
-        }));
+        cachedBooks = staticRes.data.map(mapBookRecord);
         return cachedBooks;
       }
     } catch (staticErr) {
       try {
         const fallbackRes = await axios.get('/data/books.json', { timeout: 10000 });
         if (Array.isArray(fallbackRes.data)) {
-          cachedBooks = fallbackRes.data.map((b, idx) => ({
-            _id: b._id || `local-${idx}`,
-            title: b.title || 'Без названия',
-            author: b.author || 'Не указан',
-            genre: Array.isArray(b.genre) ? b.genre : (b.genre ? [b.genre] : ['Другое']),
-            description: b.description || '',
-            year: String(b.year || ''),
-            copies: Number(b.copies ?? 1),
-            language: b.language || 'Русский',
-          }));
+          cachedBooks = fallbackRes.data.map(mapBookRecord);
           return cachedBooks;
         }
       } catch {
@@ -145,7 +145,8 @@ export async function getBooks(forceReload = false) {
     return cachedBooks;
   })();
 
-  return loadPromise;
+  const list = await loadPromise;
+  return includeHidden ? list : list.filter((b) => b.visible !== false);
 }
 
 /**
@@ -260,18 +261,28 @@ export async function searchAi(prompt) {
     return word.replace(/(ның|нің|дың|дің|тың|тің|ға|ге|қа|ке|да|де|та|те|тан|тен|нан|нен|дан|ден|пен|бен|мен|лар|лер|дар|дер|тар|тер|лық|лік|дық|дік|тық|тік|ы|і|сы|сі)$/i, '');
   };
 
-  const stemmedTokens = tokensToUse.map((t) => (t.length > 4 ? stemKazakh(t) : t));
+  const stemRussian = (word) => {
+    return word.replace(/(ому|ему|ыми|ими|ого|его|ых|их|ая|яя|ое|ее|ые|ие|ой|ей|ям|ам|ами|ями|ах|ях|ом|ем|ов|ев|ей|у|ю|а|я|ы|и|е|о)$/i, '');
+  };
+
+  const stemmedTokens = tokensToUse.map((t) => {
+    let s = t.length > 4 ? stemKazakh(t) : t;
+    return s.length > 4 ? stemRussian(s) : s;
+  });
 
   const conceptMap = {
     space: ['космос', 'ғарыш', 'garysh', 'планет', 'жұлдыз', 'марсиан', 'галактик', 'space', 'universe', 'alien', 'sci-fi', 'scifi', 'фантастик', 'азимов', 'брэдбери', 'жұлдызаралық', 'марс'],
     dystopia: ['антиутопи', 'фаренгейт', 'брэдбери', 'оруэлл', 'цензур', 'тиран', 'dystopia', 'тоталитар', '1984', 'хаксли', 'диктатура', 'болашақ', 'жасанды', 'замятин'],
-    fantasy: ['фэнтези', 'магия', 'сиқыр', 'сиқыршы', 'эльф', 'айдаһар', 'дракон', 'поттер', 'роулинг', 'толкин', 'хоббит', 'сақина', 'гарри', 'fantasy', 'wizard', 'dragon', 'witch', 'қиял-ғажайып'],
+    fantasy: ['фэнтези', 'магия', 'сиқыр', 'сиқыршы', 'эльф', 'айдаһар', 'дракон', 'поттер', 'роулинг', 'толкин', 'хоббит', 'сақина', 'гарри', 'fantasy', 'wizard', 'dragon', 'witch', 'қиял-ғажайып', 'хогвартс'],
+    war: ['война', 'соғыс', 'военный', 'фронт', 'армия', 'память', 'победа', 'окоп', 'сражени', 'блокад', 'партизан', 'штрафбат', 'штурм', 'васильев', 'быков', 'бондарев', 'шолохов', 'судьба человека', 'они сражались за родину', 'горячий снег', 'а зори здесь тихие', 'батыр'],
     detective: ['детектив', 'холмс', 'агата', 'кристи', 'пуаро', 'қылмыс', 'тергеу', 'sherlock', 'crime', 'mystery', 'расследован', 'убийств', 'тергеуші', 'тыңшы', 'загадк'],
     history: ['тарих', 'абай', 'abay', 'мұхтар', 'жүсіп', 'казах', 'қазақ', 'хан', 'батыр', 'history', 'тарихи', 'алаш', 'әуезов', 'көшпенділер', 'есенберлин', 'мағжан', 'шәкәрім', 'соқпақбаев'],
-    psychology: ['психолог', 'саморазвит', 'мотиваци', 'табыс', 'өмір', 'ақыл', 'mindset', 'habits', 'успех', 'даму', 'күш', 'мақсат', 'әдет', 'атомдық', 'клир', 'карнеги', 'франкл', 'лидер'],
+    psychology: ['психолог', 'саморазвит', 'мотиваци', 'табыс', 'өмір', 'ақыл', 'mindset', 'habits', 'успех', 'даму', 'күш', 'мақсат', 'әдет', 'атомдық', 'клир', 'карнеги', 'франкл', 'лидер', 'өзін-өзі', 'байлық', 'бизнес', 'предпринимательств', 'финансы', 'деньги', 'инвестици', 'менеджмент'],
     adventure: ['приключен', 'саяхат', 'экспедици', 'робинзон', 'верн', 'дюма', 'adventure', 'остров', 'шытырман', 'теңіз', 'джунгли', 'қазына', 'сокровищ', 'treasure', 'саяхатшы'],
     romance: ['романтик', 'махаббат', 'сезім', 'любов', 'сүйіспеншілік', 'love', 'drama', 'ғашық', 'остин', 'романтикалық', 'сезімдер'],
     poetry: ['поэзи', 'стих', 'стихотворен', 'өлең', 'жыр', 'дастан', 'ақын', 'poetry', 'poem', 'verse', 'пушкин', 'лермонтов', 'мұқағали', 'мақатаев', 'қасым'],
+    children: ['детск', 'балалар', 'сказк', 'ертегі', 'школ', 'мектеп', 'денис', 'носов', 'драгунский', 'линдгрен', 'крапивин', 'барто', 'чуковский', 'малыш', 'карлсон'],
+    classics: ['классик', 'толстой', 'достоевский', 'чехов', 'пушкин', 'лермонтов', 'тургенев', 'гоголь', 'булгаков', 'бунин', 'куприн', 'набоков', 'шекспир', 'диккенс'],
     ielts: ['ielts', 'sat', 'english', 'grammar', 'toefl', 'vocabulary', 'dictionary', 'ағылшын', 'оқулық', 'учебник', 'грамматика', 'reading', 'writing', 'speaking'],
     science: ['ғылым', 'физика', 'химия', 'биология', 'математика', 'science', 'physics', 'chemistry', 'biology', 'наука', 'энциклопедия', 'алгебра'],
   };
@@ -289,15 +300,33 @@ export async function searchAi(prompt) {
   const tokenList = Array.from(expandedTokens);
   const lowerPrompt = cleanPrompt.toLowerCase();
 
+  // Явный язык запроса
+  let explicitLang = '';
+  if (lowerPrompt.includes('на английском') || lowerPrompt.includes('english') || lowerPrompt.includes('ағылшын')) {
+    explicitLang = 'English';
+  } else if (lowerPrompt.includes('на русском') || lowerPrompt.includes('русская литература') || lowerPrompt.includes('орысша')) {
+    explicitLang = 'Русский';
+  } else if (lowerPrompt.includes('қазақша') || lowerPrompt.includes('қазақ тілінде') || lowerPrompt.includes('на казахском')) {
+    explicitLang = 'Қазақ';
+  }
+
+  const isKzQuery = /[әіңғүұқөһ]/i.test(lowerPrompt) || /(қазақ|туралы|кітап|маған|керек)/i.test(lowerPrompt);
+  const isEnQuery = /^[a-z0-9\s.,!?'"-]+$/i.test(cleanPrompt) && !/[а-яё]/i.test(cleanPrompt);
+
   const scored = books.map((b) => {
     let score = 0;
     const title = (b.title || '').toLowerCase();
     const author = (b.author || '').toLowerCase();
     const desc = (b.description || '').toLowerCase();
     const genre = (Array.isArray(b.genre) ? b.genre.join(' ') : (b.genre || '')).toLowerCase();
-    const lang = (b.language || '').toLowerCase();
+    const lang = (b.language || '');
 
     if (title === lowerPrompt || title.includes(lowerPrompt)) score += 100;
+
+    // Явный языковой приоритет
+    if (explicitLang && lang === explicitLang) {
+      score += 40;
+    }
 
     for (const t of tokensToUse) {
       if (title.includes(t)) score += 30;
@@ -311,12 +340,18 @@ export async function searchAi(prompt) {
       if (genre.includes(token)) score += 15;
       if (author.includes(token)) score += 8;
       if (desc.includes(token)) score += 6;
-      if (lang.includes(token)) score += 3;
+      if (lang.toLowerCase().includes(token)) score += 5;
     }
 
     let aiReason = '';
     const bookGenre = Array.isArray(b.genre) ? b.genre[0] : (b.genre || 'Книга');
-    aiReason = `Совпадение по ключевым словам и жанру «${bookGenre}»`;
+    if (isKzQuery) {
+      aiReason = `«${bookGenre}» санаты және тақырып бойынша сәйкестік`;
+    } else if (isEnQuery) {
+      aiReason = `Matches your search query in «${bookGenre}» category`;
+    } else {
+      aiReason = `Соответствует вашему запросу в жанре «${bookGenre}»`;
+    }
 
     return { ...b, matchScore: Math.min(98, Math.max(65, Math.round(score))), aiReason, _rawScore: score };
   });

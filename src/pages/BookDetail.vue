@@ -13,7 +13,7 @@
       <div class="detail-container">
         <!-- Breadcrumbs & Back -->
         <div class="detail-top-nav">
-          <button class="back-link-btn" @click="$router.push('/catalog')">
+          <button class="back-link-btn" @click="handleBack">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
@@ -414,6 +414,14 @@ export default {
       router.push(`/book/${encodeURIComponent(relBook.title)}`);
     };
 
+    const handleBack = () => {
+      if (window.history.length > 1) {
+        router.back();
+      } else {
+        router.push('/catalog');
+      }
+    };
+
     const onRegistered = (payload) => {
       userEmail.value = payload.email;
       userName.value = payload.name;
@@ -470,6 +478,7 @@ export default {
       confirmReservation,
       toggleFavorite,
       shareBook,
+      handleBack,
       onSelectRelated,
       onRegistered,
       onLoggedIn,

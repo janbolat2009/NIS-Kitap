@@ -33,7 +33,11 @@ const CONCEPT_MAP = {
   },
   fantasy: {
     genre: 'Фэнтези',
-    keywords: ['фэнтези', 'магия', 'сиқыр', 'сиқыршы', 'эльф', 'айдаһар', 'дракон', 'поттер', 'роулинг', 'толкин', 'хоббит', 'сақина', 'гарри', 'fantasy', 'wizard', 'dragon', 'witch', 'қиял-ғажайып', 'ертегі']
+    keywords: ['фэнтези', 'магия', 'сиқыр', 'сиқыршы', 'эльф', 'айдаһар', 'дракон', 'поттер', 'роулинг', 'толкин', 'хоббит', 'сақина', 'гарри', 'fantasy', 'wizard', 'dragon', 'witch', 'қиял-ғажайып', 'ертегі', 'хогвартс']
+  },
+  war: {
+    genre: 'Классика',
+    keywords: ['война', 'соғыс', 'военный', 'фронт', 'армия', 'память', 'победа', 'окоп', 'сражени', 'блокад', 'партизан', 'штрафбат', 'штурм', 'васильев', 'быков', 'бондарев', 'шолохов', 'судьба человека', 'они сражались за родину', 'горячий снег', 'а зори здесь тихие', 'батыр']
   },
   detective: {
     genre: 'Детектив',
@@ -44,11 +48,11 @@ const CONCEPT_MAP = {
     keywords: ['тарих', 'абай', 'abay', 'мұхтар', 'жүсіп', 'казах', 'қазақ', 'хан', 'батыр', 'history', 'тарихи', 'алаш', 'әуезов', 'көшпенділер', 'есенберлин', 'мағжан', 'шәкәрім', 'соқпақбаев', 'көшпенді']
   },
   psychology: {
-    genre: 'Психология',
-    keywords: ['психолог', 'саморазвит', 'мотиваци', 'табыс', 'өмір', 'ақыл', 'mindset', 'habits', 'успех', 'даму', 'күш', 'мақсат', 'әдет', 'атомдық', 'клир', 'карнеги', 'франкл', 'лидер', 'өзін-өзі', 'байлық']
+    genre: 'Саморазвитие',
+    keywords: ['психолог', 'саморазвит', 'мотиваци', 'табыс', 'өмір', 'ақыл', 'mindset', 'habits', 'успех', 'даму', 'күш', 'мақсат', 'әдет', 'атомдық', 'клир', 'карнеги', 'франкл', 'лидер', 'өзін-өзі', 'байлық', 'бизнес', 'предпринимательств', 'финансы', 'деньги', 'инвестици', 'менеджмент']
   },
   adventure: {
-    genre: 'Приключение',
+    genre: 'Приключения',
     keywords: ['приключен', 'саяхат', 'экспедици', 'робинзон', 'верн', 'дюма', 'adventure', 'остров', 'шытырман', 'теңіз', 'джунгли', 'қазына', 'сокровищ', 'treasure', 'саяхатшы']
   },
   romance: {
@@ -58,6 +62,14 @@ const CONCEPT_MAP = {
   poetry: {
     genre: 'Поэзия',
     keywords: ['поэзи', 'стих', 'стихотворен', 'өлең', 'жыр', 'дастан', 'ақын', 'poetry', 'poem', 'verse', 'пушкин', 'лермонтов', 'мұқағали', 'мақатаев', 'қасым']
+  },
+  children: {
+    genre: 'Детская литература',
+    keywords: ['детск', 'балалар', 'сказк', 'ертегі', 'школ', 'мектеп', 'денис', 'носов', 'драгунский', 'линдгрен', 'крапивин', 'барто', 'чуковский', 'малыш', 'карлсон']
+  },
+  classics: {
+    genre: 'Классика',
+    keywords: ['классик', 'толстой', 'достоевский', 'чехов', 'пушкин', 'лермонтов', 'тургенев', 'гоголь', 'булгаков', 'бунин', 'куприн', 'набоков', 'шекспир', 'диккенс']
   },
   academic: {
     genre: 'Оқулықтар',
@@ -86,6 +98,9 @@ function loadBooks() {
       if (fs.existsSync(p)) {
         const raw = fs.readFileSync(p, 'utf-8');
         cachedBooks = JSON.parse(raw);
+        if (Array.isArray(cachedBooks)) {
+          cachedBooks = cachedBooks.filter((b) => b.visible !== false);
+        }
         return cachedBooks;
       }
     }
@@ -199,6 +214,16 @@ export default async function handler(req, res) {
   const candidates = [];
   const lowerPrompt = cleanPrompt.toLowerCase();
 
+  // Detect explicit language in user query
+  let explicitLang = '';
+  if (lowerPrompt.includes('на английском') || lowerPrompt.includes('english') || lowerPrompt.includes('ағылшын')) {
+    explicitLang = 'English';
+  } else if (lowerPrompt.includes('на русском') || lowerPrompt.includes('русская литература') || lowerPrompt.includes('орысша')) {
+    explicitLang = 'Русский';
+  } else if (lowerPrompt.includes('қазақша') || lowerPrompt.includes('қазақ тілінде') || lowerPrompt.includes('на казахском')) {
+    explicitLang = 'Қазақ';
+  }
+
   for (let i = 0; i < allBooks.length; i++) {
     const b = allBooks[i];
     let score = 0;
@@ -206,10 +231,16 @@ export default async function handler(req, res) {
     const author = (b.author || '').toLowerCase();
     const desc = (b.description || '').toLowerCase();
     const genreStr = (Array.isArray(b.genre) ? b.genre.join(' ') : (b.genre || '')).toLowerCase();
+    const lang = (b.language || '');
 
     // Exact title match gets huge priority
     if (title === lowerPrompt || title.includes(lowerPrompt)) {
       score += 100;
+    }
+
+    // Explicit language priority
+    if (explicitLang && lang === explicitLang) {
+      score += 40;
     }
 
     // Meaningful token matches
@@ -226,6 +257,7 @@ export default async function handler(req, res) {
       if (genreStr.includes(kw)) score += 15;
       if (author.includes(kw)) score += 8;
       if (desc.includes(kw)) score += 6;
+      if (lang.toLowerCase().includes(kw)) score += 5;
     }
 
     // Genre alignment boost
@@ -257,6 +289,7 @@ export default async function handler(req, res) {
 
   // 3. Gemini AI Semantic Reranking & Personalized Insight
   let aiRerankedBooks = null;
+  let activeModel = 'gemini-2.0-flash';
 
   if (apiKey && topCandidates.length > 0) {
     try {
@@ -270,8 +303,8 @@ export default async function handler(req, res) {
       }));
 
       const langInstruction = userLang === 'kk'
-        ? 'Қазақ тілінде түсініктеме жаз (aiReason).'
-        : (userLang === 'ru' ? 'Напиши краткое пояснение на русском языке (aiReason).' : 'Write explanation in English (aiReason).');
+        ? 'Қазақ тілінде түсініктеме жаз (reason).'
+        : (userLang === 'ru' ? 'Напиши краткое пояснение на русском языке (reason).' : 'Write explanation in English (reason).');
 
       const systemPrompt = `You are the expert multilingual AI Librarian for NIS Kitap (Nazarbayev Intellectual Schools digital library).
 User query: "${cleanPrompt}"
@@ -285,41 +318,64 @@ TASK:
 2. Select ONLY books that genuinely match this user's query (up to 12 books). Do NOT select books that only happen to share irrelevant words.
 3. For each matching book, assign:
    - "id": number from candidate list
-   - "matchScore": integer between 70 and 99 reflecting relevance
-   - "aiReason": a short 1-sentence explanation of why this book matches the query in ${userLang === 'kk' ? 'Kazakh' : (userLang === 'ru' ? 'Russian' : 'English')}.
-4. Return response STRICTLY as a valid JSON array:
-[{"id": 1, "matchScore": 95, "aiReason": "..."}]`;
+   - "relevance": float between 0.70 and 0.99 reflecting relevance
+   - "reason": a short 1-sentence explanation of why this book matches the query in ${userLang === 'kk' ? 'Kazakh' : (userLang === 'ru' ? 'Russian' : 'English')}.
+4. Return response STRICTLY as a valid JSON object:
+{
+  "results": [
+    { "id": 1, "relevance": 0.96, "reason": "..." }
+  ]
+}`;
 
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: systemPrompt }] }],
-            generationConfig: {
-              temperature: 0.2,
-              maxOutputTokens: 600,
-            },
-          }),
+      const models = ['gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-2.5-flash'];
+      let response = null;
+
+      for (const m of models) {
+        try {
+          response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${m}:generateContent?key=${apiKey}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: systemPrompt }] }],
+                generationConfig: {
+                  temperature: 0.2,
+                  maxOutputTokens: 800,
+                },
+              }),
+            }
+          );
+          if (response.ok) {
+            activeModel = m;
+            break;
+          }
+        } catch {
+          // try next model
         }
-      );
+      }
 
-      if (response.ok) {
+      if (response && response.ok) {
         const data = await response.json();
         const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
         const cleanedJson = rawText.replace(/```(?:json)?/gi, '').replace(/```/g, '').trim();
         const parsed = JSON.parse(cleanedJson);
 
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        const items = Array.isArray(parsed) ? parsed : (parsed?.results && Array.isArray(parsed.results) ? parsed.results : []);
+
+        if (items.length > 0) {
           aiRerankedBooks = [];
-          for (const item of parsed) {
+          for (const item of items) {
             const cand = topCandidates.find((c, idx) => (idx + 1) === Number(item.id));
             if (cand) {
+              const matchScore = item.relevance
+                ? Math.round(Number(item.relevance) * 100)
+                : Number(item.matchScore || 85);
+              const reason = String(item.reason || item.aiReason || '');
               aiRerankedBooks.push({
                 ...cand.book,
-                matchScore: Number(item.matchScore || 85),
-                aiReason: String(item.aiReason || ''),
+                matchScore,
+                aiReason: reason,
               });
             }
           }
@@ -332,7 +388,7 @@ TASK:
 
   // 4. Final selection: if Gemini reranked, use it; otherwise, use high-precision pre-scored candidates
   let finalBooks = [];
-  let source = 'gemini-2.5-flash';
+  let source = activeModel;
 
   if (aiRerankedBooks && aiRerankedBooks.length > 0) {
     finalBooks = aiRerankedBooks;
@@ -341,11 +397,11 @@ TASK:
     finalBooks = topCandidates.slice(0, 15).map((c) => {
       let defaultReason = '';
       if (userLang === 'kk') {
-        defaultReason = `«${c.book.genre || 'Кітап'}» санаты бойынша сәйкестік`;
+        defaultReason = `«${c.book.genre || 'Кітап'}» санаты және сұраныс бойынша сәйкестік`;
       } else if (userLang === 'en') {
-        defaultReason = `Matching genre: ${c.book.genre || 'Book'}`;
+        defaultReason = `Matching genre «${c.book.genre || 'Book'}»`;
       } else {
-        defaultReason = `Совпадение по жанру: ${c.book.genre || 'Книга'}`;
+        defaultReason = `Совпадение по жанру «${c.book.genre || 'Книга'}»`;
       }
       return {
         ...c.book,
