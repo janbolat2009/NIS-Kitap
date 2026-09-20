@@ -27,7 +27,7 @@ export const CANONICAL_GENRE_MAP = {
     canonical: 'Приключения',
     i18nKey: 'genres.adventure',
     keywords: ['приключен', 'adventure', 'шытырман', 'саяхат', 'экспедици', 'саяхатшы'],
-    accent: '#10B981',
+    accent: '#0D9488', // Teal
     route: '/adventure',
     icon: 'adventure',
   },
@@ -36,7 +36,7 @@ export const CANONICAL_GENRE_MAP = {
     canonical: 'Энциклопедии',
     i18nKey: 'genres.encyclopedia',
     keywords: ['энциклопед', 'encyclopedia', 'справочник', 'анықтамалық'],
-    accent: '#0284C7',
+    accent: '#0284C7', // Sky Blue
     route: '/catalog?genre=' + encodeURIComponent('Энциклопедии'),
     icon: 'encyclopedia',
   },
@@ -45,7 +45,7 @@ export const CANONICAL_GENRE_MAP = {
     canonical: 'Фэнтези',
     i18nKey: 'genres.fantasy',
     keywords: ['фэнтези', 'fantasy', 'қиял-ғажайып', 'магия', 'сиқыр'],
-    accent: '#818CF8',
+    accent: '#818CF8', // Indigo
     route: '/fantasy',
     icon: 'fantasy',
   },
@@ -54,7 +54,7 @@ export const CANONICAL_GENRE_MAP = {
     canonical: 'Романтика',
     i18nKey: 'genres.romantica',
     keywords: ['романтик', 'romanc', 'махаббат', 'сүйіспеншілік', 'ғашық'],
-    accent: '#F43F5E',
+    accent: '#F43F5E', // Rose
     route: '/romantica',
     icon: 'romantica',
   },
@@ -63,7 +63,7 @@ export const CANONICAL_GENRE_MAP = {
     canonical: 'Учебники',
     i18nKey: 'genres.textbooks',
     keywords: ['учебник', 'textbook', 'оқулық', 'хрестоматия'],
-    accent: '#F97316',
+    accent: '#F97316', // Orange
     route: '/catalog?genre=' + encodeURIComponent('Учебники'),
     icon: 'textbooks',
   },
@@ -71,8 +71,8 @@ export const CANONICAL_GENRE_MAP = {
     key: 'biography',
     canonical: 'Биография',
     i18nKey: 'genres.biography',
-    keywords: ['биограф', 'biograph', 'өмірбаян', 'мемуар', 'тұлға'],
-    accent: '#EC4899',
+    keywords: ['биограф', 'biograph', 'өмірбаян', 'мемуар', 'тұлға', 'ғұмырнама'],
+    accent: '#EC4899', // Pink
     route: '/biography',
     icon: 'biography',
   },
@@ -81,7 +81,7 @@ export const CANONICAL_GENRE_MAP = {
     canonical: 'Фантастика',
     i18nKey: 'genres.fantastica',
     keywords: ['фантастик', 'sci-fi', 'scifi', 'ғылыми фантастика', 'космос', 'болашақ'],
-    accent: '#38BDF8',
+    accent: '#38BDF8', // Cyan
     route: '/fantastica',
     icon: 'fantastica',
   },
@@ -89,8 +89,8 @@ export const CANONICAL_GENRE_MAP = {
     key: 'teacherGuides',
     canonical: 'Методические пособия',
     i18nKey: 'genres.teacherGuides',
-    keywords: ['методическ', 'teacher', 'әдістемелік', 'пособие', 'нұсқаулық'],
-    accent: '#14B8A6',
+    keywords: ['методическ', 'teacher', 'әдістемелік', 'пособие', 'нұсқаулық', 'педагогик'],
+    accent: '#14B8A6', // Mint Teal
     route: '/catalog?genre=' + encodeURIComponent('Методические пособия'),
     icon: 'teacherGuides',
   },
@@ -99,7 +99,7 @@ export const CANONICAL_GENRE_MAP = {
     canonical: 'Поэзия',
     i18nKey: 'genres.poetry',
     keywords: ['поэзи', 'стих', 'poet', 'poem', 'өлең', 'жыр', 'лирик', 'дастан'],
-    accent: '#6366F1',
+    accent: '#6366F1', // Royal Indigo
     route: '/poetry',
     icon: 'poetry',
   },
@@ -108,7 +108,7 @@ export const CANONICAL_GENRE_MAP = {
     canonical: 'Детектив',
     i18nKey: 'genres.detective',
     keywords: ['детектив', 'detective', 'тыңшы', 'триллер', 'тергеу', 'қылмыс'],
-    accent: '#F59E0B',
+    accent: '#F59E0B', // Amber
     route: '/detective',
     icon: 'detective',
   },
@@ -116,8 +116,8 @@ export const CANONICAL_GENRE_MAP = {
     key: 'classics',
     canonical: 'Классика',
     i18nKey: 'genres.classics',
-    keywords: ['классик', 'проза', 'повест', 'fiction', 'роман'],
-    accent: '#EAB308',
+    keywords: ['классик', 'проза', 'повест', 'fiction', 'роман', 'общая литература'],
+    accent: '#EAB308', // Gold
     route: '/catalog?genre=' + encodeURIComponent('Классика'),
     icon: 'classics',
   },
@@ -126,7 +126,7 @@ export const CANONICAL_GENRE_MAP = {
     canonical: 'Драма',
     i18nKey: 'genres.drama',
     keywords: ['драма', 'трагедия', 'пьеса', 'театр'],
-    accent: '#EF4444',
+    accent: '#EF4444', // Red
     route: '/catalog?genre=' + encodeURIComponent('Драма'),
     icon: 'drama',
   },
@@ -134,10 +134,154 @@ export const CANONICAL_GENRE_MAP = {
     key: 'fairyTales',
     canonical: 'Сказки',
     i18nKey: 'genres.fairyTales',
-    keywords: ['сказк', 'ертегі', 'fairy', 'детская литература', 'аңыз'],
-    accent: '#A855F7',
+    keywords: ['сказк', 'ертегі', 'fairy', 'аңыз', 'фольклор'],
+    accent: '#A855F7', // Violet
     route: '/catalog?genre=' + encodeURIComponent('Сказки'),
     icon: 'fairyTales',
+  },
+  mathematics: {
+    key: 'mathematics',
+    canonical: 'Математика',
+    i18nKey: 'genres.mathematics',
+    keywords: ['математик', 'algebra', 'geometry', 'math', 'алгебр', 'геометри'],
+    accent: '#2563EB', // Royal Blue
+    route: '/catalog?genre=' + encodeURIComponent('Математика'),
+    icon: 'mathematics',
+  },
+  physics: {
+    key: 'physics',
+    canonical: 'Физика',
+    i18nKey: 'genres.physics',
+    keywords: ['физик', 'physics', 'квант', 'астроном', 'астрономия'],
+    accent: '#7C3AED', // Deep Violet
+    route: '/catalog?genre=' + encodeURIComponent('Физика'),
+    icon: 'physics',
+  },
+  chemistry: {
+    key: 'chemistry',
+    canonical: 'Химия',
+    i18nKey: 'genres.chemistry',
+    keywords: ['хими', 'chemistry', 'бейорганика', 'органика'],
+    accent: '#06B6D4', // Cyan
+    route: '/catalog?genre=' + encodeURIComponent('Химия'),
+    icon: 'chemistry',
+  },
+  biology: {
+    key: 'biology',
+    canonical: 'Биология',
+    i18nKey: 'genres.biology',
+    keywords: ['биолог', 'biology', 'ботаник', 'зоолог', 'генетик', 'анатоми'],
+    accent: '#16A34A', // Green
+    route: '/catalog?genre=' + encodeURIComponent('Биология'),
+    icon: 'biology',
+  },
+  computerScience: {
+    key: 'computerScience',
+    canonical: 'Информатика',
+    i18nKey: 'genres.computerScience',
+    keywords: ['информатик', 'computer', 'программир', 'it', 'бағдарламалау', 'цифрлық', 'алгоритм'],
+    accent: '#0284C7', // Sky Blue
+    route: '/catalog?genre=' + encodeURIComponent('Информатика'),
+    icon: 'computerScience',
+  },
+  history: {
+    key: 'history',
+    canonical: 'История',
+    i18nKey: 'genres.history',
+    keywords: ['тарих', 'истори', 'history', 'тарихи', 'тарихи роман', 'историческая литература', 'историческая проза'],
+    accent: '#B45309', // Warm Bronze
+    route: '/catalog?genre=' + encodeURIComponent('История'),
+    icon: 'history',
+  },
+  languages: {
+    key: 'languages',
+    canonical: 'Изучение языков',
+    i18nKey: 'genres.languages',
+    keywords: ['английский язык', 'французский язык', 'немецкий язык', 'китайский язык', 'тіл білімі', 'языкознание', 'english', 'language', 'тіл '],
+    accent: '#3B82F6', // Cobalt Blue
+    route: '/catalog?genre=' + encodeURIComponent('Английский язык'),
+    icon: 'languages',
+  },
+  philosophy: {
+    key: 'philosophy',
+    canonical: 'Философия',
+    i18nKey: 'genres.philosophy',
+    keywords: ['философ', 'philosophy', 'ойшыл', 'даналық', 'логика'],
+    accent: '#9333EA', // Purple
+    route: '/catalog?genre=' + encodeURIComponent('Философия'),
+    icon: 'philosophy',
+  },
+  art: {
+    key: 'art',
+    canonical: 'Искусство и культура',
+    i18nKey: 'genres.art',
+    keywords: ['искусств', 'өнер', 'art', 'живопись', 'сурет', 'мәдениет', 'культура'],
+    accent: '#E11D48', // Crimson Rose
+    route: '/catalog?genre=' + encodeURIComponent('Искусство'),
+    icon: 'art',
+  },
+  literaryStudies: {
+    key: 'literaryStudies',
+    canonical: 'Литературоведение',
+    i18nKey: 'genres.literaryStudies',
+    keywords: ['әдебиеттану', 'литературоведен', 'әдебиет', 'сын'],
+    accent: '#D97706', // Ochre Gold
+    route: '/catalog?genre=' + encodeURIComponent('Әдебиеттану'),
+    icon: 'literaryStudies',
+  },
+  childrenLiterature: {
+    key: 'childrenLiterature',
+    canonical: 'Детская литература',
+    i18nKey: 'genres.childrenLiterature',
+    keywords: ['балалар әдебиеті', 'детская литература', 'children', 'балалар'],
+    accent: '#FB923C', // Warm Coral
+    route: '/catalog?genre=' + encodeURIComponent('Балалар әдебиеті'),
+    icon: 'childrenLiterature',
+  },
+  socialSciences: {
+    key: 'socialSciences',
+    canonical: 'Экономика и общество',
+    i18nKey: 'genres.socialSciences',
+    keywords: ['экономик', 'қаржы', 'финанс', 'бизнес', 'business', 'политик', 'саясат', 'саясаттану', 'society'],
+    accent: '#059669', // Deep Emerald
+    route: '/catalog?genre=' + encodeURIComponent('Экономика'),
+    icon: 'socialSciences',
+  },
+  satire: {
+    key: 'satire',
+    canonical: 'Сатира и юмор',
+    i18nKey: 'genres.satire',
+    keywords: ['сатир', 'юмор', 'satire', 'күлкі', 'әзіл', 'сықақ'],
+    accent: '#F59E0B', // Amber
+    route: '/catalog?genre=' + encodeURIComponent('Сатира'),
+    icon: 'satire',
+  },
+  geography: {
+    key: 'geography',
+    canonical: 'География',
+    i18nKey: 'genres.geography',
+    keywords: ['географ', 'geography', 'өлкетану', 'атлас', 'карта'],
+    accent: '#0891B2', // Cyan Teal
+    route: '/catalog?genre=' + encodeURIComponent('География'),
+    icon: 'geography',
+  },
+  youngAdult: {
+    key: 'youngAdult',
+    canonical: 'Молодежная литература',
+    i18nKey: 'genres.youngAdult',
+    keywords: ['молодежн', 'жасөспірім', 'young adult'],
+    accent: '#8B5CF6', // Purple Glow
+    route: '/catalog?genre=' + encodeURIComponent('Молодежная литература'),
+    icon: 'youngAdult',
+  },
+  science: {
+    key: 'science',
+    canonical: 'Наука',
+    i18nKey: 'genres.science',
+    keywords: ['ғылым', 'наука', 'популярная наука', 'танымдық', 'science'],
+    accent: '#0EA5E9', // Sky Cyan
+    route: '/catalog?genre=' + encodeURIComponent('Ғылым'),
+    icon: 'science',
   },
 };
 
@@ -270,17 +414,24 @@ export function getUniqueGenres(books) {
   }
 
   // Add any dynamic ungrouped genres with >= 10 books
+  const DYNAMIC_PALETTE = [
+    '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EC4899', '#06B6D4', '#E11D48', '#14B8A6'
+  ];
+  let pIdx = 0;
   for (const [name, count] of Object.entries(ungroupedCounts)) {
     if (count >= 10) {
+      const color = DYNAMIC_PALETTE[pIdx % DYNAMIC_PALETTE.length];
+      pIdx++;
+      const normKey = name.toLowerCase().replace(/[\s,]+/g, '-');
       result.push({
-        key: name.toLowerCase().replace(/\s+/g, '-'),
+        key: normKey,
         value: name,
         label: name,
         count,
-        color: '#64748B',
-        accent: '#64748B',
+        color: color,
+        accent: color,
         route: '/catalog?genre=' + encodeURIComponent(name),
-        icon: 'default',
+        icon: normKey,
       });
     }
   }
