@@ -7,6 +7,7 @@ import { fileURLToPath } from 'url';
 import { dirname, resolve } from 'path';
 import openaiRouter from './routes/openai.js';
 import geminiRouter from './routes/gemini.js';
+import reservationsRouter from './routes/reservations.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -58,6 +59,9 @@ const bookSchema = new mongoose.Schema({
   year: { type: String, required: true },
   copies: { type: Number, required: true },
   language: { type: String, required: true },
+  isbn: { type: String, default: '' },
+  cover_image: { type: String, default: '' },
+  status: { type: String, default: 'available', enum: ['available', 'borrowed', 'reserved', 'unavailable'] },
   embedding: [Number],
 });
 const Book = mongoose.model('Book', bookSchema);
@@ -81,6 +85,7 @@ function cosineSimilarity(vecA, vecB) {
 
 app.use('/api/openai', openaiRouter);
 app.use('/api/gemini', geminiRouter);
+app.use('/api/reservations', reservationsRouter);
 
 app.get('/', (req, res) => {
   res.json({

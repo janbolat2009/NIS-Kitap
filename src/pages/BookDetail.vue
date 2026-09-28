@@ -222,6 +222,24 @@
             </p>
           </div>
 
+          <div class="user-reservation-card">
+            <div class="user-res-header">
+              <span class="res-card-label">{{ t('bookDetail.readerInfoLabel') || 'Данные читателя для бронирования' }}</span>
+              <span v-if="book.isbn" class="res-isbn-badge">ISBN: {{ book.isbn }}</span>
+            </div>
+            <div class="user-res-row">
+              <span class="user-res-name">{{ userName || t('nav.reader') }}</span>
+              <span class="user-res-email">{{ userEmail }}</span>
+            </div>
+            <div class="email-notice-badge">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                <polyline points="22,6 12,13 2,6"></polyline>
+              </svg>
+              <span>{{ t('bookDetail.emailNoticeText') || 'Уведомление с деталями брони будет отправлено библиотекарю' }}</span>
+            </div>
+          </div>
+
           <div class="nis-rules-notice">
             <span class="notice-icon">ℹ️</span>
             <span>{{ t('bookDetail.rulesNotice') }}</span>
@@ -229,9 +247,10 @@
         </div>
 
         <div class="res-modal-footer">
-          <button class="btn-cancel" @click="showReservationModal = false">{{ t('bookDetail.cancelBtn') }}</button>
-          <button class="btn-confirm-reserve" @click="confirmReservation">
-            {{ t('bookDetail.confirmReserveBtn') }}
+          <button class="btn-cancel" :disabled="isReserving" @click="showReservationModal = false">{{ t('bookDetail.cancelBtn') }}</button>
+          <button class="btn-confirm-reserve" :disabled="isReserving" @click="confirmReservation">
+            <span v-if="isReserving" class="btn-loading-spinner"></span>
+            <span>{{ isReserving ? (t('bookDetail.reservingProgress') || 'Оформление...') : t('bookDetail.confirmReserveBtn') }}</span>
           </button>
         </div>
       </div>
@@ -301,6 +320,7 @@ export default {
     const showReservationModal = ref(false);
     const reservationDays = ref(14);
     const isReserved = ref(false);
+    const isReserving = ref(false);
     const isFavorite = ref(false);
     const toastMessage = ref('');
 
@@ -376,18 +396,37 @@ export default {
     });
 
     const openReservationModal = () => {
+      if (!isLoggedIn.value) {
+        showToast(t('bookDetail.loginRequiredNotice') || 'Для бронирования книги необходимо войти в аккаунт', 'warn');
+        showRegister.value = true;
+        return;
+      }
       showReservationModal.value = true;
     };
 
-    const confirmReservation = () => {
-      const due = new Date(Date.now() + reservationDays.value * 24 * 60 * 60 * 1000).toISOString();
-      const res = reserveBook(book.value, due);
-      showReservationModal.value = false;
-      if (res.success) {
-        isReserved.value = true;
-        showToast(t('bookDetail.reservedSuccess'), 'success');
-      } else {
-        showToast(res.message, 'warn');
+    const confirmReservation = async () => {
+      if (!isLoggedIn.value) {
+        showRegister.value = true;
+        return;
+      }
+      isReserving.value = true;
+      try {
+        const due = new Date(Date.now() + reservationDays.value * 24 * 60 * 60 * 1000).toISOString();
+        const res = await reserveBook(book.value, due, {
+          name: userName.value,
+          email: userEmail.value,
+        });
+        showReservationModal.value = false;
+        if (res.success) {
+          isReserved.value = true;
+          showToast(t('bookDetail.reservedSuccess'), 'success');
+        } else {
+          showToast(res.message, 'warn');
+        }
+      } catch (err) {
+        showToast(err.message || 'Ошибка бронирования', 'warn');
+      } finally {
+        isReserving.value = false;
       }
     };
 
@@ -428,9 +467,9 @@ export default {
       userAvatar.value = payload.avatar || '';
       isLoggedIn.value = true;
       showRegister.value = false;
-      showProfile.value = true;
       localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: userAvatar.value }));
       localStorage.setItem('isLoggedIn', 'true');
+      showReservationModal.value = true;
     };
 
     const onLoggedIn = (payload) => {
@@ -441,6 +480,7 @@ export default {
       showRegister.value = false;
       localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: userAvatar.value }));
       localStorage.setItem('isLoggedIn', 'true');
+      showReservationModal.value = true;
     };
 
     const onProfileUpdated = (data) => {
@@ -472,6 +512,7 @@ export default {
       showReservationModal,
       reservationDays,
       isReserved,
+      isReserving,
       isFavorite,
       toastMessage,
       openReservationModal,
@@ -940,6 +981,75 @@ export default {
   font-size: 13px;
   color: #38BDF8;
   margin: 0;
+}
+
+.user-reservation-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px;
+  margin-bottom: 16px;
+}
+.user-res-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+.res-card-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-weight: 700;
+  color: #38BDF8;
+}
+.res-isbn-badge {
+  font-size: 11px;
+  font-family: monospace;
+  background: rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: 6px;
+  color: #E2E8F0;
+}
+.user-res-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+.user-res-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #FFFFFF;
+}
+.user-res-email {
+  font-size: 12.5px;
+  color: #94A3B8;
+}
+.email-notice-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: #10B981;
+  background: rgba(16, 185, 129, 0.1);
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+.btn-loading-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: btnSpin 0.7s linear infinite;
+  margin-right: 6px;
+  vertical-align: middle;
+}
+@keyframes btnSpin {
+  to { transform: rotate(360deg); }
 }
 
 .nis-rules-notice {

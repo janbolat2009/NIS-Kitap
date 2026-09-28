@@ -60,7 +60,7 @@ dist/
 *.bak
 __pycache__/
 
-tmp/
-temp/
+server/data/search_limits_cache.json
 server/data/excel/
+server/logs/
 scratch/

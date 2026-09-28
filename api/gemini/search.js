@@ -131,11 +131,57 @@ function detectQueryLanguage(text) {
   return 'en';
 }
 
+// Weekly Search Limit Tracking for Serverless
+const serverlessLimits = new Map();
+const WEEKLY_LIMIT = 3;
+const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+
+function checkLimit(email) {
+  const cleanEmail = email.toLowerCase().trim();
+  const now = Date.now();
+  let userRecord = serverlessLimits.get(cleanEmail);
+
+  if (!userRecord) {
+    userRecord = {
+      count: 1,
+      cycleStartedAt: now,
+      resetAt: now + SEVEN_DAYS_MS,
+    };
+    serverlessLimits.set(cleanEmail, userRecord);
+    return { allowed: true, limit: WEEKLY_LIMIT, used: 1, remaining: WEEKLY_LIMIT - 1, resetAt: new Date(userRecord.resetAt).toISOString() };
+  }
+
+  // Auto-reset every 7 days
+  if (now >= userRecord.resetAt) {
+    userRecord.count = 1;
+    userRecord.cycleStartedAt = now;
+    userRecord.resetAt = now + SEVEN_DAYS_MS;
+    serverlessLimits.set(cleanEmail, userRecord);
+    return { allowed: true, limit: WEEKLY_LIMIT, used: 1, remaining: WEEKLY_LIMIT - 1, resetAt: new Date(userRecord.resetAt).toISOString(), wasReset: true };
+  }
+
+  if (userRecord.count >= WEEKLY_LIMIT) {
+    return {
+      allowed: false,
+      limit: WEEKLY_LIMIT,
+      used: userRecord.count,
+      remaining: 0,
+      resetAt: new Date(userRecord.resetAt).toISOString(),
+      resetInMs: userRecord.resetAt - now,
+      message: `Weekly limit of ${WEEKLY_LIMIT} Gemini search requests has been reached.`,
+    };
+  }
+
+  userRecord.count += 1;
+  serverlessLimits.set(cleanEmail, userRecord);
+  return { allowed: true, limit: WEEKLY_LIMIT, used: userRecord.count, remaining: Math.max(0, WEEKLY_LIMIT - userRecord.count), resetAt: new Date(userRecord.resetAt).toISOString() };
+}
+
 export default async function handler(req, res) {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-user-email');
 
   if (req.method === 'OPTIONS' || req.method === 'HEAD') {
     return res.status(200).end();
@@ -143,11 +189,29 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.VITE_GEMINI_API_KEY;
+    const email = req.query?.email || req.headers['x-user-email'];
+    let userLimit = null;
+    if (email) {
+      const cleanEmail = String(email).toLowerCase().trim();
+      const rec = serverlessLimits.get(cleanEmail);
+      if (rec && Date.now() < rec.resetAt) {
+        userLimit = {
+          limit: WEEKLY_LIMIT,
+          used: rec.count,
+          remaining: Math.max(0, WEEKLY_LIMIT - rec.count),
+          resetAt: new Date(rec.resetAt).toISOString(),
+        };
+      } else {
+        userLimit = { limit: WEEKLY_LIMIT, used: 0, remaining: WEEKLY_LIMIT, resetAt: null };
+      }
+    }
     return res.status(200).json({
       status: 'OK',
       message: 'NIS Kitap Gemini Multilingual AI Search Serverless Endpoint',
       hasApiKey: !!apiKey,
       model: 'gemini-2.5-flash',
+      weeklyLimit: WEEKLY_LIMIT,
+      userLimit,
       timestamp: new Date().toISOString(),
     });
   }
@@ -165,6 +229,30 @@ export default async function handler(req, res) {
       body = {};
     }
   }
+
+  // 1. REQUIRE REGISTERED USER
+  const userEmail = body?.userEmail || req.headers['x-user-email'];
+  if (!userEmail || typeof userEmail !== 'string' || !userEmail.trim()) {
+    return res.status(401).json({
+      error: 'unauthorized',
+      message: 'Gemini-powered book search is only available to registered users. Please log in or register.',
+    });
+  }
+
+  // 2. CHECK 3-REQUESTS-PER-WEEK LIMIT WITH AUTOMATIC 7-DAY RESET
+  const limitCheck = checkLimit(userEmail);
+  if (!limitCheck.allowed) {
+    return res.status(429).json({
+      error: 'limit_reached',
+      message: limitCheck.message,
+      limit: limitCheck.limit,
+      used: limitCheck.used,
+      remaining: 0,
+      resetAt: limitCheck.resetAt,
+      resetInMs: limitCheck.resetInMs,
+    });
+  }
+
   const prompt = body?.prompt || body?.query || '';
   if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
     return res.status(400).json({ error: 'Поле "prompt" обязательно' });
@@ -416,5 +504,11 @@ TASK:
     query: cleanPrompt,
     keywords: searchKeywords,
     source,
+    limit: {
+      limit: limitCheck.limit,
+      used: limitCheck.used,
+      remaining: limitCheck.remaining,
+      resetAt: limitCheck.resetAt,
+    },
   });
 }

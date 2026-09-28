@@ -1,9 +1,16 @@
 import express from 'express';
 import { GoogleGenAI } from '@google/genai';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import mongoose from 'mongoose';
 import { Book } from '../server.js';
+import { checkAndIncrementSearchLimit, getUserSearchLimit, WEEKLY_SEARCH_LIMIT } from '../services/searchLimitService.js';
 import 'dotenv/config';
 
 const router = express.Router();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const geminiApiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY;
 let ai = null;
@@ -95,17 +102,74 @@ function detectQueryLanguage(text) {
   return 'en';
 }
 
+// Local cache for fallback books
+let localBooksCache = null;
+function getLocalBooks() {
+  if (localBooksCache && localBooksCache.length > 0) return localBooksCache;
+  const candidates = [
+    path.resolve(__dirname, '../data/books.json'),
+    path.resolve(__dirname, '../../public/data/books.json'),
+    path.resolve(__dirname, '../../data/books.json'),
+  ];
+  for (const p of candidates) {
+    if (fs.existsSync(p)) {
+      try {
+        localBooksCache = JSON.parse(fs.readFileSync(p, 'utf-8'));
+        return localBooksCache;
+      } catch {}
+    }
+  }
+  return [];
+}
+
 router.get('/test', (req, res) => {
   res.json({
     message: 'Google Gemini AI route is operational!',
     timestamp: new Date().toISOString(),
     hasApiKey: !!geminiApiKey,
     model: 'gemini-2.5-flash',
+    weeklyLimit: WEEKLY_SEARCH_LIMIT,
   });
 });
 
+/**
+ * GET /api/gemini/limit
+ * Check remaining Gemini search quota and reset time for a registered user.
+ */
+router.get('/limit', async (req, res) => {
+  const email = req.query.email || req.headers['x-user-email'];
+  if (!email) {
+    return res.json({
+      isLoggedIn: false,
+      limit: WEEKLY_SEARCH_LIMIT,
+      used: 0,
+      remaining: WEEKLY_SEARCH_LIMIT,
+      message: 'Gemini search is available to registered users (3 requests per week).',
+    });
+  }
+
+  const limitInfo = await getUserSearchLimit(email);
+  return res.json(limitInfo);
+});
+
+/**
+ * POST /api/gemini/search
+ * Intelligent book search with Gemini AI.
+ * ENFORCEMENT:
+ * 1. Only available to registered users (userEmail required).
+ * 2. 3 requests per user per week (automatically resets every 7 days).
+ */
 router.post('/search', async (req, res) => {
-  const { prompt } = req.body;
+  const { prompt, userEmail } = req.body;
+  const email = userEmail || req.headers['x-user-email'];
+
+  // 1. REQUIRE REGISTERED USER
+  if (!email || typeof email !== 'string' || !email.trim()) {
+    return res.status(401).json({
+      error: 'unauthorized',
+      message: 'Gemini-powered book search is only available to registered users. Please log in or register.',
+    });
+  }
 
   if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
     return res.status(400).json({ error: 'Поле "prompt" обязательно' });
@@ -113,6 +177,21 @@ router.post('/search', async (req, res) => {
 
   const cleanPrompt = prompt.trim();
   const userLang = detectQueryLanguage(cleanPrompt);
+
+  // 2. CHECK & ENFORCE 7-DAY WEEKLY LIMIT (3 REQUESTS)
+  const limitCheck = await checkAndIncrementSearchLimit(email, cleanPrompt);
+  if (!limitCheck.allowed) {
+    return res.status(429).json({
+      error: 'limit_reached',
+      message: limitCheck.message,
+      limit: limitCheck.limit,
+      used: limitCheck.used,
+      remaining: limitCheck.remaining,
+      resetAt: limitCheck.resetAt,
+      cycleStartedAt: limitCheck.cycleStartedAt,
+      resetInMs: limitCheck.resetInMs,
+    });
+  }
 
   try {
     const rawTokens = cleanPrompt
@@ -141,9 +220,9 @@ router.post('/search', async (req, res) => {
 
     const searchKeywords = Array.from(conceptKeywords);
 
-    // MongoDB search
+    // MongoDB search or local fallback
     let books = [];
-    if (Book && Book.find) {
+    if (Book && Book.find && mongoose.connection.readyState === 1) {
       const orConditions = searchKeywords.map((kw) => ({
         $or: [
           { title: { $regex: kw, $options: 'i' } },
@@ -154,8 +233,21 @@ router.post('/search', async (req, res) => {
       }));
 
       if (orConditions.length > 0) {
-        books = await Book.find({ $or: orConditions }).lean().limit(50);
+        try {
+          books = await Book.find({ $or: orConditions }).lean().limit(50);
+        } catch (dbErr) {
+          console.warn('MongoDB search query error:', dbErr.message);
+        }
       }
+    }
+
+    // Fallback to local catalog if MongoDB returned empty
+    if (books.length === 0) {
+      const allLocal = getLocalBooks();
+      books = allLocal.filter((b) => {
+        const text = `${b.title} ${b.author} ${b.description || ''} ${Array.isArray(b.genre) ? b.genre.join(' ') : b.genre}`.toLowerCase();
+        return searchKeywords.some((kw) => text.includes(kw.toLowerCase()));
+      }).slice(0, 50);
     }
 
     if (books.length === 0) {
@@ -165,6 +257,13 @@ router.post('/search', async (req, res) => {
         keywords: searchKeywords,
         source: 'no-match',
         message: 'Книги по вашему запросу не найдены',
+        limit: {
+          limit: limitCheck.limit,
+          used: limitCheck.used,
+          remaining: limitCheck.remaining,
+          resetAt: limitCheck.resetAt,
+          cycleStartedAt: limitCheck.cycleStartedAt,
+        },
       });
     }
 
@@ -249,7 +348,7 @@ Select books that genuinely match user intent. Output ONLY a JSON array:
       finalBooks = topCandidates.slice(0, 15).map((c) => ({
         ...c,
         matchScore: Math.min(95, Math.max(60, Math.round(c.candidateScore))),
-        aiReason: userLang === 'kk' ? `«${c.genre || 'Кітап'}» санаты бойынша` : `Совпадение по жанру: ${c.genre || 'Книга'}`,
+        aiReason: userLang === 'kk' ? `«${c.genre || 'Кітап'}» санаты бойынша` : (userLang === 'en' ? `Matches genre: ${c.genre || 'Book'}` : `Совпадение по жанру: ${c.genre || 'Книга'}`),
       }));
     }
 
@@ -258,6 +357,13 @@ Select books that genuinely match user intent. Output ONLY a JSON array:
       query: cleanPrompt,
       keywords: searchKeywords,
       source: aiRerankedBooks ? 'gemini-2.5-flash' : 'smart-multilingual-scoring',
+      limit: {
+        limit: limitCheck.limit,
+        used: limitCheck.used,
+        remaining: limitCheck.remaining,
+        resetAt: limitCheck.resetAt,
+        cycleStartedAt: limitCheck.cycleStartedAt,
+      },
     });
   } catch (error) {
     console.error('❌ Ошибка Gemini Router:', error.message);

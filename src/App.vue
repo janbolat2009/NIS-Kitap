@@ -117,6 +117,31 @@
             </button>
           </div>
 
+          <!-- Weekly Gemini Quota Indicator -->
+          <div class="search-quota-container">
+            <div v-if="!isLoggedIn" class="quota-pill guest" @click="showRegister = true">
+              <span class="quota-pill-icon">🔒</span>
+              <span class="quota-pill-text">{{ t('aiSearch.guestLimitNotice') }}</span>
+              <span class="quota-pill-action">{{ t('nav.login') }} &rarr;</span>
+            </div>
+
+            <div 
+              v-else 
+              class="quota-pill" 
+              :class="remainingSearches === 0 ? 'depleted' : 'active'" 
+              @click="remainingSearches === 0 ? (showLimitModal = true) : null"
+            >
+              <span class="quota-pill-icon">{{ remainingSearches === 0 ? '⏳' : '✨' }}</span>
+              <span v-if="remainingSearches > 0" class="quota-pill-text">
+                {{ t('aiSearch.quotaRemaining').replace('{count}', remainingSearches) }}
+              </span>
+              <span v-else class="quota-pill-text">
+                {{ t('aiSearch.limitDepletedShort') }} <b>{{ formattedResetTimeShort }}</b> ({{ formattedResetCountdown }})
+              </span>
+              <span v-if="remainingSearches === 0" class="quota-pill-action">&rsaquo;</span>
+            </div>
+          </div>
+
           <!-- Suggestion Chips -->
           <div class="suggestion-chips-row">
             <span class="chips-label">{{ t('aiSearch.ideas') }}</span>
@@ -342,6 +367,80 @@
       </div>
     </div>
 
+    <!-- Gemini Search Limit Reached Modal -->
+    <div v-if="showLimitModal" class="apple-modal-overlay" @click="showLimitModal = false">
+      <div class="modal-wrapper limit-modal-wrapper glass-panel" @click.stop>
+        <button class="modal-close-icon" @click="showLimitModal = false" aria-label="Close">✕</button>
+
+        <div class="limit-modal-header">
+          <div class="limit-icon-circle">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <polyline points="12 6 12 12 16 14"></polyline>
+            </svg>
+          </div>
+          <h3 class="limit-title">{{ t('aiSearch.limitReachedTitle') }}</h3>
+          <p class="limit-subtitle">{{ t('aiSearch.limitReachedDesc') }}</p>
+        </div>
+
+        <div class="limit-modal-body">
+          <div class="limit-quota-card">
+            <div class="quota-stat-row">
+              <span class="quota-stat-label">Использовано запросов:</span>
+              <span class="quota-stat-badge-depleted">3 из 3</span>
+            </div>
+            <div class="quota-divider"></div>
+            <div class="quota-reset-block">
+              <span class="quota-reset-title">{{ t('aiSearch.limitResetLabel') }}</span>
+              <div class="quota-reset-datetime">{{ formattedResetTimeFull }}</div>
+              <div class="quota-reset-countdown">({{ formattedResetCountdown }})</div>
+            </div>
+          </div>
+
+          <div class="limit-help-card">
+            <span class="limit-help-icon">💡</span>
+            <p>{{ t('aiSearch.limitResetNotice') }}</p>
+          </div>
+        </div>
+
+        <div class="limit-modal-actions">
+          <button class="apple-btn-primary limit-btn-catalog" @click="goToCatalog">
+            {{ t('aiSearch.goToCatalogBtn') }}
+          </button>
+          <button class="limit-btn-dismiss" @click="showLimitModal = false">
+            {{ t('aiSearch.understandBtn') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Auth Required Modal for Gemini Search -->
+    <div v-if="showAuthPromptModal" class="apple-modal-overlay" @click="showAuthPromptModal = false">
+      <div class="modal-wrapper auth-prompt-modal glass-panel" @click.stop>
+        <button class="modal-close-icon" @click="showAuthPromptModal = false" aria-label="Close">✕</button>
+
+        <div class="limit-modal-header">
+          <div class="auth-icon-circle">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <h3 class="limit-title">{{ t('aiSearch.guestPromptTitle') }}</h3>
+          <p class="limit-subtitle">{{ t('aiSearch.guestPromptDesc') }}</p>
+        </div>
+
+        <div class="limit-modal-actions">
+          <button class="apple-btn-primary" @click="showAuthPromptModal = false; showRegister = true">
+            {{ t('aiSearch.loginToSearchBtn') }}
+          </button>
+          <button class="limit-btn-dismiss" @click="showAuthPromptModal = false">
+            {{ t('bookDetail.cancelBtn') }}
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Apple Footer -->
     <AppleFooter />
   </div>
@@ -359,7 +458,15 @@ import Profile from '@/components/Profile.vue';
 import SearchResults from '@/components/SearchResults.vue';
 import GenreIcon from '@/components/GenreIcon.vue';
 import { getBooks, searchAi, getUniqueGenres } from '@/services/bookService';
-import { t } from '@/i18n';
+import { t, currentLocale } from '@/i18n';
+import {
+  canPerformSearch,
+  getLocalLimit,
+  syncServerLimit,
+  formatResetDateTime,
+  formatResetCountdown,
+  WEEKLY_SEARCH_LIMIT,
+} from '@/services/geminiLimitService';
 
 // Images
 import fantasticIcon from '@/img/Fantastic.png';
@@ -428,6 +535,47 @@ export default {
     const bestsellers = ref([]);
     const loadingBestsellers = ref(true);
 
+    const showLimitModal = ref(false);
+    const showAuthPromptModal = ref(false);
+    const limitStatus = ref({ used: 0, remaining: 3, resetAt: null });
+
+    const remainingSearches = computed(() => {
+      if (!isLoggedIn.value) return 3;
+      return limitStatus.value?.remaining ?? 3;
+    });
+
+    const formattedResetTimeFull = computed(() => {
+      return formatResetDateTime(limitStatus.value?.resetAt, currentLocale.value);
+    });
+
+    const formattedResetCountdown = computed(() => {
+      return formatResetCountdown(limitStatus.value?.resetAt, currentLocale.value);
+    });
+
+    const formattedResetTimeShort = computed(() => {
+      if (!limitStatus.value?.resetAt) return '';
+      const d = new Date(limitStatus.value.resetAt);
+      const loc = currentLocale.value === 'kz' ? 'kk-KZ' : currentLocale.value === 'en' ? 'en-US' : 'ru-RU';
+      return d.toLocaleDateString(loc, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    });
+
+    const refreshLimitState = async () => {
+      if (!userEmail.value) {
+        limitStatus.value = { used: 0, remaining: 3, resetAt: null };
+        return;
+      }
+      limitStatus.value = getLocalLimit(userEmail.value);
+      try {
+        const serverInfo = await syncServerLimit(userEmail.value);
+        if (serverInfo) limitStatus.value = serverInfo;
+      } catch {}
+    };
+
+    const goToCatalog = () => {
+      showLimitModal.value = false;
+      router.push('/catalog');
+    };
+
     const suggestionPrompts = computed(() => [
       t('aiSearch.chipDystopia'),
       t('aiSearch.chipSpace'),
@@ -487,6 +635,7 @@ export default {
           userEmail.value = parsed.email || '';
           userName.value = parsed.name || '';
           userAvatar.value = parsed.avatar || '';
+          refreshLimitState();
         } catch {
           // ignore
         }
@@ -507,6 +656,7 @@ export default {
               avatar: userAvatar.value,
             }));
             localStorage.setItem('isLoggedIn', 'true');
+            refreshLimitState();
           }
         });
       } catch (err) {
@@ -551,6 +701,10 @@ export default {
 
     const applyPrompt = (promptText) => {
       searchQuery.value = promptText;
+      if (!isLoggedIn.value) {
+        showAuthPromptModal.value = true;
+        return;
+      }
       handleAiSearch(true);
     };
 
@@ -565,17 +719,48 @@ export default {
         return;
       }
 
+      // 1. Поиск Gemini доступен ТОЛЬКО зарегистрированным пользователям
+      if (!isLoggedIn.value) {
+        showAuthPromptModal.value = true;
+        return;
+      }
+
+      // 2. Проверка недельного лимита (3 запроса в неделю)
+      const check = canPerformSearch(userEmail.value);
+      if (!check.allowed) {
+        limitStatus.value = {
+          used: check.used,
+          remaining: 0,
+          resetAt: check.resetAt,
+        };
+        showLimitModal.value = true;
+        return;
+      }
+
       isSearching.value = true;
       try {
-        const results = await searchAi(q);
+        const results = await searchAi(q, userEmail.value);
         searchResults.value = results || [];
         showSearchResults.value = true;
+        await refreshLimitState();
       } catch (err) {
-        console.warn('AI search notice:', err);
-        searchResults.value = [];
-        showSearchResults.value = true;
+        if (err.limitReached) {
+          limitStatus.value = {
+            used: err.used || 3,
+            remaining: 0,
+            resetAt: err.resetAt,
+          };
+          showLimitModal.value = true;
+        } else if (err.unauthorized) {
+          showAuthPromptModal.value = true;
+        } else {
+          console.warn('AI search notice:', err);
+          searchResults.value = [];
+          showSearchResults.value = true;
+        }
       } finally {
         isSearching.value = false;
+        await refreshLimitState();
       }
     };
 
@@ -593,6 +778,7 @@ export default {
       showProfile.value = true;
       localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: userAvatar.value }));
       localStorage.setItem('isLoggedIn', 'true');
+      refreshLimitState();
     };
 
     const onLoggedIn = (payload) => {
@@ -603,6 +789,7 @@ export default {
       showRegister.value = false;
       localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: userAvatar.value }));
       localStorage.setItem('isLoggedIn', 'true');
+      refreshLimitState();
     };
 
     const onProfileUpdated = (data) => {
@@ -615,6 +802,7 @@ export default {
       userEmail.value = '';
       userName.value = '';
       userAvatar.value = '';
+      refreshLimitState();
     };
 
     return {
@@ -642,6 +830,15 @@ export default {
       onLoggedIn,
       onProfileUpdated,
       onLoggedOut,
+      showLimitModal,
+      showAuthPromptModal,
+      limitStatus,
+      remainingSearches,
+      formattedResetTimeFull,
+      formattedResetCountdown,
+      formattedResetTimeShort,
+      goToCatalog,
+      refreshLimitState,
       t,
     };
   },
@@ -1378,5 +1575,288 @@ export default {
   .chip-books, .chip-ai {
     display: none;
   }
+}
+
+/* Search Quota Indicator */
+.search-quota-container {
+  display: flex;
+  justify-content: center;
+  margin-top: 14px;
+}
+
+.quota-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 18px;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(16px);
+  font-size: 13px;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: default;
+  transition: all 0.25s ease;
+}
+
+.quota-pill.guest {
+  cursor: pointer;
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.25);
+  color: #38BDF8;
+}
+.quota-pill.guest:hover {
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.4);
+  transform: translateY(-1px);
+}
+
+.quota-pill.active {
+  background: rgba(52, 199, 89, 0.08);
+  border-color: rgba(52, 199, 89, 0.25);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.quota-pill.depleted {
+  cursor: pointer;
+  background: rgba(239, 68, 68, 0.1);
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #F87171;
+}
+.quota-pill.depleted:hover {
+  background: rgba(239, 68, 68, 0.16);
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateY(-1px);
+}
+
+.quota-pill-icon {
+  font-size: 14px;
+}
+
+.quota-pill-text {
+  font-weight: 500;
+}
+.quota-pill-text b {
+  color: #FFFFFF;
+  font-weight: 600;
+}
+
+.quota-pill-action {
+  font-weight: 600;
+  margin-left: 4px;
+  opacity: 0.8;
+}
+
+/* Limit & Auth Prompt Modals */
+.limit-modal-wrapper {
+  width: 100%;
+  max-width: 480px;
+  background: rgba(26, 26, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 28px;
+  padding: 36px 32px 30px;
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(28px);
+  position: relative;
+  text-align: center;
+  animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.auth-prompt-modal {
+  width: 100%;
+  max-width: 440px;
+  background: rgba(26, 26, 30, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 28px;
+  padding: 36px 32px 30px;
+  box-shadow: 0 32px 64px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(28px);
+  position: relative;
+  text-align: center;
+  animation: modalPop 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPop {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.limit-modal-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 22px;
+}
+
+.limit-icon-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(245, 158, 11, 0.14);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.auth-icon-circle {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: rgba(56, 189, 248, 0.14);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.limit-title {
+  font-size: 22px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 8px;
+  letter-spacing: -0.01em;
+}
+
+.limit-subtitle {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.65);
+  line-height: 1.5;
+  max-width: 380px;
+}
+
+.limit-modal-body {
+  margin-bottom: 24px;
+  text-align: left;
+}
+
+.limit-quota-card {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 18px;
+  padding: 16px 20px;
+  margin-bottom: 14px;
+}
+
+.quota-stat-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.quota-stat-label {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.quota-stat-badge-depleted {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #F87171;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.quota-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.08);
+  margin: 12px 0;
+}
+
+.quota-reset-block {
+  text-align: center;
+}
+
+.quota-reset-title {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.5);
+  display: block;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 600;
+}
+
+.quota-reset-datetime {
+  font-size: 17px;
+  font-weight: 700;
+  color: #FFFFFF;
+  margin-bottom: 4px;
+}
+
+.quota-reset-countdown {
+  font-size: 13px;
+  color: #38BDF8;
+  font-weight: 500;
+}
+
+.limit-help-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  border-radius: 14px;
+  padding: 12px 14px;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.75);
+  line-height: 1.45;
+}
+
+.limit-help-icon {
+  font-size: 16px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.limit-modal-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.limit-btn-catalog {
+  width: 100%;
+  padding: 14px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  border-radius: 14px;
+  cursor: pointer;
+  background: #0071E3;
+  color: #FFFFFF;
+  border: none;
+  transition: all 0.2s ease;
+}
+.limit-btn-catalog:hover {
+  background: #0077ED;
+  transform: translateY(-1px);
+}
+
+.limit-btn-dismiss {
+  width: 100%;
+  padding: 11px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  border-radius: 14px;
+  cursor: pointer;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+.limit-btn-dismiss:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: #FFFFFF;
 }
 </style>

@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { canPerformSearch, recordSearch, getLocalLimit } from './geminiLimitService';
 
 let cachedBooks = null;
 let loadPromise = null;
@@ -204,28 +205,89 @@ export async function getBookByTitle(title) {
 }
 
 /**
- * Умный ИИ-поиск через Gemini API (с интеллектуальным клиенто-ориентированным fallback)
+ * Умный ИИ-поиск через Gemini API (с проверкой лимита и авторизации)
  */
-export async function searchAi(prompt) {
+export async function searchAi(prompt, userEmail = null) {
   if (!prompt || !prompt.trim()) return [];
   const cleanPrompt = prompt.trim();
 
-  // 1. Запрос к серверному Gemini эндпоинту
+  // Получаем email пользователя из параметров или localStorage
+  let activeEmail = userEmail;
+  if (!activeEmail) {
+    try {
+      const u = JSON.parse(localStorage.getItem('user') || '{}');
+      activeEmail = u.email || null;
+    } catch {}
+  }
+
+  // 1. Поиск Gemini доступен ТОЛЬКО зарегистрированным пользователям
+  if (!activeEmail) {
+    const authErr = new Error('Gemini-powered book search is only available to registered users.');
+    authErr.unauthorized = true;
+    authErr.code = 'UNAUTHORIZED';
+    throw authErr;
+  }
+
+  // 2. Проверка лимита: 3 поисковых запроса в неделю (сброс каждые 7 дней)
+  const clientCheck = canPerformSearch(activeEmail);
+  if (!clientCheck.allowed) {
+    const limitErr = new Error(clientCheck.message || 'Weekly limit reached');
+    limitErr.limitReached = true;
+    limitErr.limit = clientCheck.limit;
+    limitErr.used = clientCheck.used;
+    limitErr.remaining = 0;
+    limitErr.resetAt = clientCheck.resetAt;
+    limitErr.resetInMs = clientCheck.resetInMs;
+    throw limitErr;
+  }
+
+  // 3. Запрос к серверному Gemini эндпоинту
   const endpoints = [`${API_BASE}/gemini/search`, `${API_BASE}/ai/search`, `${API_BASE}/openai/search`];
   for (const ep of endpoints) {
     try {
       const res = await axios.post(
         ep,
-        { prompt: cleanPrompt },
-        { headers: { 'Content-Type': 'application/json' }, timeout: 12000 }
+        { prompt: cleanPrompt, userEmail: activeEmail },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-user-email': activeEmail,
+          },
+          timeout: 12000,
+        }
       );
       if (res.data && Array.isArray(res.data.books)) {
+        if (res.data.limit) {
+          recordSearch(activeEmail, res.data.limit);
+        } else {
+          recordSearch(activeEmail);
+        }
         return res.data.books;
       }
-    } catch {
+    } catch (apiErr) {
+      if (apiErr.response?.status === 429) {
+        const serverData = apiErr.response.data || {};
+        recordSearch(activeEmail, serverData);
+        const limitErr = new Error(serverData.message || 'Weekly limit reached');
+        limitErr.limitReached = true;
+        limitErr.limit = serverData.limit || 3;
+        limitErr.used = serverData.used || 3;
+        limitErr.remaining = 0;
+        limitErr.resetAt = serverData.resetAt;
+        limitErr.resetInMs = serverData.resetInMs;
+        throw limitErr;
+      }
+      if (apiErr.response?.status === 401) {
+        const authErr = new Error('Gemini-powered book search is only available to registered users.');
+        authErr.unauthorized = true;
+        throw authErr;
+      }
       // Переход к следующему эндпоинту или клиенто-ориентированному алгоритму
     }
   }
+
+  // Фиксируем использование клиентского поиска при недоступности бэкенда
+  recordSearch(activeEmail);
 
   // 2. Интеллектуальный клиентский матчинг (семантический скоринг для KZ, RU, EN)
   const books = await getBooks();
@@ -382,31 +444,99 @@ export function getUserReservations() {
   }
 }
 
-export function reserveBook(book, returnDateStr = null) {
+export async function reserveBook(book, returnDateStr = null, userInfo = null) {
   const current = getUserReservations();
   const exists = current.find((r) => r.title === book.title);
   if (exists) {
     return { success: false, message: 'Эта книга уже забронирована вами!' };
   }
 
+  let finalUser = userInfo;
+  if (!finalUser) {
+    try {
+      const raw = localStorage.getItem('user');
+      if (raw) finalUser = JSON.parse(raw);
+    } catch {}
+  }
+
   const dueDate = returnDateStr
     ? new Date(returnDateStr)
     : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+
+  const userName = finalUser?.name || 'Читатель NIS';
+  const userEmail = finalUser?.email || '';
 
   const newReservation = {
     id: 'res_' + Date.now(),
     title: book.title,
     author: book.author,
-    genre: Array.isArray(book.genre) ? book.genre.join(', ') : book.genre,
-    year: book.year,
+    genre: Array.isArray(book.genre) ? book.genre.join(', ') : (book.genre || 'Не указан'),
+    isbn: book.isbn || '',
+    year: book.year || '',
+    language: book.language || 'Русский',
+    copies: book.copies ?? 1,
     reservedAt: new Date().toISOString(),
     dueDate: dueDate.toISOString(),
     status: 'active',
+    userName,
+    userEmail,
   };
 
   current.unshift(newReservation);
   localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(current));
-  return { success: true, reservation: newReservation };
+
+  // Sync to Firestore if available
+  try {
+    const { doc, setDoc } = await import('firebase/firestore');
+    const { db } = await import('@/firebase');
+    if (db && newReservation.id) {
+      await setDoc(doc(db, 'reservations', newReservation.id), {
+        ...newReservation,
+        createdAt: new Date().toISOString(),
+      });
+    }
+  } catch (fbErr) {
+    console.warn('Firestore reservation sync notice:', fbErr.message);
+  }
+
+  // Automatically send email notification to both librarian & Zhanbolat via backend
+  let emailNotification = null;
+  const reservationEndpoints = [`${API_BASE}/reservations`, `/api/reservations`];
+  for (const ep of reservationEndpoints) {
+    try {
+      const res = await axios.post(
+        ep,
+        {
+          book: {
+            title: book.title,
+            author: book.author,
+            genre: book.genre,
+            isbn: book.isbn || '',
+            year: book.year,
+            language: book.language,
+            copies: book.copies,
+            description: book.description,
+          },
+          user: {
+            name: userName,
+            email: userEmail,
+            uid: finalUser?.uid || finalUser?.id || '',
+          },
+          dueDate: newReservation.dueDate,
+          reservationId: newReservation.id,
+        },
+        { headers: { 'Content-Type': 'application/json' }, timeout: 8000 }
+      );
+      if (res.data && res.data.success) {
+        emailNotification = res.data.emailNotification;
+        break;
+      }
+    } catch {
+      // Continue to next endpoint or fallback
+    }
+  }
+
+  return { success: true, reservation: newReservation, emailNotification };
 }
 
 export function cancelReservation(id) {
