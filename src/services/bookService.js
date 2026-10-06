@@ -509,9 +509,22 @@ export async function reserveBook(book, returnDateStr = null, userInfo = null) {
 
   // Automatically send email notification to both librarian & Zhanbolat via backend
   let emailNotification = null;
-  const reservationEndpoints = [`${API_BASE}/reservations`, `/api/reservations`];
-  for (const ep of reservationEndpoints) {
+  let emailSent = false;
+  let emailError = null;
+
+  // Try relative endpoint (for Vercel & Vite proxy) and direct localhost backend
+  const reservationEndpoints = [
+    `${API_BASE}/reservations`,
+    '/api/reservations',
+    'http://localhost:3001/api/reservations',
+  ];
+
+  // Remove duplicates
+  const uniqueEndpoints = [...new Set(reservationEndpoints)];
+
+  for (const ep of uniqueEndpoints) {
     try {
+      console.log(`[NIS Kitap] Отправка бронирования на: ${ep}`);
       const res = await axios.post(
         ep,
         {
@@ -533,18 +546,34 @@ export async function reserveBook(book, returnDateStr = null, userInfo = null) {
           dueDate: newReservation.dueDate,
           reservationId: newReservation.id,
         },
-        { headers: { 'Content-Type': 'application/json' }, timeout: 8000 }
+        { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
       );
-      if (res.data && res.data.success) {
+
+      if (res.data) {
         emailNotification = res.data.emailNotification;
+        emailSent = res.data.emailSent ?? res.data.emailNotification?.success ?? res.data.emailNotification?.sent ?? false;
+        emailError = res.data.emailError ?? res.data.emailNotification?.error ?? null;
+        console.log('[NIS Kitap] Ответ сервера бронирования:', res.data);
+        if (emailSent) {
+          console.log('✅ [NIS Kitap] Письмо успешно отправлено на обе почты!');
+        } else if (emailError) {
+          console.warn('⚠️ [NIS Kitap] Сервер ответил, но письмо не отправлено:', emailError);
+        }
         break;
       }
-    } catch {
-      // Continue to next endpoint or fallback
+    } catch (err) {
+      emailError = err.response?.data?.error || err.message;
+      console.warn(`[NIS Kitap] Эндпоинт ${ep} недоступен или вернул ошибку:`, emailError);
     }
   }
 
-  return { success: true, reservation: newReservation, emailNotification };
+  return {
+    success: true,
+    reservation: newReservation,
+    emailNotification,
+    emailSent,
+    emailError,
+  };
 }
 
 export function cancelReservation(id) {

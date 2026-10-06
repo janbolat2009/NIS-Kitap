@@ -151,47 +151,50 @@ async function sendEmailNotification(payload) {
   const smtpHost = process.env.SMTP_HOST || 'smtp.gmail.com';
   const smtpPort = Number(process.env.SMTP_PORT) || 465;
 
-  let transporter;
-  if (smtpUser && smtpPass) {
-    transporter = nodemailer.createTransport({
+  if (!smtpUser || !smtpPass) {
+    console.warn('⚠️ SMTP credentials not found in environment variables!');
+    return {
+      success: false,
+      error: 'SMTP_USER or SMTP_PASS not configured in Vercel / server environment variables',
+      recipients: NOTIFICATION_RECIPIENTS,
+    };
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
       host: smtpHost,
       port: smtpPort,
       secure: smtpPort === 465,
       auth: { user: smtpUser, pass: smtpPass },
     });
-  } else {
-    try {
-      const testAccount = await nodemailer.createTestAccount();
-      transporter = nodemailer.createTransport({
-        host: testAccount.smtp.host,
-        port: testAccount.smtp.port,
-        secure: testAccount.smtp.secure,
-        auth: { user: testAccount.user, pass: testAccount.pass },
-      });
-    } catch {
-      transporter = nodemailer.createTransport({ jsonTransport: true });
-    }
+
+    const subject = `[NIS Kitap] Новое бронирование книги: «${payload.bookTitle}» — ${payload.userName}`;
+    const html = generateReservationEmailHtml(payload);
+    const text = generateReservationEmailText(payload);
+    const from = process.env.SMTP_FROM || process.env.SMTP_USER || '"NIS Kitap Library" <library@nis.edu.kz>';
+
+    const info = await transporter.sendMail({
+      from,
+      to: NOTIFICATION_RECIPIENTS,
+      subject,
+      text,
+      html,
+    });
+
+    console.log('✅ Reservation email notification successfully sent! Message ID:', info.messageId);
+    return {
+      success: true,
+      messageId: info.messageId,
+      recipients: NOTIFICATION_RECIPIENTS,
+    };
+  } catch (err) {
+    console.error('❌ Failed to send email via SMTP:', err);
+    return {
+      success: false,
+      error: err.message,
+      recipients: NOTIFICATION_RECIPIENTS,
+    };
   }
-
-  const subject = `[NIS Kitap] Новое бронирование книги: «${payload.bookTitle}» — ${payload.userName}`;
-  const html = generateReservationEmailHtml(payload);
-  const text = generateReservationEmailText(payload);
-  const from = process.env.SMTP_FROM || process.env.SMTP_USER || '"NIS Kitap Library" <library@nis.edu.kz>';
-
-  const info = await transporter.sendMail({
-    from,
-    to: NOTIFICATION_RECIPIENTS,
-    subject,
-    text,
-    html,
-  });
-
-  return {
-    success: true,
-    messageId: info.messageId,
-    previewUrl: nodemailer.getTestMessageUrl(info) || null,
-    recipients: NOTIFICATION_RECIPIENTS,
-  };
 }
 
 export default async function handler(req, res) {
@@ -249,7 +252,11 @@ export default async function handler(req, res) {
     const emailResult = await sendEmailNotification(payload);
     return res.status(201).json({
       success: true,
-      message: 'Reservation created and email notifications sent to librarian and Zhanbolat',
+      emailSent: emailResult.success,
+      emailError: emailResult.error || null,
+      message: emailResult.success
+        ? 'Reservation created and email notifications sent to librarian and Zhanbolat'
+        : `Reservation created, but email notification failed: ${emailResult.error}`,
       reservation: {
         id: resId,
         title: payload.bookTitle,
@@ -267,6 +274,7 @@ export default async function handler(req, res) {
   } catch (err) {
     return res.status(500).json({
       success: false,
+      emailSent: false,
       error: 'Error processing reservation notification',
       details: err.message,
     });

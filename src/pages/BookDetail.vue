@@ -375,7 +375,7 @@ export default {
       }
     };
 
-    onMounted(() => {
+    onMounted(async () => {
       const local = localStorage.getItem('user');
       if (local) {
         try {
@@ -386,6 +386,20 @@ export default {
           userAvatar.value = parsed.avatar || '';
         } catch {}
       }
+
+      try {
+        const { getAuth, onAuthStateChanged } = await import('firebase/auth');
+        const auth = getAuth();
+        onAuthStateChanged(auth, (u) => {
+          if (u) {
+            isLoggedIn.value = true;
+            userEmail.value = u.email || userEmail.value;
+            userName.value = u.displayName || userName.value || u.email?.split('@')[0];
+            userAvatar.value = u.photoURL || userAvatar.value;
+          }
+        });
+      } catch {}
+
       loadBookData();
     });
 
@@ -408,6 +422,13 @@ export default {
         showRegister.value = true;
         return;
       }
+
+      if (!userEmail.value || !userEmail.value.includes('@')) {
+        showToast('Для бронирования требуется указать корректный Email. Пожалуйста, выполните вход.', 'warn');
+        showRegister.value = true;
+        return;
+      }
+
       isReserving.value = true;
       try {
         const due = new Date(Date.now() + reservationDays.value * 24 * 60 * 60 * 1000).toISOString();
@@ -418,7 +439,13 @@ export default {
         showReservationModal.value = false;
         if (res.success) {
           isReserved.value = true;
-          showToast(t('bookDetail.reservedSuccess'), 'success');
+          if (res.emailSent) {
+            showToast('Книга забронирована! Уведомление отправлено на почту.', 'success');
+          } else if (res.emailError) {
+            showToast(`Книга забронирована, но почтовое уведомление не ушло: ${res.emailError}`, 'warn');
+          } else {
+            showToast(t('bookDetail.reservedSuccess'), 'success');
+          }
         } else {
           showToast(res.message, 'warn');
         }
