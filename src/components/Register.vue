@@ -104,7 +104,7 @@
         </button>
 
         <div class="demo-mode-hint">
-          <span>💡 {{ t('auth.demoHint') }}</span>
+          <span>{{ t('auth.demoHint') }}</span>
         </div>
       </form>
 
@@ -181,6 +181,8 @@ import {
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
   signInWithPopup, 
+  signInWithRedirect,
+  getRedirectResult,
   updateProfile 
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
@@ -204,6 +206,51 @@ export default {
       errorMessage: '',
     };
   },
+  async mounted() {
+    document.body.classList.add('modal-open');
+
+    // Handle redirect result if user came back from Google OAuth redirect
+    if (auth) {
+      try {
+        const result = await getRedirectResult(auth);
+        if (result && result.user) {
+          const user = result.user;
+          const payload = {
+            email: user.email || '',
+            name: user.displayName || user.email?.split('@')[0] || t('nav.reader'),
+            avatar: user.photoURL || '',
+          };
+
+          if (db && user.uid) {
+            try {
+              await setDoc(doc(db, 'users', user.uid), {
+                name: payload.name,
+                email: payload.email,
+                avatar: payload.avatar,
+                provider: 'google',
+                lastLogin: new Date().toISOString(),
+              }, { merge: true });
+            } catch (dbErr) {
+              console.warn('Firestore doc creation error:', dbErr);
+            }
+          }
+
+          localStorage.setItem('user', JSON.stringify(payload));
+          localStorage.setItem('isLoggedIn', 'true');
+
+          this.$emit('loggedIn', payload);
+        }
+      } catch (err) {
+        console.warn('Firebase getRedirectResult error:', err);
+        if (err.code !== 'auth/popup-closed-by-user') {
+          this.errorMessage = t('auth.googleError');
+        }
+      }
+    }
+  },
+  beforeUnmount() {
+    document.body.classList.remove('modal-open');
+  },
   methods: {
     t,
     async handleGoogleSignIn() {
@@ -211,10 +258,38 @@ export default {
       this.googleLoading = true;
 
       try {
-        if (auth && googleProvider) {
+        if (!auth || !googleProvider) {
+          this.errorMessage = t('auth.googleError');
+          return;
+        }
+
+        let user = null;
+        try {
           const result = await signInWithPopup(auth, googleProvider);
-          const user = result.user;
-          
+          user = result.user;
+        } catch (popupErr) {
+          console.warn('Firebase popup attempt:', popupErr.code, popupErr.message);
+          if (
+            popupErr.code === 'auth/popup-closed-by-user' || 
+            popupErr.code === 'auth/cancelled-popup-request'
+          ) {
+            this.googleLoading = false;
+            return;
+          }
+
+          // Mobile browsers and restrictive environments block popups - fall back to redirect
+          if (
+            popupErr.code === 'auth/popup-blocked' || 
+            popupErr.code === 'auth/operation-not-supported-in-this-environment'
+          ) {
+            await signInWithRedirect(auth, googleProvider);
+            return;
+          }
+
+          throw popupErr;
+        }
+
+        if (user) {
           const payload = {
             email: user.email || '',
             name: user.displayName || user.email?.split('@')[0] || t('nav.reader'),
@@ -239,34 +314,12 @@ export default {
           localStorage.setItem('isLoggedIn', 'true');
 
           this.$emit(this.activeTab === 'register' ? 'registered' : 'loggedIn', payload);
-          return;
         }
       } catch (err) {
-        console.warn('Firebase Google Auth warning:', err);
-        if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
-          this.googleLoading = false;
-          return;
+        console.error('Firebase Google Auth error:', err);
+        if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+          this.errorMessage = t('auth.googleError');
         }
-
-        // Демо-фоллбэк при невозможности открыть всплывающее окно в среде
-        if (
-          err.code === 'auth/popup-blocked' || 
-          err.code === 'auth/operation-not-supported-in-this-environment' || 
-          err.code === 'auth/network-request-failed' || 
-          !auth
-        ) {
-          const fallbackUser = {
-            email: 'student.nis@nis.edu.kz',
-            name: 'Ученик NIS (Google)',
-            avatar: '',
-          };
-          localStorage.setItem('user', JSON.stringify(fallbackUser));
-          localStorage.setItem('isLoggedIn', 'true');
-          this.$emit(this.activeTab === 'register' ? 'registered' : 'loggedIn', fallbackUser);
-          return;
-        }
-
-        this.errorMessage = t('auth.googleError');
       } finally {
         this.googleLoading = false;
       }
@@ -380,6 +433,11 @@ export default {
   padding: 32px 28px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
   color: #FFFFFF;
+  box-sizing: border-box;
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
 }
 
 .auth-header {
@@ -610,5 +668,57 @@ export default {
 }
 .demo-mode-hint b {
   color: #38BDF8;
+}
+
+@media (max-width: 480px) {
+  .apple-auth-modal {
+    padding: 22px 18px;
+    border-radius: 20px;
+    max-height: calc(100dvh - 20px);
+  }
+  .auth-header {
+    margin-bottom: 14px;
+  }
+  .auth-logo-badge {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 10px;
+  }
+  .auth-logo-img {
+    height: 26px;
+  }
+  .auth-title {
+    font-size: 19px;
+  }
+  .auth-subtitle {
+    font-size: 12.5px;
+    margin-bottom: 14px;
+  }
+  .segment-btn {
+    padding: 7px 12px;
+    font-size: 13px;
+  }
+  .google-auth-btn {
+    padding: 10px 14px;
+    font-size: 13.5px;
+  }
+  .auth-form {
+    gap: 12px;
+  }
+  .apple-input {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+  .auth-submit-btn {
+    padding: 11px;
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 360px) {
+  .apple-auth-modal {
+    padding: 18px 14px;
+    border-radius: 16px;
+  }
 }
 </style>

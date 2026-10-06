@@ -127,7 +127,6 @@
         </div>
 
         <div v-else-if="filteredBooks.length === 0" class="no-books-state glass-panel">
-          <div class="no-books-icon">🔍</div>
           <h3>{{ t('catalog.emptyTitle') }}</h3>
           <p>{{ t('catalog.emptyDesc') }}</p>
           <button class="apple-btn-primary" @click="resetAllFilters">{{ t('catalog.resetAll') }}</button>
@@ -195,7 +194,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import AppleNavbar from '@/components/AppleNavbar.vue';
 import AppleFooter from '@/components/AppleFooter.vue';
@@ -327,6 +326,30 @@ export default {
         loading.value = false;
       }
     });
+
+    watch(
+      () => route.query.genre,
+      (newGenre) => {
+        activeGenre.value = newGenre || '';
+        currentPage.value = 1;
+      }
+    );
+
+    watch(
+      () => route.query.lang,
+      (newLang) => {
+        activeLanguage.value = newLang || '';
+        currentPage.value = 1;
+      }
+    );
+
+    watch(
+      () => route.query.q,
+      (newQ) => {
+        searchQuery.value = newQ || '';
+        currentPage.value = 1;
+      }
+    );
 
     const hasActiveFilters = computed(() => {
       return !!activeGenre.value || !!activeLanguage.value || !!searchQuery.value.trim();

@@ -87,7 +87,6 @@
         </div>
 
         <div v-else-if="filteredBooks.length === 0" class="empty-state glass-panel">
-          <div class="empty-icon">🌍</div>
           <h3>{{ t('catalog.emptyTitle') }}</h3>
           <p>{{ t('catalog.emptyDesc') }}</p>
           <button class="apple-btn-primary" @click="resetFilters">{{ t('catalog.resetAll') }}</button>
@@ -165,7 +164,7 @@ export default {
     },
     flagEmoji: {
       type: String,
-      default: '📚',
+      default: '',
     },
   },
   setup(props) {

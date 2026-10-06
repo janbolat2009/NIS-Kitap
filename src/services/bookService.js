@@ -71,12 +71,19 @@ export function matchLanguage(bookLang, targetLang) {
   return String(bookLang || '').toLowerCase().includes(String(targetLang).toLowerCase());
 }
 
-export {
+import {
   CANONICAL_GENRE_MAP,
   matchGenre,
   getUniqueGenres,
   getGenreMeta,
 } from '@/config/genres';
+
+export {
+  CANONICAL_GENRE_MAP,
+  matchGenre,
+  getUniqueGenres,
+  getGenreMeta,
+};
 
 function mapBookRecord(b, idx) {
   return {
@@ -99,7 +106,7 @@ function mapBookRecord(b, idx) {
  * Загрузка книг: сначала проверяется бэкенд, при недоступности — статический fallback из public/data/books.json
  */
 export async function getBooks(forceReload = false, includeHidden = false) {
-  if (cachedBooks && !forceReload) {
+  if (cachedBooks && cachedBooks.length > 0 && !forceReload) {
     return includeHidden ? cachedBooks : cachedBooks.filter((b) => b.visible !== false);
   }
 
@@ -109,8 +116,8 @@ export async function getBooks(forceReload = false, includeHidden = false) {
   }
 
   loadPromise = (async () => {
+    // 1. Попытка загрузить с бэкенда
     try {
-      // 1. Попытка загрузить с бэкенда
       const res = await axios.get(`${API_BASE}/books?all=true`, { timeout: 2500 });
       if (Array.isArray(res.data) && res.data.length > 0) {
         cachedBooks = res.data.map(mapBookRecord);
@@ -120,25 +127,22 @@ export async function getBooks(forceReload = false, includeHidden = false) {
       // Бэкенд недоступен — используем fallback
     }
 
-    try {
-      // 2. Fallback: загрузка локального JSON из public/data/books.json
-      const baseUrl = import.meta.env?.BASE_URL || './';
-      const cleanBase = baseUrl.endsWith('/') ? baseUrl : `${baseUrl}/`;
+    // 2. Fallback: загрузка локального JSON из public/data/books.json
+    const candidateUrls = [
+      '/data/books.json',
+      `${(import.meta.env?.BASE_URL || '/').replace(/\/+$/, '')}/data/books.json`,
+      './data/books.json',
+    ];
 
-      const staticRes = await axios.get(`${cleanBase}data/books.json`, { timeout: 10000 });
-      if (Array.isArray(staticRes.data)) {
-        cachedBooks = staticRes.data.map(mapBookRecord);
-        return cachedBooks;
-      }
-    } catch (staticErr) {
+    for (const url of candidateUrls) {
       try {
-        const fallbackRes = await axios.get('/data/books.json', { timeout: 10000 });
-        if (Array.isArray(fallbackRes.data)) {
-          cachedBooks = fallbackRes.data.map(mapBookRecord);
+        const res = await axios.get(url, { timeout: 10000 });
+        if (Array.isArray(res.data) && res.data.length > 0) {
+          cachedBooks = res.data.map(mapBookRecord);
           return cachedBooks;
         }
       } catch {
-        // ignore
+        // try next candidate
       }
     }
 
@@ -146,8 +150,12 @@ export async function getBooks(forceReload = false, includeHidden = false) {
     return cachedBooks;
   })();
 
-  const list = await loadPromise;
-  return includeHidden ? list : list.filter((b) => b.visible !== false);
+  try {
+    const list = await loadPromise;
+    return includeHidden ? list : list.filter((b) => b.visible !== false);
+  } finally {
+    loadPromise = null;
+  }
 }
 
 /**

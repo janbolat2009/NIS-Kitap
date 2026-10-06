@@ -113,12 +113,22 @@ export default {
     },
   },
   watch: {
+    modelValue(val) {
+      if (val) {
+        document.body.classList.add('modal-open');
+      } else {
+        document.body.classList.remove('modal-open');
+      }
+    },
     currentGenre(val) {
       this.selectedGenre = val;
     },
     currentLanguage(val) {
       this.selectedLanguage = val;
     },
+  },
+  beforeUnmount() {
+    document.body.classList.remove('modal-open');
   },
   methods: {
     t,
@@ -161,11 +171,13 @@ export default {
   background: rgba(0, 0, 0, 0.65);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  z-index: 1200;
+  z-index: 2000;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .apple-sheet-container {
@@ -179,12 +191,17 @@ export default {
   padding: 24px;
   box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
   color: #FFFFFF;
+  box-sizing: border-box;
+  max-height: calc(100dvh - 32px);
+  display: flex;
+  flex-direction: column;
 }
 
 .sheet-header {
   display: flex;
   flex-direction: column;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
 }
 
 .sheet-handle {
@@ -230,8 +247,14 @@ export default {
 .sheet-body {
   display: flex;
   flex-direction: column;
-  gap: 22px;
-  margin-bottom: 24px;
+  gap: 20px;
+  margin-bottom: 16px;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-right: 4px;
 }
 
 .filter-section {
@@ -297,6 +320,10 @@ export default {
   display: flex;
   align-items: center;
   gap: 12px;
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .btn-reset {
@@ -334,5 +361,58 @@ export default {
 .btn-apply:hover {
   box-shadow: 0 6px 20px rgba(0, 113, 227, 0.5);
   transform: translateY(-1px);
+}
+
+@media (max-width: 480px) {
+  .apple-modal-backdrop {
+    padding: 12px;
+  }
+  .apple-sheet-container {
+    padding: 18px 16px;
+    border-radius: 20px;
+    max-height: calc(100dvh - 24px);
+  }
+  .sheet-title-row h3 {
+    font-size: 18px;
+  }
+  .filter-section {
+    gap: 8px;
+  }
+  .tags-grid {
+    gap: 6px;
+  }
+  .filter-tag-pill {
+    padding: 6px 12px;
+    font-size: 12.5px;
+  }
+  .btn-reset, .btn-apply {
+    padding: 10px;
+    font-size: 13.5px;
+  }
+}
+
+@media (max-width: 360px) {
+  .apple-modal-backdrop {
+    padding: 8px;
+  }
+  .apple-sheet-container {
+    padding: 14px 12px;
+    border-radius: 16px;
+  }
+  .sheet-header {
+    margin-bottom: 12px;
+  }
+  .sheet-body {
+    gap: 14px;
+    margin-bottom: 12px;
+  }
+  .sheet-footer {
+    gap: 8px;
+    padding-top: 10px;
+  }
+  .btn-reset, .btn-apply {
+    padding: 9px 8px;
+    font-size: 13px;
+  }
 }
 </style>

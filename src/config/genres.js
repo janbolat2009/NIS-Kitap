@@ -199,7 +199,7 @@ export const CANONICAL_GENRE_MAP = {
     i18nKey: 'genres.languages',
     keywords: ['английский язык', 'французский язык', 'немецкий язык', 'китайский язык', 'тіл білімі', 'языкознание', 'english', 'language', 'тіл '],
     accent: '#3B82F6', // Cobalt Blue
-    route: '/catalog?genre=' + encodeURIComponent('Английский язык'),
+    route: '/catalog?genre=' + encodeURIComponent('Изучение языков'),
     icon: 'languages',
   },
   philosophy: {
@@ -217,7 +217,7 @@ export const CANONICAL_GENRE_MAP = {
     i18nKey: 'genres.art',
     keywords: ['искусств', 'өнер', 'art', 'живопись', 'сурет', 'мәдениет', 'культура'],
     accent: '#E11D48', // Crimson Rose
-    route: '/catalog?genre=' + encodeURIComponent('Искусство'),
+    route: '/catalog?genre=' + encodeURIComponent('Искусство и культура'),
     icon: 'art',
   },
   literaryStudies: {
@@ -226,7 +226,7 @@ export const CANONICAL_GENRE_MAP = {
     i18nKey: 'genres.literaryStudies',
     keywords: ['әдебиеттану', 'литературоведен', 'әдебиет', 'сын'],
     accent: '#D97706', // Ochre Gold
-    route: '/catalog?genre=' + encodeURIComponent('Әдебиеттану'),
+    route: '/catalog?genre=' + encodeURIComponent('Литературоведение'),
     icon: 'literaryStudies',
   },
   childrenLiterature: {
@@ -235,7 +235,7 @@ export const CANONICAL_GENRE_MAP = {
     i18nKey: 'genres.childrenLiterature',
     keywords: ['балалар әдебиеті', 'детская литература', 'children', 'балалар'],
     accent: '#FB923C', // Warm Coral
-    route: '/catalog?genre=' + encodeURIComponent('Балалар әдебиеті'),
+    route: '/catalog?genre=' + encodeURIComponent('Детская литература'),
     icon: 'childrenLiterature',
   },
   socialSciences: {
@@ -244,7 +244,7 @@ export const CANONICAL_GENRE_MAP = {
     i18nKey: 'genres.socialSciences',
     keywords: ['экономик', 'қаржы', 'финанс', 'бизнес', 'business', 'политик', 'саясат', 'саясаттану', 'society'],
     accent: '#059669', // Deep Emerald
-    route: '/catalog?genre=' + encodeURIComponent('Экономика'),
+    route: '/catalog?genre=' + encodeURIComponent('Экономика и общество'),
     icon: 'socialSciences',
   },
   satire: {
@@ -253,7 +253,7 @@ export const CANONICAL_GENRE_MAP = {
     i18nKey: 'genres.satire',
     keywords: ['сатир', 'юмор', 'satire', 'күлкі', 'әзіл', 'сықақ'],
     accent: '#F59E0B', // Amber
-    route: '/catalog?genre=' + encodeURIComponent('Сатира'),
+    route: '/catalog?genre=' + encodeURIComponent('Сатира и юмор'),
     icon: 'satire',
   },
   geography: {
@@ -280,7 +280,7 @@ export const CANONICAL_GENRE_MAP = {
     i18nKey: 'genres.science',
     keywords: ['ғылым', 'наука', 'популярная наука', 'танымдық', 'science'],
     accent: '#0EA5E9', // Sky Cyan
-    route: '/catalog?genre=' + encodeURIComponent('Ғылым'),
+    route: '/catalog?genre=' + encodeURIComponent('Наука'),
     icon: 'science',
   },
 };

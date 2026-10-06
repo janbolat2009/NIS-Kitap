@@ -36,7 +36,6 @@
 
         <!-- Book Not Found -->
         <div v-else-if="!book" class="detail-not-found glass-panel">
-          <div class="not-found-icon">📕</div>
           <h2>{{ t('bookDetail.notFoundTitle') }}</h2>
           <p>«{{ decodedTitle }}» {{ t('bookDetail.notFoundDesc') }}</p>
           <button class="apple-btn-primary" @click="$router.push('/catalog')">

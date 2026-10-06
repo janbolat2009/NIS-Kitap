@@ -52,14 +52,12 @@
               <img src="@/img/publicLibrary.png" alt="NIS Kitap Library" class="hero-library-art" />
               <div class="glass-reflection"></div>
               <div class="floating-chip chip-books">
-                <span class="chip-icon">📖</span>
                 <div>
                   <strong>{{ t('hero.booksCount') }}</strong>
                   <small>{{ t('hero.inCatalog') }}</small>
                 </div>
               </div>
               <div class="floating-chip chip-ai">
-                <span class="chip-icon">✨</span>
                 <div>
                   <strong>{{ t('hero.aiSearch') }}</strong>
                   <small>{{ t('hero.smartPick') }}</small>
@@ -120,7 +118,6 @@
           <!-- Weekly Gemini Quota Indicator -->
           <div class="search-quota-container">
             <div v-if="!isLoggedIn" class="quota-pill guest" @click="showRegister = true">
-              <span class="quota-pill-icon">🔒</span>
               <span class="quota-pill-text">{{ t('aiSearch.guestLimitNotice') }}</span>
               <span class="quota-pill-action">{{ t('nav.login') }} &rarr;</span>
             </div>
@@ -131,7 +128,6 @@
               :class="remainingSearches === 0 ? 'depleted' : 'active'" 
               @click="remainingSearches === 0 ? (showLimitModal = true) : null"
             >
-              <span class="quota-pill-icon">{{ remainingSearches === 0 ? '⏳' : '✨' }}</span>
               <span v-if="remainingSearches > 0" class="quota-pill-text">
                 {{ t('aiSearch.quotaRemaining').replace('{count}', remainingSearches) }}
               </span>
@@ -398,7 +394,6 @@
           </div>
 
           <div class="limit-help-card">
-            <span class="limit-help-icon">💡</span>
             <p>{{ t('aiSearch.limitResetNotice') }}</p>
           </div>
         </div>

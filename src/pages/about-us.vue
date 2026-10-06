@@ -58,7 +58,6 @@
 
           <div class="values-grid">
             <div class="value-card glass-card">
-              <div class="value-icon">🤖</div>
               <h3 class="value-title">{{ t('aboutPage.valAiTitle') }}</h3>
               <p class="value-desc">
                 {{ t('aboutPage.valAiDesc') }}
@@ -66,7 +65,6 @@
             </div>
 
             <div class="value-card glass-card">
-              <div class="value-icon">⚡️</div>
               <h3 class="value-title">{{ t('aboutPage.valBookingTitle') }}</h3>
               <p class="value-desc">
                 {{ t('aboutPage.valBookingDesc') }}
@@ -74,7 +72,6 @@
             </div>
 
             <div class="value-card glass-card">
-              <div class="value-icon">🌍</div>
               <h3 class="value-title">{{ t('aboutPage.valTrilingualTitle') }}</h3>
               <p class="value-desc">
                 {{ t('aboutPage.valTrilingualDesc') }}
@@ -82,7 +79,6 @@
             </div>
 
             <div class="value-card glass-card">
-              <div class="value-icon">📱</div>
               <h3 class="value-title">{{ t('aboutPage.valAppleTitle') }}</h3>
               <p class="value-desc">
                 {{ t('aboutPage.valAppleDesc') }}

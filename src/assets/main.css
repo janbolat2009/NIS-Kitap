@@ -228,3 +228,25 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
+
+/* Modal Scroll Lock & Global Modal Overlays */
+body.modal-open {
+  overflow: hidden !important;
+}
+
+.apple-modal-overlay {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 480px) {
+  .apple-modal-overlay {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .apple-modal-overlay {
+    padding: 8px;
+  }
+}

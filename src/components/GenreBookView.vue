@@ -78,7 +78,6 @@
         </div>
 
         <div v-else-if="filteredBooks.length === 0" class="empty-state glass-panel">
-          <div class="empty-icon">📚</div>
           <h3>{{ t('catalog.emptyTitle') }}</h3>
           <p>{{ t('catalog.emptyDesc') }}</p>
           <button class="apple-btn-primary" @click="searchQuery = ''">{{ t('catalog.resetAll') }}</button>
@@ -122,7 +121,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import AppleNavbar from '@/components/AppleNavbar.vue';
 import AppleFooter from '@/components/AppleFooter.vue';
@@ -171,6 +170,17 @@ export default {
     const showRegister = ref(false);
     const showProfile = ref(false);
 
+    const loadBooks = async (genre) => {
+      loading.value = true;
+      try {
+        books.value = await getBooksByGenre(genre);
+      } catch (err) {
+        console.error('Ошибка загрузки книг по жанру:', err);
+      } finally {
+        loading.value = false;
+      }
+    };
+
     onMounted(async () => {
       const local = localStorage.getItem('user');
       if (local) {
@@ -183,14 +193,17 @@ export default {
         } catch {}
       }
 
-      try {
-        books.value = await getBooksByGenre(props.genreTitle);
-      } catch (err) {
-        console.error('Ошибка загрузки книг по жанру:', err);
-      } finally {
-        loading.value = false;
-      }
+      await loadBooks(props.genreTitle);
     });
+
+    watch(
+      () => props.genreTitle,
+      (newTitle) => {
+        if (newTitle) {
+          loadBooks(newTitle);
+        }
+      }
+    );
 
     const filteredBooks = computed(() => {
       let list = books.value;

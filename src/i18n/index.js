@@ -157,7 +157,7 @@ export const translations = {
     },
     // Bestsellers
     bestsellers: {
-      popularTag: '🔥 Популярное среди учеников',
+      popularTag: 'Популярное среди учеников',
       title: 'Бестселлеры библиотеки',
       subtitle: 'Книги, которые читают прямо сейчас',
       viewAll: 'Смотреть все',
@@ -174,7 +174,7 @@ export const translations = {
     },
     // About Page
     aboutPage: {
-      badge: '✨ О школьной библиотеке',
+      badge: 'О школьной библиотеке',
       titlePart1: 'Инновации для чтения.',
       titlePart2: 'Создано учениками для школы.',
       lead: 'NIS Kitap — это передовая цифровая библиотека Назарбаев Интеллектуальной Школы, призванная сделать чтение естественной, удобной и вдохновляющей частью каждого дня.',
@@ -295,8 +295,8 @@ export const translations = {
     profile: {
       title: 'Личный кабинет',
       badge: 'Читатель NIS',
-      tabProfile: '👤 Мой профиль',
-      tabBooks: '📚 Мои книги',
+      tabProfile: 'Мой профиль',
+      tabBooks: 'Мои книги',
       changePhotoHint: 'Нажмите на фото, чтобы изменить аватар',
       nameLabel: 'Имя и фамилия',
       emailLabel: 'Школьная почта (Email)',
@@ -478,7 +478,7 @@ export const translations = {
       enBtn: 'Explore books',
     },
     bestsellers: {
-      popularTag: '🔥 Оқушылар арасында танымал',
+      popularTag: 'Оқушылар арасында танымал',
       title: 'Кітапхана бестселлерлері',
       subtitle: 'Дәл қазір ең көп оқылып жатқан кітаптар',
       viewAll: 'Барлығын көру',
@@ -493,7 +493,7 @@ export const translations = {
       moreBtn: 'Біз туралы толығырақ',
     },
     aboutPage: {
-      badge: '✨ Мектеп кітапханасы туралы',
+      badge: 'Мектеп кітапханасы туралы',
       titlePart1: 'Оқудағы инновациялар.',
       titlePart2: 'Оқушылар мектеп үшін жасаған.',
       lead: 'NIS Kitap — Назарбаев Зияткерлік Мектебінің озық цифрлық кітапханасы. Біз оқуды әрбір оқушының шабыттандыратын күнделікті әдетіне айналдырамыз.',
@@ -609,8 +609,8 @@ export const translations = {
     profile: {
       title: 'Жеке кабинет',
       badge: 'NIS оқырманы',
-      tabProfile: '👤 Менің профилім',
-      tabBooks: '📚 Менің кітаптарым',
+      tabProfile: 'Менің профилім',
+      tabBooks: 'Менің кітаптарым',
       changePhotoHint: 'Аватарды өзгерту үшін фотоны басыңыз',
       nameLabel: 'Аты мен тегі',
       emailLabel: 'Мектеп поштасы (Email)',
@@ -789,7 +789,7 @@ export const translations = {
       enBtn: 'Explore English Books',
     },
     bestsellers: {
-      popularTag: '🔥 Trending Among Students',
+      popularTag: 'Trending Among Students',
       title: 'Library Bestsellers',
       subtitle: 'Most popular books being read right now',
       viewAll: 'View All',
@@ -804,7 +804,7 @@ export const translations = {
       moreBtn: 'Learn More About Us',
     },
     aboutPage: {
-      badge: '✨ About the School Library',
+      badge: 'About the School Library',
       titlePart1: 'Innovations for Reading.',
       titlePart2: 'Built by Students for NIS.',
       lead: 'NIS Kitap is the cutting-edge digital library of Nazarbayev Intellectual School, designed to make reading an effortless, inspiring part of every student’s day.',
@@ -920,8 +920,8 @@ export const translations = {
     profile: {
       title: 'Reader Account',
       badge: 'NIS Reader',
-      tabProfile: '👤 My Profile',
-      tabBooks: '📚 My Books',
+      tabProfile: 'My Profile',
+      tabBooks: 'My Books',
       changePhotoHint: 'Click photo to update avatar',
       nameLabel: 'Full Name',
       emailLabel: 'School Email',
