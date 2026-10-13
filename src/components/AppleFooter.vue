@@ -63,7 +63,7 @@
           </div>
 
           <div class="social-row">
-            <a href="https://instagram.com" target="_blank" rel="noopener" class="social-btn" title="Instagram">
+            <a href="https://instagram.com/nis.kitap?srtk=aXNheWxhMmZoYmVv&utm_source=qr" target="_blank" rel="noopener" class="social-btn" title="Instagram">
               <img src="@/img/mdi_instagram.png" alt="Instagram" />
             </a>
             <a href="https://t.me" target="_blank" rel="noopener" class="social-btn" title="Telegram">
