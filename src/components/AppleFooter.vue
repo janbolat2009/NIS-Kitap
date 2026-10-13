@@ -79,12 +79,6 @@
         <p class="copyright">
           © {{ currentYear }} NIS Kitap. {{ t('footer.rights') }}
         </p>
-        <div class="footer-badges">
-          <span class="tech-badge">Vue 3 + Vite</span>
-          <span class="tech-badge">Glassmorphism</span>
-          <span class="tech-badge">Gemini AI</span>
-          <span class="tech-badge">KZ • RU • EN</span>
-        </div>
       </div>
     </div>
   </footer>
@@ -245,8 +239,8 @@ export default {
 .contact-icon {
   width: 16px;
   height: 16px;
-  opacity: 0.8;
-  filter: invert(1);
+  opacity: 0.95;
+  filter: brightness(0) invert(1);
 }
 
 .social-row {
@@ -274,8 +268,8 @@ export default {
 .social-btn img {
   width: 18px;
   height: 18px;
-  opacity: 0.9;
-  filter: invert(1);
+  opacity: 0.95;
+  filter: brightness(0) invert(1);
 }
 
 /* Bottom */
@@ -297,21 +291,6 @@ export default {
 .copyright {
   margin: 0;
   color: rgba(255, 255, 255, 0.5);
-}
-
-.footer-badges {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.tech-badge {
-  font-size: 11px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 3px 8px;
-  border-radius: 6px;
-  color: rgba(255, 255, 255, 0.6);
 }
 
 @media (max-width: 960px) {

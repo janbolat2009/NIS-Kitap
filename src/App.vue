@@ -1577,6 +1577,7 @@ export default {
   display: flex;
   justify-content: center;
   margin-top: 14px;
+  margin-bottom: 22px;
 }
 
 .quota-pill {
