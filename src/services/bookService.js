@@ -1,5 +1,17 @@
 import axios from 'axios';
-import { canPerformSearch, recordSearch, getLocalLimit } from './geminiLimitService';
+import { canPerformSearch, recordSearch } from './geminiLimitService';
+import { getBookId } from '@/lib/bookId';
+import { session, getIdToken } from '@/stores/session';
+
+// Firebase ID token for server-side identity checks in /api functions.
+async function authHeader() {
+  try {
+    const token = await getIdToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  } catch {
+    return {};
+  }
+}
 
 let cachedBooks = null;
 let loadPromise = null;
@@ -260,6 +272,7 @@ export async function searchAi(prompt, userEmail = null) {
           headers: {
             'Content-Type': 'application/json',
             'x-user-email': activeEmail,
+            ...(await authHeader()),
           },
           timeout: 12000,
         }
@@ -453,29 +466,29 @@ export function getUserReservations() {
 }
 
 export async function reserveBook(book, returnDateStr = null, userInfo = null) {
+  // A reservation is created only for a signed-in user with a verified email.
+  if (!session.uid) {
+    return { success: false, code: 'auth_required', message: 'auth_required' };
+  }
+  const bookId = getBookId(book);
   const current = getUserReservations();
-  const exists = current.find((r) => r.title === book.title);
-  if (exists) {
-    return { success: false, message: 'Эта книга уже забронирована вами!' };
+  if (current.find((r) => r.title === book.title && r.status === 'active') || await hasActiveReservation(book)) {
+    return { success: false, code: 'already_reserved', message: 'already_reserved' };
   }
 
-  let finalUser = userInfo;
-  if (!finalUser) {
-    try {
-      const raw = localStorage.getItem('user');
-      if (raw) finalUser = JSON.parse(raw);
-    } catch {}
-  }
+  const finalUser = { ...(userInfo || {}), name: userInfo?.name || session.name, email: session.email };
 
   const dueDate = returnDateStr
     ? new Date(returnDateStr)
     : new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
 
-  const userName = finalUser?.name || 'Читатель NIS';
-  const userEmail = finalUser?.email || '';
+  const userName = finalUser.name || session.email.split('@')[0];
+  const userEmail = session.email;
 
   const newReservation = {
-    id: 'res_' + Date.now(),
+    id: `res_${session.uid.slice(0, 8)}_${Date.now()}`,
+    uid: session.uid,
+    bookId,
     title: book.title,
     author: book.author,
     genre: Array.isArray(book.genre) ? book.genre.join(', ') : (book.genre || 'Не указан'),
@@ -490,21 +503,28 @@ export async function reserveBook(book, returnDateStr = null, userInfo = null) {
     userEmail,
   };
 
-  current.unshift(newReservation);
-  localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(current));
-
-  // Sync to Firestore if available
+  // The Firestore record is the source of truth for the librarian; if it cannot be
+  // written (rules, network), the reservation is not created at all.
   try {
     const { doc, setDoc } = await import('firebase/firestore');
     const { db } = await import('@/firebase');
-    if (db && newReservation.id) {
-      await setDoc(doc(db, 'reservations', newReservation.id), {
-        ...newReservation,
-        createdAt: new Date().toISOString(),
-      });
-    }
+    await setDoc(doc(db, 'reservations', newReservation.id), {
+      ...newReservation,
+      createdAt: new Date().toISOString(),
+    });
   } catch (fbErr) {
-    console.warn('Firestore reservation sync notice:', fbErr.message);
+    console.warn('Firestore reservation not saved:', fbErr.code || fbErr.message);
+    return { success: false, code: fbErr.code || 'save_failed', message: 'save_failed' };
+  }
+
+  current.unshift(newReservation);
+  localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(current));
+
+  try {
+    const { logReadingEvent } = await import('@/services/progressService');
+    await logReadingEvent('reservation', { ...book, bookId }, { data: { reservationId: newReservation.id } });
+  } catch {
+    // analytics only
   }
 
   // Automatically send email notification to both librarian & Zhanbolat via backend
@@ -546,7 +566,7 @@ export async function reserveBook(book, returnDateStr = null, userInfo = null) {
           dueDate: newReservation.dueDate,
           reservationId: newReservation.id,
         },
-        { headers: { 'Content-Type': 'application/json' }, timeout: 10000 }
+        { headers: { 'Content-Type': 'application/json', ...(await authHeader()) }, timeout: 10000 }
       );
 
       if (res.data) {
@@ -580,10 +600,57 @@ export function cancelReservation(id) {
   const current = getUserReservations();
   const filtered = current.filter((r) => r.id !== id);
   localStorage.setItem(RESERVATIONS_KEY, JSON.stringify(filtered));
+  // Mirror the cancellation in Firestore so the librarian sees it.
+  (async () => {
+    try {
+      const { doc, updateDoc } = await import('firebase/firestore');
+      const { db } = await import('@/firebase');
+      const now = new Date().toISOString();
+      await updateDoc(doc(db, 'reservations', id), { status: 'cancelled', updatedAt: now, cancelledAt: now });
+    } catch (err) {
+      console.warn('Reservation cancel not synced:', err.code || err.message);
+    }
+  })();
   return true;
 }
 
 export function isBookReserved(title) {
   const current = getUserReservations();
   return current.some((r) => r.title === title && r.status === 'active');
+}
+
+/**
+ * Active reservation of the current user for this book, checked in Firestore.
+ */
+export async function hasActiveReservation(book) {
+  if (!session.uid || !book) return false;
+  try {
+    const { collection, getDocs, query, where } = await import('firebase/firestore');
+    const { db } = await import('@/firebase');
+    const snap = await getDocs(query(collection(db, 'reservations'), where('uid', '==', session.uid)));
+    const bookId = getBookId(book);
+    return snap.docs.some((d) => {
+      const r = d.data();
+      return (r.bookId === bookId || r.title === book.title) && ['active', 'issued'].includes(r.status);
+    });
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Copies on the shelf: catalog copies minus copies the librarian marked as issued
+ * (book_stock/{bookId}.issued). A reservation alone does not reduce availability.
+ */
+export async function getAvailableCopies(book) {
+  const total = Number(book?.copies ?? 0);
+  try {
+    const { doc, getDoc } = await import('firebase/firestore');
+    const { db } = await import('@/firebase');
+    const snap = await getDoc(doc(db, 'book_stock', getBookId(book)));
+    const issued = snap.exists() ? Number(snap.data().issued) || 0 : 0;
+    return Math.max(0, total - issued);
+  } catch {
+    return total;
+  }
 }

@@ -133,7 +133,6 @@ export function canPerformSearch(email) {
  */
 export function recordSearch(email, serverLimit = null) {
   if (!email) return;
-  const key = getStorageKey(email);
   const now = Date.now();
 
   if (serverLimit && typeof serverLimit.used === 'number') {

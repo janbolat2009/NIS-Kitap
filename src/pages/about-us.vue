@@ -95,7 +95,7 @@
           </div>
           <div class="stat-divider"></div>
           <div class="stat-cell">
-            <span class="stat-number">7</span>
+            <span class="stat-number">{{ genreCount || '—' }}</span>
             <span class="stat-label">{{ t('aboutTeaser.statGenres') }}</span>
           </div>
           <div class="stat-divider"></div>
@@ -143,6 +143,8 @@ import AppleFooter from '@/components/AppleFooter.vue';
 import Register from '@/components/Register.vue';
 import Profile from '@/components/Profile.vue';
 import { t } from '@/i18n';
+import { bindSessionRefs } from '@/stores/session';
+import { getBooks, getUniqueGenres } from '@/services/bookService';
 
 export default {
   name: 'AboutUs',
@@ -161,16 +163,16 @@ export default {
     const showRegister = ref(false);
     const showProfile = ref(false);
 
-    onMounted(() => {
-      const local = localStorage.getItem('user');
-      if (local) {
-        try {
-          const parsed = JSON.parse(local);
-          isLoggedIn.value = true;
-          userEmail.value = parsed.email || '';
-          userName.value = parsed.name || '';
-          userAvatar.value = parsed.avatar || '';
-        } catch {}
+    // Same genre count as the home page and the catalog, calculated from the books.
+    const genreCount = ref(0);
+
+    bindSessionRefs({ isLoggedIn, userEmail, userName, userAvatar });
+
+    onMounted(async () => {
+      try {
+        genreCount.value = getUniqueGenres(await getBooks()).length;
+      } catch {
+        genreCount.value = 0;
       }
     });
 
@@ -208,6 +210,7 @@ export default {
     };
 
     return {
+      genreCount,
       isLoggedIn,
       userEmail,
       userName,

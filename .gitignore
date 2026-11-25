@@ -64,3 +64,8 @@ server/data/search_limits_cache.json
 server/data/excel/
 server/logs/
 scratch/
+.vercel
+.env*
+
+# Environment template is safe to commit (no values)
+!.env.example

@@ -1,0 +1,10 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "reading_progress",
+      "fieldPath": "review",
+      "indexes": []
+    }
+  ]
+}

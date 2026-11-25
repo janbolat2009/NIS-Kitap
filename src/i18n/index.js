@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue';
+import { extra } from './extra.js';
 
 const LOCALE_KEY = 'nis_kitap_locale';
 
@@ -283,7 +284,7 @@ export const translations = {
       registerSubmit: 'Зарегистрироваться',
       submittingLogin: 'Вход...',
       submittingRegister: 'Создание...',
-      demoHint: 'Нет аккаунта? Переключитесь на Регистрацию или введите любой email для демо-входа',
+      demoHint: 'Нет аккаунта? Войдите через Google или зарегистрируйтесь и подтвердите email по ссылке из письма',
       passMismatch: 'Пароли не совпадают!',
       loginError: 'Неверная почта или пароль. Попробуйте снова или зарегистрируйтесь.',
       emailInUse: 'Пользователь с такой почтой уже существует. Пожалуйста, войдите.',
@@ -598,7 +599,7 @@ export const translations = {
       registerSubmit: 'Тіркелу',
       submittingLogin: 'Кіруде...',
       submittingRegister: 'Тіркелуде...',
-      demoHint: 'Аккаунтыңыз жоқ па? Тіркелуге ауысыңыз немесе демо үшін кез келген email енгізіңіз',
+      demoHint: 'Аккаунтыңыз жоқ па? Google арқылы кіріңіз немесе тіркеліп, хаттағы сілтеме арқылы email-ді растаңыз',
       passMismatch: 'Құпия сөздер сәйкес келмейді!',
       loginError: 'Қате пошта немесе құпия сөз. Қайталап көріңіз немесе тіркеліңіз.',
       emailInUse: 'Бұл поштамен қолданушы тіркелген. Жүйеге кіріңіз.',
@@ -909,7 +910,7 @@ export const translations = {
       registerSubmit: 'Create Account',
       submittingLogin: 'Signing in...',
       submittingRegister: 'Creating...',
-      demoHint: 'No account? Switch to Register or enter any email for demo sign-in',
+      demoHint: 'No account? Sign in with Google, or register and confirm your email using the link we send',
       passMismatch: 'Passwords do not match!',
       loginError: 'Incorrect email or password. Please try again or register.',
       emailInUse: 'An account with this email already exists. Please sign in.',
@@ -964,6 +965,20 @@ export const translations = {
     },
   },
 };
+
+// Merge section dictionaries (100 kitap, leaderboard, admin, ...) into the base one.
+function deepMerge(target, source) {
+  for (const [key, value] of Object.entries(source)) {
+    if (value && typeof value === 'object' && !Array.isArray(value)) {
+      if (!target[key] || typeof target[key] !== 'object') target[key] = {};
+      deepMerge(target[key], value);
+    } else {
+      target[key] = value;
+    }
+  }
+  return target;
+}
+for (const loc of Object.keys(extra)) deepMerge(translations[loc], extra[loc]);
 
 /**
  * Функция перевода t(key)

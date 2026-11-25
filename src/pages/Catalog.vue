@@ -204,6 +204,7 @@ import Register from '@/components/Register.vue';
 import Profile from '@/components/Profile.vue';
 import { getBooks, matchLanguage, matchGenre, getUniqueGenres } from '@/services/bookService';
 import { t } from '@/i18n';
+import { bindSessionRefs } from '@/stores/session';
 
 export default {
   name: 'Catalog',
@@ -291,20 +292,10 @@ export default {
       return found ? found.label : val;
     };
 
+    // Auth state comes only from Firebase (src/stores/session.js).
+    bindSessionRefs({ isLoggedIn, userEmail, userName, userAvatar });
+
     onMounted(async () => {
-      // 1. Чтение пользователя из localStorage
-      const local = localStorage.getItem('user');
-      if (local) {
-        try {
-          const parsed = JSON.parse(local);
-          isLoggedIn.value = true;
-          userEmail.value = parsed.email || '';
-          userName.value = parsed.name || '';
-          userAvatar.value = parsed.avatar || '';
-        } catch {
-          // ignore
-        }
-      }
 
       // 2. Чтение query-параметров роутера
       if (route.query.genre) {

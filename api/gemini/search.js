@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { verifyFirebaseToken, bearerToken } from '../_lib/firebaseAuth.js';
 
 // Stopwords in Kazakh, Russian, and English that distort book search relevance
 const STOP_WORDS = new Set([
@@ -230,9 +231,16 @@ export default async function handler(req, res) {
     }
   }
 
-  // 1. REQUIRE REGISTERED USER
-  const userEmail = body?.userEmail || req.headers['x-user-email'];
-  if (!userEmail || typeof userEmail !== 'string' || !userEmail.trim()) {
+  // 1. REQUIRE REGISTERED USER — identity comes from a verified Firebase ID token,
+  // so the weekly limit cannot be bypassed by sending another email in the body.
+  let userEmail = '';
+  try {
+    const authUser = await verifyFirebaseToken(bearerToken(req));
+    userEmail = authUser.email || authUser.uid;
+  } catch {
+    userEmail = '';
+  }
+  if (!userEmail) {
     return res.status(401).json({
       error: 'unauthorized',
       message: 'Gemini-powered book search is only available to registered users. Please log in or register.',

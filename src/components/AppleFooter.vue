@@ -23,8 +23,12 @@
           <ul class="col-list">
             <li><router-link to="/">{{ t('nav.home') }}</router-link></li>
             <li><router-link to="/catalog">{{ t('nav.catalog') }}</router-link></li>
+            <li><router-link to="/100-kitap">{{ t('nav.hundred') }}</router-link></li>
+            <li v-if="session.uid"><router-link to="/leaderboard">{{ t('nav.leaderboard') }}</router-link></li>
             <li><router-link to="/about-us">{{ t('nav.about') }}</router-link></li>
-            <li><a href="#ai-search-section">{{ t('nav.searchAi') }}</a></li>
+            <li><router-link :to="{ path: '/', hash: '#ai-search-section' }">{{ t('nav.searchAi') }}</router-link></li>
+            <li v-if="can(session.role, 'analytics.view')"><router-link to="/admin/analytics">{{ t('nav.analytics') }}</router-link></li>
+            <li v-if="can(session.role, 'rewards.view')"><router-link to="/admin/rewards">{{ t('nav.rewards') }}</router-link></li>
           </ul>
         </div>
 
@@ -86,11 +90,13 @@
 
 <script>
 import { t } from '@/i18n';
+import { session } from '@/stores/session';
+import { can } from '@/lib/roles';
 
 export default {
   name: 'AppleFooter',
   setup() {
-    return { t };
+    return { t, session, can };
   },
   data() {
     return {

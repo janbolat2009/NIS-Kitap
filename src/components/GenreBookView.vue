@@ -131,6 +131,7 @@ import Profile from '@/components/Profile.vue';
 import GenreIcon from '@/components/GenreIcon.vue';
 import { getBooksByGenre } from '@/services/bookService';
 import { t } from '@/i18n';
+import { bindSessionRefs } from '@/stores/session';
 
 export default {
   name: 'GenreBookView',
@@ -181,17 +182,10 @@ export default {
       }
     };
 
+    // Auth state comes only from Firebase (src/stores/session.js).
+    bindSessionRefs({ isLoggedIn, userEmail, userName, userAvatar });
+
     onMounted(async () => {
-      const local = localStorage.getItem('user');
-      if (local) {
-        try {
-          const parsed = JSON.parse(local);
-          isLoggedIn.value = true;
-          userEmail.value = parsed.email || '';
-          userName.value = parsed.name || '';
-          userAvatar.value = parsed.avatar || '';
-        } catch {}
-      }
 
       await loadBooks(props.genreTitle);
     });

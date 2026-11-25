@@ -1,0 +1,7 @@
+{
+  "_comment": "Bootstrap role lists. Replace the placeholders with real lowercase emails, then run `npm run rules:build` and deploy the rules. Roles can also be assigned later on /admin/roster (stored in Firestore roles/{email}).",
+  "DIRECTOR_EMAILS": ["DIRECTOR_EMAIL_HERE"],
+  "LIBRARIAN_EMAILS": ["LIBRARIAN_EMAIL_HERE"],
+  "PROJECT_ADMIN_EMAILS": ["ARDAK_EMAIL_HERE"],
+  "SUPER_ADMIN_EMAILS": ["SUPER_ADMIN_EMAIL_HERE"]
+}

@@ -183,7 +183,8 @@ import {
   signInWithPopup, 
   signInWithRedirect,
   getRedirectResult,
-  updateProfile 
+  updateProfile,
+  sendEmailVerification,
 } from 'firebase/auth';
 import { doc, setDoc } from 'firebase/firestore';
 import { auth, googleProvider, db } from '../firebase';
@@ -329,36 +330,28 @@ export default {
       this.errorMessage = '';
       this.loading = true;
 
+      // Only a real Firebase account can sign in. There is no local/demo fallback.
       try {
-        if (auth) {
-          const userCred = await signInWithEmailAndPassword(auth, this.loginEmail, this.loginPassword);
-          const user = userCred.user;
-          const payload = {
-            email: user.email,
-            name: user.displayName || user.email.split('@')[0],
-            avatar: user.photoURL || '',
-          };
-          this.$emit('loggedIn', payload);
-          return;
+        const userCred = await signInWithEmailAndPassword(auth, this.loginEmail.trim(), this.loginPassword);
+        const user = userCred.user;
+        if (!user.emailVerified) {
+          try {
+            await sendEmailVerification(user);
+          } catch {
+            // already sent recently
+          }
         }
+        this.$emit('loggedIn', {
+          email: user.email,
+          name: user.displayName || user.email.split('@')[0],
+          avatar: user.photoURL || '',
+        });
       } catch (err) {
-        console.warn('Firebase login error, falling back to local session:', err.message);
-        if (err.code === 'auth/wrong-password' || err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-          this.errorMessage = t('auth.loginError');
-          this.loading = false;
-          return;
-        }
+        console.warn('Firebase login error:', err.code);
+        this.errorMessage = t('auth.loginError');
+      } finally {
+        this.loading = false;
       }
-
-      // Безопасный демо fallback
-      const demoName = this.loginEmail.split('@')[0];
-      const payload = {
-        email: this.loginEmail,
-        name: demoName ? demoName.charAt(0).toUpperCase() + demoName.slice(1) : t('nav.reader'),
-        avatar: '',
-      };
-      this.$emit('loggedIn', payload);
-      this.loading = false;
     },
 
     async handleRegister() {
@@ -372,50 +365,32 @@ export default {
       this.loading = true;
 
       try {
-        if (auth) {
-          const userCred = await createUserWithEmailAndPassword(auth, this.email, this.password);
-          const user = userCred.user;
-
-          await updateProfile(user, { displayName: this.name });
-
-          if (db) {
-            try {
-              await setDoc(doc(db, 'users', user.uid), {
-                name: this.name,
-                email: this.email,
-                avatar: '',
-                createdAt: new Date().toISOString(),
-              });
-            } catch (dbErr) {
-              console.warn('Firestore doc creation error:', dbErr);
-            }
-          }
-
-          const payload = {
-            email: user.email,
+        const userCred = await createUserWithEmailAndPassword(auth, this.email.trim(), this.password);
+        const user = userCred.user;
+        await updateProfile(user, { displayName: this.name });
+        // Staff and reading features require a confirmed email address.
+        try {
+          await sendEmailVerification(user);
+        } catch (mailErr) {
+          console.warn('Verification email not sent:', mailErr.code);
+        }
+        try {
+          await setDoc(doc(db, 'users', user.uid), {
             name: this.name,
+            email: (user.email || '').toLowerCase(),
             avatar: '',
-          };
-          this.$emit('registered', payload);
-          return;
+            createdAt: new Date().toISOString(),
+          }, { merge: true });
+        } catch (dbErr) {
+          console.warn('Firestore profile not saved:', dbErr.code);
         }
+        this.$emit('registered', { email: user.email, name: this.name, avatar: '' });
       } catch (err) {
-        console.warn('Firebase registration error:', err.message);
-        if (err.code === 'auth/email-already-in-use') {
-          this.errorMessage = t('auth.emailInUse');
-          this.loading = false;
-          return;
-        }
+        console.warn('Firebase registration error:', err.code);
+        this.errorMessage = err.code === 'auth/email-already-in-use' ? t('auth.emailInUse') : t('auth.loginError');
+      } finally {
+        this.loading = false;
       }
-
-      // Безопасный fallback
-      const payload = {
-        email: this.email,
-        name: this.name || 'Ученик NIS',
-        avatar: '',
-      };
-      this.$emit('registered', payload);
-      this.loading = false;
     },
   },
 };

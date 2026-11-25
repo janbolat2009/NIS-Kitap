@@ -11,7 +11,10 @@
       <nav class="desktop-nav">
         <router-link to="/" class="nav-link" active-class="active" exact>{{ t('nav.home') }}</router-link>
         <router-link to="/catalog" class="nav-link" active-class="active">{{ t('nav.catalog') }}</router-link>
+        <router-link to="/100-kitap" class="nav-link" active-class="active">{{ t('nav.hundred') }}</router-link>
+        <router-link v-if="isLoggedIn" to="/leaderboard" class="nav-link" active-class="active">{{ t('nav.leaderboard') }}</router-link>
         <router-link to="/about-us" class="nav-link" active-class="active">{{ t('nav.about') }}</router-link>
+        <router-link v-if="staffHome" :to="staffHome" class="nav-link nav-staff" :class="{ active: $route.path.startsWith('/admin') }">{{ t('nav.staff') }}</router-link>
       </nav>
 
       <!-- Desktop Actions (Hidden on Mobile) -->
@@ -143,9 +146,43 @@
                 <span class="link-arrow">&rsaquo;</span>
               </router-link>
 
+              <router-link to="/100-kitap" class="mobile-nav-link" @click="closeMobileMenu">
+                <div class="link-left">
+                  <span class="link-title">{{ t('nav.hundred') }}</span>
+                </div>
+                <span class="link-arrow">&rsaquo;</span>
+              </router-link>
+
+              <router-link v-if="isLoggedIn" to="/leaderboard" class="mobile-nav-link" @click="closeMobileMenu">
+                <div class="link-left">
+                  <span class="link-title">{{ t('nav.leaderboard') }}</span>
+                </div>
+                <span class="link-arrow">&rsaquo;</span>
+              </router-link>
+
+              <router-link v-if="isLoggedIn" to="/me" class="mobile-nav-link" @click="closeMobileMenu">
+                <div class="link-left">
+                  <span class="link-title">{{ t('nav.myProgress') }}</span>
+                </div>
+                <span class="link-arrow">&rsaquo;</span>
+              </router-link>
+
               <router-link to="/about-us" class="mobile-nav-link" @click="closeMobileMenu">
                 <div class="link-left">
                   <span class="link-title">{{ t('nav.about') }}</span>
+                </div>
+                <span class="link-arrow">&rsaquo;</span>
+              </router-link>
+            </div>
+          </div>
+
+          <!-- Staff sections (only for permitted roles; data access is enforced by Firestore rules) -->
+          <div v-if="staffLinks.length" class="menu-section">
+            <div class="section-label">{{ t('nav.staff') }}</div>
+            <div class="mobile-nav-list">
+              <router-link v-for="link in staffLinks" :key="link.to" :to="link.to" class="mobile-nav-link" @click="closeMobileMenu">
+                <div class="link-left">
+                  <span class="link-title">{{ link.label }}</span>
                 </div>
                 <span class="link-arrow">&rsaquo;</span>
               </router-link>
@@ -176,6 +213,8 @@
 
 <script>
 import { currentLocale, setLocale, t } from '@/i18n';
+import { session } from '@/stores/session';
+import { can } from '@/lib/roles';
 
 export default {
   name: 'AppleNavbar',
@@ -212,6 +251,19 @@ export default {
     };
   },
   computed: {
+    // Staff links are shown only to permitted roles (role resolved from Firebase, never from the client).
+    staffLinks() {
+      const role = session.role;
+      return [
+        { to: '/admin', label: t('nav.admin'), perm: 'reading.verify' },
+        { to: '/admin/analytics', label: t('nav.analytics'), perm: 'analytics.view' },
+        { to: '/admin/rewards', label: t('nav.rewards'), perm: 'rewards.view' },
+        { to: '/admin/roster', label: t('analytics.roster'), perm: 'roster.manage' },
+      ].filter((link) => can(role, link.perm));
+    },
+    staffHome() {
+      return this.staffLinks[0]?.to || '';
+    },
     userInitials() {
       if (!this.userName) return 'U';
       const parts = this.userName.trim().split(' ');
@@ -837,7 +889,15 @@ export default {
 }
 
 /* Media Queries */
-@media (max-width: 960px) {
+@media (max-width: 1240px) {
+  .search-text,
+  .kbd-shortcut {
+    display: none;
+  }
+}
+
+/* More sections in the bar now, so the compact menu starts a bit earlier. */
+@media (max-width: 1100px) {
   .desktop-nav,
   .desktop-actions {
     display: none !important;

@@ -289,8 +289,10 @@ import AppleFooter from '@/components/AppleFooter.vue';
 import BookCard from '@/components/BookCard.vue';
 import Register from '@/components/Register.vue';
 import Profile from '@/components/Profile.vue';
-import { getBookByTitle, getBooks, reserveBook, isBookReserved } from '@/services/bookService';
+import { getBookByTitle, getBooks, reserveBook, isBookReserved, hasActiveReservation, getAvailableCopies } from '@/services/bookService';
 import { t, currentLocale } from '@/i18n';
+import { session, bindSessionRefs } from '@/stores/session';
+import { setBookmark, isBookmarked, logReadingEvent } from '@/services/progressService';
 
 export default {
   name: 'BookDetail',
@@ -322,6 +324,9 @@ export default {
     const isReserving = ref(false);
     const isFavorite = ref(false);
     const toastMessage = ref('');
+
+    // Auth state comes only from Firebase (src/stores/session.js).
+    bindSessionRefs({ isLoggedIn, userEmail, userName, userAvatar });
 
     const decodedTitle = computed(() => {
       return decodeURIComponent(route.params.title || '');
@@ -358,9 +363,10 @@ export default {
       loading.value = true;
       try {
         const found = await getBookByTitle(decodedTitle.value);
-        book.value = found;
+        // Copies on the shelf = catalog copies minus copies the librarian marked as issued.
+        book.value = found ? { ...found, copies: await getAvailableCopies(found) } : found;
         if (found) {
-          isReserved.value = isBookReserved(found.title);
+          isReserved.value = isBookReserved(found.title) || await hasActiveReservation(found);
           // Похожие книги
           const all = await getBooks();
           const targetGenre = Array.isArray(found.genre) ? found.genre[0] : found.genre;
@@ -376,30 +382,6 @@ export default {
     };
 
     onMounted(async () => {
-      const local = localStorage.getItem('user');
-      if (local) {
-        try {
-          const parsed = JSON.parse(local);
-          isLoggedIn.value = true;
-          userEmail.value = parsed.email || '';
-          userName.value = parsed.name || '';
-          userAvatar.value = parsed.avatar || '';
-        } catch {}
-      }
-
-      try {
-        const { getAuth, onAuthStateChanged } = await import('firebase/auth');
-        const auth = getAuth();
-        onAuthStateChanged(auth, (u) => {
-          if (u) {
-            isLoggedIn.value = true;
-            userEmail.value = u.email || userEmail.value;
-            userName.value = u.displayName || userName.value || u.email?.split('@')[0];
-            userAvatar.value = u.photoURL || userAvatar.value;
-          }
-        });
-      } catch {}
-
       loadBookData();
     });
 
@@ -424,7 +406,7 @@ export default {
       }
 
       if (!userEmail.value || !userEmail.value.includes('@')) {
-        showToast('Для бронирования требуется указать корректный Email. Пожалуйста, выполните вход.', 'warn');
+        showToast(t('common.loginRequiredDesc'), 'warn');
         showRegister.value = true;
         return;
       }
@@ -440,26 +422,49 @@ export default {
         if (res.success) {
           isReserved.value = true;
           if (res.emailSent) {
-            showToast('Книга забронирована! Уведомление отправлено на почту.', 'success');
+            showToast(t('bookDetail.reservedSuccess'), 'success');
           } else if (res.emailError) {
-            showToast(`Книга забронирована, но почтовое уведомление не ушло: ${res.emailError}`, 'warn');
+            showToast(t('bookDetail.reservedSuccess'), 'success');
           } else {
             showToast(t('bookDetail.reservedSuccess'), 'success');
           }
         } else {
-          showToast(res.message, 'warn');
+          showToast(res.code === 'already_reserved' ? t('bookDetail.alreadyReservedBtn') : t('admin.errors.default'), 'warn');
         }
       } catch (err) {
-        showToast(err.message || 'Ошибка бронирования', 'warn');
+        showToast(t('admin.errors.default'), 'warn');
       } finally {
         isReserving.value = false;
       }
     };
 
-    const toggleFavorite = () => {
-      isFavorite.value = !isFavorite.value;
-      showToast(isFavorite.value ? t('bookDetail.inFavorites') : t('bookDetail.toFavorites'));
+    // Bookmarks are stored in Firestore (bookmarks/{uid}__{bookId}), not only in memory.
+    const toggleFavorite = async () => {
+      if (!isLoggedIn.value) {
+        showRegister.value = true;
+        return;
+      }
+      const next = !isFavorite.value;
+      isFavorite.value = next;
+      try {
+        await setBookmark(book.value, next);
+        showToast(next ? t('bookDetail.inFavorites') : t('bookDetail.toFavorites'));
+      } catch (err) {
+        isFavorite.value = !next;
+        showToast(err?.code === 'email_not_verified' ? t('common.verifyEmailDesc') : t('admin.errors.default'), 'warn');
+      }
     };
+
+    // Per-user state for the opened book: bookmark + one analytics "view" event.
+    const syncUserBookState = async () => {
+      if (!book.value || !session.uid) {
+        isFavorite.value = false;
+        return;
+      }
+      isFavorite.value = await isBookmarked(book.value);
+      logReadingEvent('view', book.value);
+    };
+    watch(() => [book.value?.title, session.uid], syncUserBookState);
 
     const shareBook = () => {
       if (navigator.clipboard) {
@@ -468,7 +473,7 @@ export default {
       }
     };
 
-    const showToast = (msg, type = '') => {
+    const showToast = (msg, _type = '') => {
       toastMessage.value = msg;
       setTimeout(() => {
         toastMessage.value = '';

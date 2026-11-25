@@ -17,6 +17,16 @@ const routes = [
   { path: '/russian', name: 'Russian', component: () => import('@/pages/languages/RussianBooks.vue') },
   { path: '/kazakh', name: 'Kazakh', component: () => import('@/pages/languages/KazakhBooks.vue') },
   { path: '/about-us', name: 'AboutUs', component: () => import('@/pages/about-us.vue') },
+  // 100 kitap project, ranking and personal progress
+  { path: '/100-kitap', name: 'HundredBooks', component: () => import('@/pages/HundredBooks.vue') },
+  { path: '/leaderboard', name: 'Leaderboard', component: () => import('@/pages/Leaderboard.vue') },
+  { path: '/me', name: 'MyProgress', component: () => import('@/pages/MyProgress.vue') },
+  { path: '/certificate/:number', name: 'Certificate', component: () => import('@/pages/Certificate.vue') },
+  // Staff pages: the UI checks the role, Firestore rules enforce it.
+  { path: '/admin', name: 'AdminHome', component: () => import('@/pages/admin/AdminHome.vue'), meta: { permission: 'reading.verify' } },
+  { path: '/admin/analytics', name: 'AdminAnalytics', component: () => import('@/pages/admin/Analytics.vue'), meta: { permission: 'analytics.view' } },
+  { path: '/admin/rewards', name: 'AdminRewards', component: () => import('@/pages/admin/Rewards.vue'), meta: { permission: 'rewards.view' } },
+  { path: '/admin/roster', name: 'AdminRoster', component: () => import('@/pages/admin/Roster.vue'), meta: { permission: 'roster.manage' } },
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ];
 

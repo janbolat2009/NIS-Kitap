@@ -1,6 +1,5 @@
 import nodemailer from 'nodemailer';
-import fs from 'fs';
-import path from 'path';
+import { requireUser } from '../_lib/firebaseAuth.js';
 
 // Target recipients specified in requirements:
 // 1. janbolatique.kz@gmail.com (Zhanbolat)
@@ -48,7 +47,6 @@ function generateReservationEmailHtml(details) {
     reservedAt,
     dueDate,
     reservationId,
-    description,
   } = details;
 
   return `
@@ -210,6 +208,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method Not Allowed' });
   }
 
+  // Only a signed-in Firebase user can trigger a reservation email; the reader's
+  // identity comes from the verified token, not from the request body.
+  const authUser = await requireUser(req, res);
+  if (!authUser) return undefined;
+
   let body = req.body;
   if (typeof body === 'string') {
     try {
@@ -223,8 +226,8 @@ export default async function handler(req, res) {
   if (!book?.title) {
     return res.status(400).json({ error: 'Book details (title) are required' });
   }
-  if (!user?.email) {
-    return res.status(400).json({ error: 'User details (email) are required' });
+  if (!authUser.email) {
+    return res.status(400).json({ error: 'User email is required' });
   }
 
   const reservedAt = new Date();
@@ -240,9 +243,9 @@ export default async function handler(req, res) {
     year: String(book.year || ''),
     copies: Number(book.copies ?? 1),
     description: book.description || '',
-    userName: user.name || user.email.split('@')[0],
-    userEmail: user.email.trim(),
-    userId: user.uid || user.id || '',
+    userName: String(user?.name || authUser.name || authUser.email.split('@')[0]).slice(0, 120),
+    userEmail: authUser.email,
+    userId: authUser.uid,
     reservedAt: reservedAt.toISOString(),
     dueDate: returnDate.toISOString(),
     reservationId: resId,

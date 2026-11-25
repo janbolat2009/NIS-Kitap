@@ -103,6 +103,11 @@
         </div>
       </div>
 
+      <div class="profile-links-row">
+        <router-link to="/me" class="profile-link-btn" @click="$emit('back')">{{ t('nav.myProgress') }}</router-link>
+        <router-link v-if="staffHome" :to="staffHome" class="profile-link-btn" @click="$emit('back')">{{ t('nav.staff') }}</router-link>
+      </div>
+
       <div class="profile-actions-row">
         <button class="apple-save-btn" @click="saveProfile">
           {{ t('profile.saveBtn') }}
@@ -155,6 +160,8 @@
 <script>
 import { getAuth, updatePassword, updateProfile, signOut } from 'firebase/auth';
 import { getUserReservations, cancelReservation } from '@/services/bookService';
+import { session } from '@/stores/session';
+import { can } from '@/lib/roles';
 import { t, currentLocale } from '@/i18n';
 
 export default {
@@ -182,6 +189,14 @@ export default {
     };
   },
   computed: {
+    staffHome() {
+      const role = session.role;
+      if (can(role, 'reading.verify')) return '/admin';
+      if (can(role, 'analytics.view')) return '/admin/analytics';
+      if (can(role, 'rewards.view')) return '/admin/rewards';
+      if (can(role, 'roster.manage')) return '/admin/roster';
+      return '';
+    },
     initials() {
       if (!this.userName) return 'U';
       const parts = this.userName.trim().split(' ');
@@ -550,6 +565,29 @@ export default {
 .apple-save-btn:hover {
   box-shadow: 0 6px 20px rgba(0, 113, 227, 0.5);
   transform: translateY(-1px);
+}
+
+.profile-links-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.profile-link-btn {
+  flex: 1 1 140px;
+  text-align: center;
+  padding: 10px 14px;
+  border-radius: 9999px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  background: rgba(0, 113, 227, 0.1);
+  color: #E0F2FE;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+.profile-link-btn:hover {
+  background: rgba(0, 113, 227, 0.2);
 }
 
 .apple-logout-btn {

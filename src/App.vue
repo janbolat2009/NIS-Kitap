@@ -153,8 +153,11 @@
         </div>
       </section>
 
+      <!-- 100 kitap project (right after the AI search, before genres) -->
+      <HundredBooksTeaser />
+
       <!-- Genres Section -->
-      <section class="genres-section" id="genres-section">
+      <section class="genres-section" id="genres-section" v-reveal>
         <div class="section-container">
           <div class="section-header-flex">
             <div>
@@ -200,7 +203,7 @@
       </section>
 
       <!-- Languages Section -->
-      <section class="languages-section" id="languages-section">
+      <section class="languages-section" id="languages-section" v-reveal>
         <div class="section-container">
           <div class="section-header-flex">
             <div>
@@ -262,7 +265,7 @@
       </section>
 
       <!-- Bestsellers Spotlight Section -->
-      <section class="bestsellers-section" id="bestsellers-section">
+      <section class="bestsellers-section" id="bestsellers-section" v-reveal>
         <div class="section-container">
           <div class="section-header-flex">
             <div>
@@ -296,7 +299,7 @@
       </section>
 
       <!-- About Us Teaser Section -->
-      <section class="about-teaser-section">
+      <section class="about-teaser-section" v-reveal>
         <div class="section-container">
           <div class="about-glass-box glass-panel">
             <div class="about-text-side">
@@ -311,7 +314,7 @@
                   <span>{{ t('aboutTeaser.statBooks') }}</span>
                 </div>
                 <div class="stat-item">
-                  <strong>{{ genreCards.length || 7 }}</strong>
+                  <strong>{{ genreCount || '—' }}</strong>
                   <span>{{ t('aboutTeaser.statGenres') }}</span>
                 </div>
                 <div class="stat-item">
@@ -442,9 +445,10 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { useRouter } from 'vue-router';
-import { getAuth, onAuthStateChanged } from 'firebase/auth';
+import { bindSessionRefs } from '@/stores/session';
+import HundredBooksTeaser from '@/components/HundredBooksTeaser.vue';
 import AppleNavbar from '@/components/AppleNavbar.vue';
 import AppleFooter from '@/components/AppleFooter.vue';
 import BookCard from '@/components/BookCard.vue';
@@ -509,6 +513,7 @@ export default {
     Profile,
     SearchResults,
     GenreIcon,
+    HundredBooksTeaser,
   },
   setup() {
     const router = useRouter();
@@ -597,7 +602,7 @@ export default {
 
       return dynamicGenres.map((g) => {
         let name = g.label;
-        let desc = `${g.count} книг`;
+        let desc = `${g.count} ${t('common.books')}`;
         if (g.key && t(`genres.${g.key}`)) {
           const locName = t(`genres.${g.key}`);
           if (locName && !locName.startsWith('genres.')) name = locName;
@@ -620,45 +625,15 @@ export default {
       });
     });
 
+    // One genre count for the whole site, calculated from the catalog itself.
+    const genreCount = computed(() => getUniqueGenres(allBooks.value).length);
+
+    // Auth state comes only from Firebase (see src/stores/session.js).
+    bindSessionRefs({ isLoggedIn, userEmail, userName, userAvatar });
+    watch(userEmail, () => refreshLimitState(), { immediate: true });
+
     onMounted(async () => {
-      // 1. Проверка авторизации из localStorage
-      const localUser = localStorage.getItem('user');
-      if (localUser) {
-        try {
-          const parsed = JSON.parse(localUser);
-          isLoggedIn.value = true;
-          userEmail.value = parsed.email || '';
-          userName.value = parsed.name || '';
-          userAvatar.value = parsed.avatar || '';
-          refreshLimitState();
-        } catch {
-          // ignore
-        }
-      }
-
-      // 2. Firebase auth listener
-      try {
-        const auth = getAuth();
-        onAuthStateChanged(auth, (user) => {
-          if (user) {
-            isLoggedIn.value = true;
-            userEmail.value = user.email || '';
-            userName.value = user.displayName || userName.value || user.email?.split('@')[0];
-            userAvatar.value = user.photoURL || userAvatar.value || '';
-            localStorage.setItem('user', JSON.stringify({
-              email: userEmail.value,
-              name: userName.value,
-              avatar: userAvatar.value,
-            }));
-            localStorage.setItem('isLoggedIn', 'true');
-            refreshLimitState();
-          }
-        });
-      } catch (err) {
-        console.warn('Firebase init:', err);
-      }
-
-      // 3. Загрузка книг и бестселлеров через bookService
+      // Загрузка книг и бестселлеров через bookService
       try {
         const all = await getBooks();
         if (all && all.length > 0) {
@@ -686,12 +661,8 @@ export default {
 
     const onSearchInput = () => {
       clearTimeout(searchDebounceTimer);
-      const q = searchQuery.value?.trim() || '';
-      if (q.length >= 3) {
-        searchDebounceTimer = setTimeout(() => {
-          handleAiSearch();
-        }, 500);
-      }
+      // Typing no longer fires a search automatically: every automatic call used
+      // one of the 3 weekly Gemini requests. Search runs on Enter or the button.
     };
 
     const applyPrompt = (promptText) => {
@@ -816,6 +787,7 @@ export default {
       loadingBestsellers,
       suggestionPrompts,
       genreCards,
+      genreCount,
       focusSearchInput,
       onSearchInput,
       applyPrompt,
