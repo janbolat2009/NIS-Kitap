@@ -36,6 +36,8 @@
 
 ---
 
+> Проект «100 кітап», лидерборд, аналитика и награды: роли, импорт и настройка — см. [docs/ADMIN_GUIDE.md](docs/ADMIN_GUIDE.md).
+
 ## 🛠 Технологический стек
 
 - **Фронтенд**: Vue 3 (Composition API & Options API), Vue Router 4 (Lazy loading & code splitting), Vite 7
