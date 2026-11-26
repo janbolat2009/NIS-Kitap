@@ -1,6 +1,6 @@
 <template>
   <div class="page container book-page">
-    <button type="button" class="btn btn-ghost btn-sm back" @click="$router.back()">← {{ t('book.back') }}</button>
+    <button type="button" class="btn btn-ghost btn-sm back" @click="goBack">← {{ t('book.back') }}</button>
 
     <div v-if="loading" class="layout"><div class="skeleton cover-sk" /><div><div class="skeleton" style="height: 40px; width: 70%" /><div class="skeleton" style="height: 20px; width: 40%; margin-top: 12px" /></div></div>
 
@@ -11,13 +11,14 @@
 
     <template v-else>
       <article class="layout">
-        <div class="cover" :style="{ '--c': coverColor }" aria-hidden="true">
-          <span class="cover-title">{{ book.title }}</span><span class="cover-author">{{ book.author }}</span>
-        </div>
         <div class="info">
-          <p v-if="hundred" class="badge badge-warm">{{ t('book.hundredBadge') }}</p>
-          <h1 class="title">{{ book.title }}</h1>
-          <p class="author">{{ book.author }}</p>
+          <div class="identity">
+            <p v-if="hundred" class="badge badge-warm">{{ t('book.hundredBadge') }}</p>
+            <h1 class="title">{{ book.title }}</h1>
+            <p class="author">{{ book.author }}</p>
+            <a v-if="av && (av.available > 0 || myLoan)" href="#reserve" class="reserve-jump">{{ myLoan ? t('loan.code') : t('loan.reserve') }} ↓</a>
+          </div>
+          <BookCover :book="book" size="large" class="detail-cover" />
           <dl class="meta">
             <div v-if="book.language"><dt>{{ t('book.language') }}</dt><dd>{{ book.language }}</dd></div>
             <div v-if="genre"><dt>{{ t('book.genre') }}</dt><dd>{{ genre }}</dd></div>
@@ -25,9 +26,15 @@
             <div v-if="book.isbn"><dt>{{ t('book.isbn') }}</dt><dd>{{ book.isbn }}</dd></div>
           </dl>
 
+          <section class="desc" aria-labelledby="description-title">
+            <h2 id="description-title" class="section-title">{{ t('book.description') }}</h2>
+            <p>{{ book.description || t('book.noDescription') }}</p>
+          </section>
+
           <section id="reserve" class="fund" :aria-label="t('book.fund')">
             <h2 class="h3">{{ t('book.fund') }}</h2>
-            <dl class="counters">
+            <p v-if="!av" class="muted">{{ t('common.loading') }}</p>
+            <dl v-else class="counters">
               <div><dt>{{ t('loan.total') }}</dt><dd class="tabular">{{ av.total }}</dd></div>
               <div class="ok"><dt>{{ t('loan.available') }}</dt><dd class="tabular">{{ av.available }}</dd></div>
               <div><dt>{{ t('loan.held') }}</dt><dd class="tabular">{{ av.held }}</dd></div>
@@ -41,7 +48,7 @@
               <p v-if="myLoan.dueDate && myLoan.status === 'issued'" class="loan-line">{{ t('loan.due') }}: {{ fmtDate(myLoan.dueDate) }}</p>
               <button v-if="['requested', 'ready'].includes(myLoan.status)" type="button" class="btn btn-danger btn-sm" :disabled="busy" @click="cancel">{{ t('loan.cancel') }}</button>
             </div>
-            <template v-else>
+            <template v-else-if="av">
               <button type="button" class="btn btn-primary btn-lg reserve-btn" :class="{ done: justReserved }" :disabled="busy || av.available < 1" @click="reserve">
                 <span v-if="busy" class="spinner" />
                 <svg v-else-if="justReserved" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4"><path class="check" d="M5 12.5l4.5 4.5L19 7.5" /></svg>
@@ -60,11 +67,6 @@
           </section>
         </div>
       </article>
-
-      <section v-if="book.description" class="desc">
-        <h2 class="section-title">{{ t('book.description') }}</h2>
-        <p>{{ book.description }}</p>
-      </section>
 
       <section class="reviews">
         <div class="rev-head">
@@ -102,7 +104,8 @@
 
 <script setup>
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import BookCover from '@/components/BookCover.vue';
 import { t, currentLocale } from '@/i18n';
 import { session } from '@/stores/session';
 import { openLogin, toast } from '@/stores/ui';
@@ -117,9 +120,14 @@ import {
 } from '@/services/library';
 
 const route = useRoute();
+const router = useRouter();
+function goBack() {
+  if (window.history.state?.back) router.back();
+  else router.push('/catalog');
+}
 const book = ref(null);
 const loading = ref(true);
-const av = ref({ total: 0, held: 0, issued: 0, available: 0 });
+const av = ref(null);
 const loans = ref([]);
 const progressMap = ref(new Map());
 const hundred = ref(null);
@@ -140,11 +148,6 @@ const displayState = computed(() => displayStatus(progress.value));
 const locked = computed(() => ['pending', 'confirmed'].includes(progress.value?.verificationStatus));
 const myLoan = computed(() => loans.value.find((l) => l.bookId === bookId.value && ['requested', 'ready', 'issued'].includes(l.status)) || null);
 const avgRating = computed(() => (reviews.value.length ? (reviews.value.reduce((s, r) => s + r.rating, 0) / reviews.value.length).toFixed(1) : ''));
-const coverColor = computed(() => {
-  let h = 0;
-  for (const ch of String(book.value?.title || '')) h = (h * 31 + ch.charCodeAt(0)) % 5;
-  return `var(--cover-${h + 1})`;
-});
 
 const locale = () => ({ kz: 'kk-KZ', en: 'en-GB' }[currentLocale.value] || 'ru-RU');
 const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString(locale(), { day: 'numeric', month: 'long' }) : '');
@@ -236,6 +239,7 @@ async function load() {
   stops.forEach((s) => s());
   stops = [];
   loading.value = true;
+  av.value = null;
   justReserved.value = false;
   try {
     book.value = await getBookByTitle(route.params.title);
@@ -264,18 +268,19 @@ onBeforeUnmount(() => stops.forEach((s) => s()));
 
 <style scoped>
 .back { margin-bottom: 16px; }
-.layout { display: grid; grid-template-columns: 260px 1fr; gap: 40px; align-items: start; }
+.layout { display: grid; grid-template-columns: minmax(0, 260px) minmax(0, 1fr); gap: 20px clamp(24px, 4vw, 48px); align-items: start; }
+.info { display: contents; }
+.info > * { grid-column: 2; min-width: 0; }
+.info > .detail-cover { grid-column: 1; grid-row: 1 / span 5; position: sticky; top: calc(var(--nav-h) + 20px); }
 .cover-sk { aspect-ratio: 2 / 3; border-radius: 6px 14px 14px 6px; }
-.cover { aspect-ratio: 2 / 3; border-radius: 4px 14px 14px 4px; background: var(--c); color: #fff; padding: 24px 20px; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; box-shadow: var(--shadow-2), inset 6px 0 0 rgba(0, 0, 0, 0.18); position: sticky; top: calc(var(--nav-h) + 20px); animation: rise var(--dur-3) var(--ease-out) both; }
-.cover-title { font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.25; font-weight: 600; overflow-wrap: anywhere; }
-.cover-author { font-size: var(--fs-sm); opacity: 0.85; }
-.title { font-size: var(--fs-2xl); margin: 10px 0 6px; overflow-wrap: anywhere; }
-.author { font-size: var(--fs-lg); color: var(--text-2); }
-.meta { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 20px 0 0; }
+.title { font-size: clamp(1.45rem, 2.3vw + 0.55rem, 2.9rem); margin: 5px 0 6px; overflow-wrap: anywhere; }
+.author { font-size: var(--fs-md); color: var(--text-2); }
+.reserve-jump { display: inline-block; margin-top: 8px; font-size: var(--fs-sm); font-weight: 640; padding: 4px 0; }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 24px; margin: 0; }
 .meta dt { font-size: var(--fs-xs); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
 .meta dd { margin: 2px 0 0; font-weight: 550; }
-.h3 { font-family: var(--font-sans); font-size: var(--fs-md); font-weight: 650; margin-bottom: 12px; }
-.fund, .status { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
+.h3 { font-size: var(--fs-md); font-weight: 710; margin-bottom: 12px; }
+.fund, .status { padding-top: 18px; border-top: 1px solid var(--line); }
 .counters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 16px; }
 .counters div { padding: 12px; border-radius: var(--r-md); background: var(--surface-2); }
 .counters dt { font-size: var(--fs-xs); color: var(--text-3); }
@@ -294,8 +299,9 @@ onBeforeUnmount(() => stops.forEach((s) => s()));
 .seg button[aria-pressed='true'] { background: var(--text-1); color: var(--bg); }
 .seg button:disabled { opacity: 0.5; }
 .link-sm { display: inline-block; margin-top: 10px; font-size: var(--fs-sm); font-weight: 600; }
-.desc { margin-top: 48px; max-width: 760px; }
-.desc p { color: var(--text-2); line-height: 1.75; white-space: pre-line; }
+.desc { max-width: 70ch; }
+.desc h2 { margin-bottom: 7px; }
+.desc p { color: var(--text-2); line-height: 1.65; white-space: pre-line; overflow-wrap: anywhere; }
 .reviews { margin-top: 48px; max-width: 760px; }
 .rev-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .avg { color: var(--warm); font-family: var(--font-sans); font-size: var(--fs-md); }
@@ -311,9 +317,12 @@ onBeforeUnmount(() => stops.forEach((s) => s()));
 .rev-text { margin-top: 6px; color: var(--text-1); white-space: pre-line; overflow-wrap: anywhere; }
 .notice { margin: 10px 0; }
 @media (max-width: 760px) {
-  .layout { grid-template-columns: 1fr; gap: 20px; }
-  .cover { position: static; width: 150px; }
+  .layout { grid-template-columns: clamp(98px, 32vw, 150px) minmax(0, 1fr); gap: 15px; }
+  .info > * { grid-column: 1 / -1; }
+  .info > .identity { grid-column: 2; grid-row: 1; align-self: center; }
+  .info > .detail-cover { grid-row: 1; position: static; padding: 10px 16px 12px 9px; --jacket-depth: 8px; }
+  .identity .badge { font-size: 0.65rem; white-space: normal; }
   .counters { grid-template-columns: repeat(2, 1fr); }
-  .reserve-btn { width: 100%; }
+  .reserve-btn { width: 100%; min-width: 0; white-space: normal; line-height: 1.2; }
 }
 </style>

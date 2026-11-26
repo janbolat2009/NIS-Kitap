@@ -82,7 +82,6 @@
               v-for="book in filteredBooks" 
               :key="book._id" 
               :book="book" 
-              @select="goToBookDetail"
             />
           </div>
         </div>
@@ -99,7 +98,6 @@
 import { watch as watchShell } from 'vue';
 import { openLogin } from '@/stores/ui';
 import { ref, computed, watch, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 import BookCard from '@/components/BookCard.vue';
 import GenreIcon from '@/components/GenreIcon.vue';
 import { getBooksByGenre } from '@/services/bookService';
@@ -127,7 +125,6 @@ export default {
     },
   },
   setup(props) {
-    const router = useRouter();
     const books = ref([]);
     const loading = ref(true);
     const searchQuery = ref('');
@@ -189,10 +186,6 @@ export default {
       return list;
     });
 
-    const goToBookDetail = (book) => {
-      router.push(`/book/${encodeURIComponent(book.title)}`);
-    };
-
     const onRegistered = (payload) => {
       userEmail.value = payload.email;
       userName.value = payload.name;
@@ -238,7 +231,6 @@ export default {
       userAvatar,
       showRegister,
       showProfile,
-      goToBookDetail,
       onRegistered,
       onLoggedIn,
       onProfileUpdated,

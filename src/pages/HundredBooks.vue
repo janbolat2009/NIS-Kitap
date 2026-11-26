@@ -21,6 +21,14 @@
     </header>
 
     <section class="filters" :aria-label="t('hundred.filters')">
+      <div class="list-search" role="search">
+        <label class="label" for="hundred-search">{{ t('catalog.searchLabel') }}</label>
+        <div class="search-controls">
+          <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5" /><path d="m16 16 4.5 4.5" /></svg>
+          <input id="hundred-search" ref="searchInput" v-model="query" type="search" class="input" :placeholder="t('hundred.searchPlaceholder')" />
+          <button v-if="query" type="button" class="btn btn-ghost clear-query" :aria-label="t('catalog.clearQuery')" @click="clearQuery">✕</button>
+        </div>
+      </div>
       <label class="f">
         <span class="label">{{ t('hundred.grade') }}</span>
         <select v-model="f.grade" class="select"><option value="">{{ t('hundred.all') }}</option><option v-for="g in grades" :key="g" :value="String(g)">{{ t('hundred.gradeN', { n: g }) }}</option></select>
@@ -41,7 +49,7 @@
         <select v-model="f.avail" class="select"><option value="">{{ t('hundred.all') }}</option><option v-for="a in ['available', 'all_taken', 'not_in_catalog']" :key="a" :value="a">{{ t(`hundred.avail.${a}`) }}</option></select>
       </label>
       <div class="f-foot">
-        <span class="muted">{{ t('hundred.found', { n: filtered.length }) }}</span>
+        <span v-if="!loading && !loadError" class="muted" role="status">{{ t('hundred.found', { n: filtered.length }) }}</span>
         <button v-if="activeFilters" type="button" class="btn btn-ghost btn-sm" @click="resetFilters">{{ t('hundred.reset') }}</button>
       </div>
     </section>
@@ -50,7 +58,14 @@
       <div v-for="n in 6" :key="n" class="skeleton" style="height: 150px; border-radius: 16px" />
     </div>
     <p v-else-if="loadError" class="notice notice-danger">{{ loadError }} <button type="button" class="btn btn-sm btn-secondary" @click="load">{{ t('common.retry') }}</button></p>
-    <div v-else-if="!filtered.length" class="empty"><h3>{{ t('hundred.empty') }}</h3><button type="button" class="btn btn-secondary" @click="resetFilters">{{ t('hundred.reset') }}</button></div>
+    <div v-else-if="!filtered.length" class="empty">
+      <h3>{{ t('hundred.empty') }}</h3>
+      <p v-if="searchTerms.length" class="muted">{{ t('catalog.emptyQuery') }}</p>
+      <div class="empty-actions">
+        <button v-if="searchTerms.length" type="button" class="btn btn-primary" @click="clearQuery">{{ t('catalog.clearQuery') }}</button>
+        <button v-if="activeFilters" type="button" class="btn btn-secondary" @click="resetFilters">{{ t('hundred.reset') }}</button>
+      </div>
+    </div>
 
     <ol v-else class="list">
       <li v-for="e in filtered" :key="e.id" class="item" :class="{ turned: turned === e.id }">
@@ -126,6 +141,7 @@ import { t, currentLocale } from '@/i18n';
 import { session } from '@/stores/session';
 import { openLogin, toast } from '@/stores/ui';
 import { displayStatus } from '@/lib/workflow';
+import { normalizeBookSearch } from '@/lib/bookSearch';
 import { errorMessage } from '@/services/api';
 import {
   loadHundredBooks, trackId, watchMyProgress, getAvailabilityMany, setReadingStatus, requestVerification, withdrawVerification,
@@ -139,6 +155,9 @@ const loadError = ref('');
 const busy = ref('');
 const turned = ref('');
 const f = reactive({ grade: '', section: '', status: '', avail: '' });
+const query = ref('');
+const searchInput = ref(null);
+const searchTerms = computed(() => normalizeBookSearch(query.value).trim().split(/\s+/).filter(Boolean));
 const verifyFor = ref(null);
 const vForm = reactive({ review: '', publish: false, rating: 5 });
 const vError = ref('');
@@ -192,6 +211,10 @@ const filtered = computed(() => entries.value.filter((e) => {
     const k = availOf(e).kind === 'unknown' ? 'not_in_catalog' : availOf(e).kind;
     if (k !== f.avail) return false;
   }
+  if (searchTerms.value.length) {
+    const text = normalizeBookSearch([e.title, e.titleAlt, e.author, e.catalogTitle].join(' '));
+    return searchTerms.value.every((term) => text.includes(term));
+  }
   return true;
 }));
 const activeFilters = computed(() => Boolean(f.grade || f.section || f.status || f.avail));
@@ -200,6 +223,11 @@ const pending = computed(() => entries.value.filter((e) => stateOf(e) === 'pendi
 
 function resetFilters() {
   Object.assign(f, { grade: '', section: '', status: '', avail: '' });
+}
+
+function clearQuery() {
+  query.value = '';
+  searchInput.value?.focus();
 }
 
 function requireSignIn() {
@@ -297,17 +325,25 @@ onBeforeUnmount(() => { unwatch(); document.body.classList.remove('modal-open');
 .signin { align-items: center; justify-content: space-between; flex-wrap: wrap; max-width: 520px; }
 
 .filters { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 10px; align-items: end; margin-bottom: 20px; }
+.list-search { display: grid; grid-column: 1 / -1; gap: 6px; margin-bottom: 4px; }
+.search-controls { position: relative; }
+.search-controls .input { min-height: 50px; padding-inline: 42px 52px; font-weight: 550; }
+.search-controls .input::-webkit-search-cancel-button { appearance: none; }
+.search-icon { position: absolute; inset: 50% auto auto 14px; translate: 0 -50%; color: var(--accent-text); pointer-events: none; }
+.clear-query { position: absolute; inset: 3px 4px 3px auto; min-width: 44px; padding: 0; }
+.empty-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
 .f { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.f .select { font-weight: 550; }
 .f-foot { display: flex; align-items: center; gap: 8px; min-height: 44px; white-space: nowrap; }
 
 .list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
 .item { display: flex; gap: 14px; padding: 16px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); transition: border-color var(--dur-1) ease; }
 .item:hover { border-color: var(--line-strong); }
-.num { flex: none; width: 34px; font-family: var(--font-serif); font-size: 1.15rem; color: var(--text-3); padding-top: 1px; }
+.num { flex: none; width: 34px; font-family: var(--font-heading); font-size: 1.15rem; color: var(--text-3); padding-top: 1px; }
 .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
 .top { display: flex; gap: 10px; justify-content: space-between; align-items: flex-start; }
 .title-block { min-width: 0; }
-.title { font-family: var(--font-serif); font-size: 1.08rem; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
+.title { font-family: var(--font-heading); font-size: 1.08rem; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
 .title a { color: inherit; text-decoration: none; }
 .title a:hover { text-decoration: underline; }
 .meta { font-size: var(--fs-sm); color: var(--text-3); margin-top: 2px; }

@@ -2,7 +2,7 @@
   <div class="apple-catalog-page">
 
     <!-- Main Content -->
-    <main class="catalog-main">
+    <div class="catalog-main">
       <div class="catalog-container">
         <!-- Page Header -->
         <div class="catalog-header">
@@ -20,26 +20,28 @@
         <!-- Search & Filter Bar -->
         <div class="filter-toolbar glass-panel">
           <!-- Live Search Input -->
-          <div class="search-input-field">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <div class="search-input-field" role="search">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true">
               <circle cx="11" cy="11" r="8"></circle>
               <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
             </svg>
-            <input 
+            <label class="visually-hidden" for="catalog-search">{{ t('catalog.searchLabel') }}</label>
+            <input
+              id="catalog-search"
               ref="catalogSearchInput"
-              v-model="searchQuery" 
-              type="text" 
-              :placeholder="t('catalog.searchPlaceholder')" 
+              v-model="searchQuery"
+              type="search"
+              :placeholder="t('catalog.searchPlaceholder')"
               class="catalog-search"
             />
-            <button v-if="searchQuery" class="clear-btn" @click="searchQuery = ''">✕</button>
+            <button v-if="searchQuery" type="button" class="clear-btn" :aria-label="t('catalog.clearQuery')" @click="clearSearch">✕</button>
           </div>
 
           <!-- Controls Right: Sort & Filter Sheet Button -->
           <div class="toolbar-actions">
             <!-- Sort dropdown -->
             <div class="select-wrapper">
-              <select v-model="sortBy" class="apple-select">
+              <select v-model="sortBy" class="apple-select" :aria-label="t('catalog.sortLabel')">
                 <option value="default">{{ t('catalog.sortDefault') }}</option>
                 <option value="title">{{ t('catalog.sortTitle') }}</option>
                 <option value="year-desc">{{ t('catalog.sortYearDesc') }}</option>
@@ -49,7 +51,7 @@
 
             <!-- Filter Modal Button -->
             <button class="filter-sheet-btn" @click="showFilterModal = true">
-              <img src="@/img/filter-icon.png" alt="Filter" class="filter-svg" />
+              <svg class="filter-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 5h15L14 11.5v5l-4 2v-7z" /></svg>
               <span>{{ t('catalog.filtersBtn') }}</span>
               <span v-if="hasActiveFilters" class="filter-active-dot"></span>
             </button>
@@ -94,7 +96,7 @@
 
         <!-- Active Filters Summary & Count -->
         <div class="catalog-summary-bar">
-          <div class="results-count">
+          <div v-if="!loading" class="results-count" role="status">
             <span>{{ t('catalog.foundCount') }} <b>{{ filteredBooks.length }}</b> {{ t('catalog.booksWord') }}</span>
             <span v-if="activeGenre || activeLanguage || searchQuery" class="filter-tag-hint">
               {{ t('catalog.filtersApplied') }}
@@ -102,12 +104,12 @@
           </div>
 
           <div v-if="hasActiveFilters" class="active-chips">
-            <span v-if="activeGenre" class="active-chip" @click="activeGenre = ''">
+            <button v-if="activeGenre" type="button" class="active-chip" @click="activeGenre = ''">
               {{ t('catalog.genreLabel') }} {{ getGenreLabel(activeGenre) }} ✕
-            </span>
-            <span v-if="activeLanguage" class="active-chip" @click="activeLanguage = ''">
+            </button>
+            <button v-if="activeLanguage" type="button" class="active-chip" @click="activeLanguage = ''">
               {{ t('catalog.langLabel') }} {{ getLanguageLabel(activeLanguage) }} ✕
-            </span>
+            </button>
             <button class="reset-all-link" @click="resetAllFilters">{{ t('catalog.resetAll') }}</button>
           </div>
         </div>
@@ -119,8 +121,11 @@
 
         <div v-else-if="filteredBooks.length === 0" class="no-books-state glass-panel">
           <h3>{{ t('catalog.emptyTitle') }}</h3>
-          <p>{{ t('catalog.emptyDesc') }}</p>
-          <button class="apple-btn-primary" @click="resetAllFilters">{{ t('catalog.resetAll') }}</button>
+          <p>{{ t(searchQuery.trim() ? 'catalog.emptyQuery' : 'catalog.emptyDesc') }}</p>
+          <div class="empty-actions">
+            <button v-if="searchQuery.trim()" type="button" class="btn btn-primary" @click="clearSearch">{{ t('catalog.clearQuery') }}</button>
+            <button v-if="!searchQuery.trim() || activeGenre || activeLanguage" type="button" class="btn btn-secondary" @click="resetAllFilters">{{ t('catalog.resetAll') }}</button>
+          </div>
         </div>
 
         <div v-else class="books-grid-wrapper">
@@ -129,7 +134,6 @@
               v-for="book in visibleBooks" 
               :key="book._id" 
               :book="book" 
-              @select="goToBookDetail"
             />
           </div>
 
@@ -144,7 +148,7 @@
           </div>
         </div>
       </div>
-    </main>
+    </div>
 
     <!-- Modals -->
     <!-- Filter Modal -->
@@ -170,9 +174,10 @@
 import { watch as watchShell } from 'vue';
 import { openLogin } from '@/stores/ui';
 import { ref, computed, watch, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import BookCard from '@/components/BookCard.vue';
 import FilterModal from '@/components/FilterModal.vue';
+import { normalizeBookSearch } from '@/lib/bookSearch';
 import { getBooks, matchLanguage, matchGenre, getUniqueGenres } from '@/services/bookService';
 import { t } from '@/i18n';
 import { bindSessionRefs } from '@/stores/session';
@@ -184,8 +189,8 @@ export default {
     FilterModal,
   },
   setup() {
-    const router = useRouter();
     const route = useRoute();
+    const router = useRouter();
 
     const isLoggedIn = ref(false);
     const userEmail = ref('');
@@ -272,7 +277,7 @@ export default {
       if (route.query.lang) {
         activeLanguage.value = route.query.lang;
       }
-      if (route.query.q) {
+      if (typeof route.query.q === 'string') {
         searchQuery.value = route.query.q;
       }
 
@@ -305,10 +310,12 @@ export default {
     watch(
       () => route.query.q,
       (newQ) => {
-        searchQuery.value = newQ || '';
+        searchQuery.value = typeof newQ === 'string' ? newQ : '';
         currentPage.value = 1;
       }
     );
+
+    watch([searchQuery, sortBy], () => { currentPage.value = 1; });
 
     const hasActiveFilters = computed(() => {
       return !!activeGenre.value || !!activeLanguage.value || !!searchQuery.value.trim();
@@ -329,12 +336,10 @@ export default {
 
       // Filter Search
       if (searchQuery.value.trim()) {
-        const q = searchQuery.value.toLowerCase().trim();
+        const words = normalizeBookSearch(searchQuery.value).trim().split(/\s+/);
         list = list.filter((b) => {
-          const t = (b.title || '').toLowerCase();
-          const a = (b.author || '').toLowerCase();
-          const g = Array.isArray(b.genre) ? b.genre.join(' ').toLowerCase() : (b.genre || '').toLowerCase();
-          return t.includes(q) || a.includes(q) || g.includes(q);
+          const text = normalizeBookSearch([b.title, b.author, ...(Array.isArray(b.genre) ? b.genre : [b.genre])].join(' '));
+          return words.every((word) => text.includes(word));
         });
       }
 
@@ -386,8 +391,10 @@ export default {
       catalogSearchInput.value?.focus();
     };
 
-    const goToBookDetail = (book) => {
-      router.push(`/book/${encodeURIComponent(book.title)}`);
+    const clearSearch = () => {
+      searchQuery.value = '';
+      if (route.query.q != null) router.replace({ query: { ...route.query, q: undefined } });
+      focusSearch();
     };
 
     const onRegistered = (payload) => {
@@ -450,7 +457,7 @@ export default {
       resetAllFilters,
       onFilterSubmit,
       focusSearch,
-      goToBookDetail,
+      clearSearch,
       onRegistered,
       onLoggedIn,
       onProfileUpdated,
@@ -470,13 +477,13 @@ export default {
 
 .catalog-main {
   flex: 1;
-  padding: 100px 0 80px;
+  padding: clamp(25px, 5vw, 65px) 0 80px;
 }
 
 .catalog-container {
   max-width: 1320px;
   margin: 0 auto;
-  padding: 0 24px;
+  padding: 0 var(--gutter);
 }
 
 /* Header */
@@ -530,26 +537,40 @@ export default {
 .search-input-field {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
+  min-height: 48px;
+  border: 1px solid var(--line-strong);
+  border-radius: var(--r-md);
+  padding-inline: 12px 5px;
+  background: var(--bg-elevated);
   flex: 1;
   min-width: 0;
   color: var(--accent-text);
 }
+.search-input-field > svg { flex: none; }
+.search-input-field:focus-within { border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus); }
 
 .catalog-search {
   width: 100%;
+  min-width: 0;
   background: transparent;
   border: none;
   color: var(--text-1);
   font-family: inherit;
   font-size: 15px;
+  font-weight: 550;
   outline: none;
 }
+.catalog-search::-webkit-search-cancel-button { appearance: none; }
 .catalog-search::placeholder {
   color: var(--text-3);
 }
 
 .clear-btn {
+  flex: none;
+  width: 38px;
+  min-height: 38px;
+  border-radius: var(--r-sm);
   background: transparent;
   border: none;
   color: var(--text-2);
@@ -557,8 +578,10 @@ export default {
   cursor: pointer;
 }
 .clear-btn:hover {
+  background: var(--accent-soft);
   color: var(--text-1);
 }
+.empty-actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; }
 
 .toolbar-actions {
   display: flex;
@@ -581,7 +604,7 @@ export default {
   border-radius: 12px;
   font-family: inherit;
   font-size: 13.5px;
-  outline: none;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   overflow: hidden;
@@ -603,7 +626,7 @@ export default {
   border-radius: 12px;
   font-family: inherit;
   font-size: 13.5px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
@@ -613,9 +636,10 @@ export default {
   background: var(--surface-3);
 }
 .filter-svg {
-  width: 14px;
-  height: 14px;
-  filter: invert(1);
+  flex: none;
+  width: 17px;
+  height: 17px;
+  color: var(--accent-text);
 }
 .filter-active-dot {
   width: 6px;
@@ -647,7 +671,7 @@ export default {
   border-radius: 9999px;
   font-family: inherit;
   font-size: 13px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s ease;
@@ -657,8 +681,8 @@ export default {
   color: var(--text-1);
 }
 .pill-btn.active {
-  background: var(--accent);
-  border-color: var(--accent);
+  background: var(--button-fill);
+  border-color: var(--button-fill);
   color: var(--on-accent);
   font-weight: 600;
 }

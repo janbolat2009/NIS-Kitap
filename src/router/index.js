@@ -41,12 +41,36 @@ const routes = [
   { path: '/:pathMatch(.*)*', redirect: '/' },
 ];
 
+function waitForAnchor(hash) {
+  const find = () => document.getElementById(hash.slice(1));
+  const element = find();
+  if (element) return Promise.resolve(element);
+
+  return new Promise((resolve) => {
+    const finish = (target) => {
+      observer.disconnect();
+      clearTimeout(timeout);
+      resolve(target);
+    };
+    const observer = new MutationObserver(() => {
+      const target = find();
+      if (target) finish(target);
+    });
+    const timeout = setTimeout(() => finish(null), 1000);
+    observer.observe(document.querySelector('#main') || document.body, { childList: true, subtree: true });
+  });
+}
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes,
-  scrollBehavior(to, from, saved) {
+  async scrollBehavior(to, from, saved) {
     if (saved) return saved;
-    if (to.hash) return { el: to.hash, top: 80, behavior: 'smooth' };
+    if (to.hash) {
+      const el = await waitForAnchor(to.hash);
+      if (router.currentRoute.value.fullPath !== to.fullPath) return false;
+      if (el) return { el, top: 80, behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' };
+    }
     if (to.path === from.path) return false;
     return { top: 0 };
   },

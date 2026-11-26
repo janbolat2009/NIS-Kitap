@@ -91,7 +91,6 @@
               v-for="book in filteredBooks" 
               :key="book._id" 
               :book="book" 
-              @select="goToBookDetail"
             />
           </div>
         </div>
@@ -217,10 +216,6 @@ export default {
       }
     };
 
-    const goToBookDetail = (book) => {
-      router.push(`/book/${encodeURIComponent(book.title)}`);
-    };
-
     const onRegistered = (payload) => {
       userEmail.value = payload.email;
       userName.value = payload.name;
@@ -270,7 +265,6 @@ export default {
       showProfile,
       resetFilters,
       handleBack,
-      goToBookDetail,
       onRegistered,
       onLoggedIn,
       onProfileUpdated,

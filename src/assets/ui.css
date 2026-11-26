@@ -10,15 +10,15 @@
 @media (prefers-reduced-motion: reduce) { .reveal-on-scroll { opacity: 1; transform: none; } }
 
 /* ---------- page ---------- */
-.page { padding: clamp(24px, 5vw, 48px) 0 72px; }
+.page { padding-block: clamp(24px, 5vw, 48px) 72px; }
 .kp-page { display: flex; flex-direction: column; }
 .kp-main { flex: 1; padding: clamp(24px, 5vw, 48px) 0 72px; }
 .kp-container { max-width: var(--container); margin: 0 auto; padding: 0 var(--gutter); }
 .page-head, .kp-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px 24px; flex-wrap: wrap; margin-bottom: 24px; }
 .eyebrow, .kp-eyebrow { display: block; font-size: var(--fs-xs); font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-3); margin-bottom: 8px; }
-.page-title, .kp-title { font-family: var(--font-serif); font-size: var(--fs-2xl); font-weight: 600; line-height: 1.15; letter-spacing: -0.015em; margin: 0 0 8px; overflow-wrap: anywhere; }
+.page-title, .kp-title { font-family: var(--font-heading); font-size: var(--fs-2xl); font-weight: 760; line-height: 1.15; letter-spacing: -0.02em; margin: 0 0 8px; overflow-wrap: anywhere; }
 .page-lead, .kp-subtitle { font-size: var(--fs-md); line-height: 1.6; color: var(--text-2); max-width: 680px; margin: 0; }
-.section-title, .kp-h2 { font-family: var(--font-serif); font-size: var(--fs-xl); font-weight: 600; margin: 0 0 14px; }
+.section-title, .kp-h2 { font-family: var(--font-heading); font-size: var(--fs-xl); font-weight: 730; margin: 0 0 14px; }
 .kp-muted { color: var(--text-3); font-size: var(--fs-sm); }
 .kp-section { margin-top: 32px; }
 

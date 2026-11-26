@@ -1,6 +1,6 @@
 import { createApp } from 'vue';
-import '@fontsource-variable/inter';
-import '@fontsource-variable/literata';
+import '@fontsource-variable/montserrat';
+import '@fontsource-variable/manrope';
 import Root from './Root.vue';
 import router from './router';
 import { startSession } from './stores/session';

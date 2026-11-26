@@ -38,11 +38,11 @@ const year = new Date().getFullYear();
 <style scoped>
 .site-footer { margin-top: auto; border-top: 1px solid var(--line); background: var(--bg-elevated); padding: 48px 0 24px; }
 .grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 32px; }
-.brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-1); font-family: var(--font-serif); font-weight: 650; font-size: 1.1rem; }
+.brand { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--text-1); font-family: var(--font-heading); font-weight: 650; font-size: 1.1rem; }
 .about p { margin-top: 14px; color: var(--text-2); font-size: var(--fs-sm); max-width: 420px; }
 .about .made { color: var(--text-3); }
 .col { display: flex; flex-direction: column; gap: 10px; }
-.col h2 { font-family: var(--font-sans); font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 4px; }
+.col h2 { font-size: var(--fs-xs); text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-3); margin-bottom: 4px; }
 .col a { color: var(--text-2); text-decoration: none; font-size: var(--fs-sm); overflow-wrap: anywhere; }
 .col a:hover { color: var(--text-1); text-decoration: underline; }
 .bottom { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-top: 36px; padding-top: 18px; border-top: 1px solid var(--line); color: var(--text-3); font-size: var(--fs-xs); }
