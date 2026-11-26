@@ -1,12 +1,5 @@
 <template>
   <div class="apple-lang-view">
-    <AppleNavbar 
-      :is-logged-in="isLoggedIn"
-      :user-name="userName"
-      :user-avatar="userAvatar"
-      @open-register="showRegister = true"
-      @open-profile="showProfile = true"
-    />
 
     <main class="lang-main-content">
       <div class="lang-container">
@@ -106,37 +99,17 @@
     </main>
 
     <!-- Modals -->
-    <div v-if="showRegister" class="apple-modal-overlay" @click="showRegister = false">
-      <div class="modal-wrapper" @click.stop>
-        <button class="modal-close-icon" @click="showRegister = false">✕</button>
-        <Register @registered="onRegistered" @loggedIn="onLoggedIn" />
-      </div>
-    </div>
 
-    <div v-if="showProfile" class="apple-modal-overlay" @click="showProfile = false">
-      <div class="modal-wrapper" @click.stop>
-        <Profile 
-          :email="userEmail" 
-          :name="userName" 
-          @back="showProfile = false" 
-          @updated="onProfileUpdated"
-          @loggedOut="onLoggedOut"
-        />
-      </div>
-    </div>
 
-    <AppleFooter />
   </div>
 </template>
 
 <script>
+import { watch as watchShell } from 'vue';
+import { openLogin } from '@/stores/ui';
 import { ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
-import AppleNavbar from '@/components/AppleNavbar.vue';
-import AppleFooter from '@/components/AppleFooter.vue';
 import BookCard from '@/components/BookCard.vue';
-import Register from '@/components/Register.vue';
-import Profile from '@/components/Profile.vue';
 import { getBooksByLanguage, matchGenre } from '@/services/bookService';
 import { t } from '@/i18n';
 import { bindSessionRefs } from '@/stores/session';
@@ -144,11 +117,7 @@ import { bindSessionRefs } from '@/stores/session';
 export default {
   name: 'LanguageBookView',
   components: {
-    AppleNavbar,
-    AppleFooter,
     BookCard,
-    Register,
-    Profile,
   },
   props: {
     languageTitle: {
@@ -181,6 +150,7 @@ export default {
     const userName = ref('');
     const userAvatar = ref('');
     const showRegister = ref(false);
+    watchShell(showRegister, (v) => { if (v) { openLogin(); showRegister.value = false; } });
     const showProfile = ref(false);
 
     // Auth state comes only from Firebase (src/stores/session.js).
@@ -342,9 +312,9 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #FFFFFF;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-1);
   padding: 8px 16px;
   border-radius: 9999px;
   font-family: inherit;
@@ -353,7 +323,7 @@ export default {
   transition: all 0.2s ease;
 }
 .back-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
+  background: var(--surface-3);
 }
 
 .breadcrumbs {
@@ -361,14 +331,14 @@ export default {
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-2);
 }
 .breadcrumbs a {
-  color: #38BDF8;
+  color: var(--accent-text);
   text-decoration: none;
 }
 .active-crumb {
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-1);
 }
 
 /* Hero */
@@ -393,22 +363,22 @@ export default {
   width: 68px;
   height: 68px;
   border-radius: 20px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 34px;
   flex-shrink: 0;
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-2);
 }
 
 .lang-badge {
   font-size: 11.5px;
   font-weight: 600;
-  color: #38BDF8;
-  background: rgba(0, 113, 227, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft);
   padding: 3px 10px;
   border-radius: 9999px;
   width: fit-content;
@@ -420,31 +390,31 @@ export default {
   font-size: 32px;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #FFFFFF;
+  color: var(--text-1);
 }
 
 .lang-description {
   margin: 0;
   font-size: 15px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-2);
 }
 
 .lang-stats-pill {
   display: flex;
   flex-direction: column;
   align-items: center;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   padding: 12px 20px;
   border-radius: 16px;
 }
 .lang-stats-pill span {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--text-2);
 }
 .lang-stats-pill strong {
   font-size: 24px;
-  color: #38BDF8;
+  color: var(--accent-text);
 }
 
 /* Toolbar */
@@ -471,19 +441,19 @@ export default {
   width: 100%;
   background: transparent;
   border: none;
-  color: #FFFFFF;
+  color: var(--text-1);
   font-family: inherit;
   font-size: 14.5px;
   outline: none;
 }
 .lang-search-input::placeholder {
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-3);
 }
 
 .clear-search {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-2);
   cursor: pointer;
 }
 
@@ -494,9 +464,9 @@ export default {
 }
 
 .apple-select {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #FFFFFF;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-1);
   padding: 8px 14px;
   border-radius: 12px;
   font-family: inherit;
@@ -505,8 +475,8 @@ export default {
   cursor: pointer;
 }
 .apple-select option {
-  background: #0e1626;
-  color: #FFFFFF;
+  background: var(--surface);
+  color: var(--text-1);
 }
 
 /* Grid */
@@ -538,10 +508,10 @@ export default {
 }
 .empty-state h3 {
   margin: 0 0 8px;
-  color: #FFFFFF;
+  color: var(--text-1);
 }
 .empty-state p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-2);
   margin: 0 0 18px;
 }
 
@@ -549,9 +519,9 @@ export default {
 .apple-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: var(--surface);
+
+
   z-index: 2000;
   display: flex;
   align-items: center;
@@ -566,9 +536,9 @@ export default {
   position: absolute;
   top: 14px;
   right: 14px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-2);
   width: 32px;
   height: 32px;
   border-radius: 50%;

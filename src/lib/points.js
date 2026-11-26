@@ -1,42 +1,62 @@
-// Reading points: formula, ledger entries, periods, rankings and anti-abuse checks.
-// Pure functions only, so the same logic is unit-tested and used by the admin UI.
-// Reading points are NOT school grades and are never written to any grade record.
+// Reading points: rules, ledger entries, periods and summaries.
+// Pure functions shared by the server API (which alone writes the ledger),
+// the UI and the unit tests. Reading points are not school grades.
+//
+// Ledger model (points_ledger/{id}):
+//   one document per credited action, never deleted. A deterministic id
+//   (`book__{progressId}`, `hundred__{progressId}` …) means the same confirmed
+//   action can be credited only once. A mistaken entry is cancelled by a second
+//   entry with the opposite sign (`reversal__{originalId}`); the original keeps
+//   `reversed: true` so the history stays readable.
+//   Every entry stores the student's class and shanyrak *at the time of the
+//   action*, so moving a student later never changes past results.
 
-export const DEFAULT_POINT_SETTINGS = Object.freeze({
-  confirmedBook: 100,
+export const ACTIONS = ['book_confirmed', 'hundred_bonus', 'review_accepted', 'milestone', 'reward', 'manual', 'reversal'];
+
+export const DEFAULT_POINT_RULES = Object.freeze({
+  bookConfirmed: 100,
   hundredBonus: 25,
-  meaningfulReview: 20,
-  // Share of the base points for a book the student already had confirmed before
-  // (another edition / a re-read). 0 means a re-read gives no points.
-  rereadShare: 0,
+  reviewAccepted: 20,
   milestones: [10, 25, 50, 75, 100],
-  minReviewLength: 120,
+  milestonePoints: 0,
+  maxManualPoints: 500,
 });
 
-export function normalizeSettings(raw = {}) {
-  const s = { ...DEFAULT_POINT_SETTINGS, ...(raw || {}) };
-  const num = (v, d) => (Number.isFinite(Number(v)) && Number(v) >= 0 ? Math.round(Number(v)) : d);
+const num = (v, d, max = 100000) => {
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? Math.min(max, Math.round(n)) : d;
+};
+
+// Accepts the old setting names (confirmedBook, meaningfulReview) as well.
+export function normalizeRules(raw = {}) {
+  const r = raw || {};
+  const d = DEFAULT_POINT_RULES;
   return {
-    confirmedBook: num(s.confirmedBook, DEFAULT_POINT_SETTINGS.confirmedBook),
-    hundredBonus: num(s.hundredBonus, DEFAULT_POINT_SETTINGS.hundredBonus),
-    meaningfulReview: num(s.meaningfulReview, DEFAULT_POINT_SETTINGS.meaningfulReview),
-    rereadShare: Math.min(1, Math.max(0, Number(s.rereadShare) || 0)),
-    milestones: (Array.isArray(s.milestones) ? s.milestones : DEFAULT_POINT_SETTINGS.milestones)
+    bookConfirmed: num(r.bookConfirmed ?? r.confirmedBook, d.bookConfirmed, 1000),
+    hundredBonus: num(r.hundredBonus, d.hundredBonus, 1000),
+    reviewAccepted: num(r.reviewAccepted ?? r.meaningfulReview, d.reviewAccepted, 1000),
+    milestones: (Array.isArray(r.milestones) ? r.milestones : d.milestones)
       .map(Number)
-      .filter((n) => Number.isInteger(n) && n > 0)
-      .sort((a, b) => a - b),
-    minReviewLength: num(s.minReviewLength, DEFAULT_POINT_SETTINGS.minReviewLength),
+      .filter((n) => Number.isInteger(n) && n > 0 && n <= 1000)
+      .sort((a, b) => a - b)
+      .filter((n, i, arr) => arr.indexOf(n) === i),
+    milestonePoints: num(r.milestonePoints, d.milestonePoints, 1000),
+    maxManualPoints: num(r.maxManualPoints, d.maxManualPoints, 5000),
   };
 }
+// Backward-compatible names used by older pages.
+export const DEFAULT_POINT_SETTINGS = DEFAULT_POINT_RULES;
+export const normalizeSettings = normalizeRules;
 
 // ---------- periods ----------
-// School year runs 1 September → 31 August. Terms (четверти):
+// School year 1 September → 31 August. Quarters (четверти):
 // Q1 Sep–Oct, Q2 Nov–Dec, Q3 Jan–Mar, Q4 Apr–Aug.
 export function toDate(value) {
   if (!value) return null;
   if (value instanceof Date) return value;
   if (typeof value.toDate === 'function') return value.toDate();
   if (typeof value.seconds === 'number') return new Date(value.seconds * 1000);
+  if (typeof value._seconds === 'number') return new Date(value._seconds * 1000);
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? null : d;
 }
@@ -69,103 +89,186 @@ export function periodKeys(value) {
   return { month: monthOf(value), quarter: quarterOf(value), academicYear: academicYearOf(value) };
 }
 
+// Month keys ('YYYY-MM') that belong to a quarter key ('2026-2027-Q2').
+export function monthsOfQuarter(quarterKey) {
+  const m = /^(\d{4})-(\d{4})-Q([1-4])$/.exec(String(quarterKey || ''));
+  if (!m) return [];
+  const [start, end] = [Number(m[1]), Number(m[2])];
+  const map = { 1: [[start, 9], [start, 10]], 2: [[start, 11], [start, 12]], 3: [[end, 1], [end, 2], [end, 3]], 4: [[end, 4], [end, 5], [end, 6], [end, 7], [end, 8]] };
+  return map[m[3]].map(([y, mo]) => `${y}-${String(mo).padStart(2, '0')}`);
+}
+
+export function monthsOfAcademicYear(year) {
+  const m = /^(\d{4})-(\d{4})$/.exec(String(year || ''));
+  if (!m) return [];
+  return [1, 2, 3, 4].flatMap((q) => monthsOfQuarter(`${year}-Q${q}`));
+}
+
 // ---------- ledger ----------
-// Ledger document IDs are deterministic. A second attempt to credit the same
-// event produces the same ID; Firestore rules forbid overwriting ledger docs,
-// so the same event can never be counted twice.
 export function ledgerId(kind, sourceId) {
   return `${kind}__${String(sourceId).replace(/[^A-Za-z0-9_-]/g, '_')}`;
 }
 
-export function isMeaningfulReview(text, settings = DEFAULT_POINT_SETTINGS) {
-  const clean = String(text || '').replace(/\s+/g, ' ').trim();
-  if (clean.length < settings.minReviewLength) return false;
-  const words = clean.split(' ').filter((w) => w.length > 1);
-  const unique = new Set(words.map((w) => w.toLowerCase()));
-  return words.length >= 15 && unique.size / words.length > 0.45;
+// Entries written by the first version of the site used `kind` instead of `action`.
+const LEGACY_KIND = { book: 'book_confirmed', hundred: 'hundred_bonus', review: 'review_accepted', badge: 'milestone', manual: 'manual', reward: 'reward' };
+export function actionOf(entry) {
+  if (!entry) return '';
+  if (entry.action) return entry.action;
+  return LEGACY_KIND[entry.kind] || entry.kind || '';
+}
+
+function snapshotFields(snapshot = {}) {
+  return {
+    academicYear: snapshot.academicYear || '',
+    classId: snapshot.classId || '',
+    className: snapshot.className || '',
+    shanyrakId: snapshot.shanyrakId || '',
+    shanyrakName: snapshot.shanyrakName || '',
+  };
 }
 
 /**
- * Ledger entries created when a librarian confirms a reading.
- * @param progress  { id, uid, bookId, isHundred }
- * @param options   { settings, actorUid, now, reviewAccepted, alreadyConfirmedBookIds }
+ * Ledger entries for a reading confirmed by a librarian.
+ * @param progress { id, uid, bookId, bookTitle, isHundred }
+ * @param options  { rules, reviewAccepted, snapshot, actor: {uid, role}, now }
  */
 export function entriesForConfirmation(progress, options = {}) {
-  const settings = normalizeSettings(options.settings);
+  const rules = normalizeRules(options.rules);
   const now = toDate(options.now) || new Date();
-  const periods = periodKeys(now);
+  const actor = options.actor || {};
   const base = {
     uid: progress.uid,
     sourceType: 'reading_progress',
     sourceId: progress.id,
     bookId: progress.bookId || '',
-    createdBy: options.actorUid || '',
+    bookTitle: String(progress.bookTitle || '').slice(0, 300),
     createdAt: now.toISOString(),
-    ...periods,
+    createdBy: actor.uid || '',
+    createdByRole: actor.role || '',
+    ...periodKeys(now),
+    ...snapshotFields(options.snapshot),
+    reversed: false,
   };
-  const reread = Array.isArray(options.alreadyConfirmedBookIds) && options.alreadyConfirmedBookIds.includes(progress.bookId);
-  const bookPoints = reread ? Math.round(settings.confirmedBook * settings.rereadShare) : settings.confirmedBook;
-
-  const entries = [
-    { ...base, id: ledgerId('book', progress.id), kind: 'book', points: bookPoints, reason: reread ? 'reread_confirmed' : 'book_confirmed' },
-  ];
-  if (progress.isHundred && !reread && settings.hundredBonus > 0) {
-    entries.push({ ...base, id: ledgerId('hundred', progress.id), kind: 'hundred', points: settings.hundredBonus, reason: 'hundred_books_bonus' });
+  if (options.snapshot?.academicYear) base.academicYear = options.snapshot.academicYear;
+  const entries = [{ ...base, id: ledgerId('book', progress.id), action: 'book_confirmed', points: rules.bookConfirmed, rule: 'bookConfirmed' }];
+  if (progress.isHundred && rules.hundredBonus > 0) {
+    entries.push({ ...base, id: ledgerId('hundred', progress.id), action: 'hundred_bonus', points: rules.hundredBonus, rule: 'hundredBonus' });
   }
-  if (options.reviewAccepted && settings.meaningfulReview > 0) {
-    entries.push({ ...base, id: ledgerId('review', progress.id), kind: 'review', points: settings.meaningfulReview, reason: 'meaningful_review' });
+  if (options.reviewAccepted && rules.reviewAccepted > 0) {
+    entries.push({ ...base, id: ledgerId('review', progress.id), action: 'review_accepted', points: rules.reviewAccepted, rule: 'reviewAccepted' });
   }
   return entries;
 }
 
-export function milestoneEntries(uid, confirmedCount, existingIds = new Set(), options = {}) {
-  const settings = normalizeSettings(options.settings);
+// Milestone badges reached with this confirmation (confirmedCount includes it).
+export function milestoneEntries(uid, confirmedCount, options = {}) {
+  const rules = normalizeRules(options.rules);
   const now = toDate(options.now) || new Date();
-  return settings.milestones
-    .filter((m) => confirmedCount >= m)
+  const actor = options.actor || {};
+  return rules.milestones
+    .filter((m) => confirmedCount === m)
     .map((m) => ({
       id: ledgerId('badge', `${uid}_${m}`),
       uid,
-      kind: 'badge',
+      action: 'milestone',
       badge: `books_${m}`,
-      points: 0,
-      reason: `milestone_${m}`,
+      points: rules.milestonePoints,
+      rule: 'milestonePoints',
       sourceType: 'milestone',
       sourceId: `${uid}_${m}`,
-      createdBy: options.actorUid || '',
       createdAt: now.toISOString(),
+      createdBy: actor.uid || '',
+      createdByRole: actor.role || '',
       ...periodKeys(now),
-    }))
-    .filter((e) => !existingIds.has(e.id));
+      ...snapshotFields(options.snapshot),
+      reversed: false,
+    }));
 }
 
-// Drop entries that already exist (idempotent re-run of the same confirmation).
-export function onlyNewEntries(entries, existingIds) {
-  const seen = new Set(existingIds);
-  return entries.filter((e) => {
-    if (seen.has(e.id)) return false;
-    seen.add(e.id);
-    return true;
-  });
+// The entry that cancels another one. Attributed to the same period, class and
+// shanyrak as the original, so the original contribution is removed exactly.
+export function reversalEntry(original, { actor = {}, reason = '', now = new Date() } = {}) {
+  return {
+    id: ledgerId('reversal', original.id),
+    uid: original.uid,
+    action: 'reversal',
+    points: -(Number(original.points) || 0),
+    reversalOf: original.id,
+    reversedAction: actionOf(original),
+    bookId: original.bookId || '',
+    bookTitle: original.bookTitle || '',
+    sourceType: 'points_ledger',
+    sourceId: original.id,
+    reason: String(reason || '').slice(0, 300),
+    createdAt: (toDate(now) || new Date()).toISOString(),
+    createdBy: actor.uid || '',
+    createdByRole: actor.role || '',
+    month: original.month || monthOf(original.createdAt),
+    quarter: original.quarter || quarterOf(original.createdAt),
+    academicYear: original.academicYear || academicYearOf(original.createdAt),
+    classId: original.classId || '',
+    className: original.className || '',
+    shanyrakId: original.shanyrakId || '',
+    shanyrakName: original.shanyrakName || '',
+    reversed: false,
+  };
 }
 
+// Kind key used in aggregates: book, hundred, review, milestone, reward, manual, reversal.
+export function aggregateKey(entry) {
+  const a = actionOf(entry);
+  return { book_confirmed: 'book', hundred_bonus: 'hundred', review_accepted: 'review' }[a] || a || 'other';
+}
+
+/**
+ * Student summary from the ledger.
+ */
 export function summarizeLedger(entries = []) {
-  const summary = { total: 0, byPeriod: {}, badges: [], confirmedBooks: 0, hundredBooks: 0 };
+  const summary = { total: 0, byYear: {}, byPeriod: {}, byAction: {}, badges: [], confirmedBooks: 0, hundredBooks: 0 };
   const seen = new Set();
+  const reversedIds = new Set(entries.filter((e) => actionOf(e) === 'reversal').map((e) => e.reversalOf));
   for (const e of entries) {
     if (!e || seen.has(e.id)) continue;
     seen.add(e.id);
     const pts = Number(e.points) || 0;
+    const action = actionOf(e);
     summary.total += pts;
+    summary.byAction[action] = (summary.byAction[action] || 0) + pts;
     for (const key of [e.month, e.quarter, e.academicYear]) {
       if (key) summary.byPeriod[key] = (summary.byPeriod[key] || 0) + pts;
     }
-    if (e.kind === 'badge' && e.badge) summary.badges.push(e.badge);
-    if (e.kind === 'book') summary.confirmedBooks += 1;
-    if (e.kind === 'hundred') summary.hundredBooks += 1;
+    if (e.academicYear) summary.byYear[e.academicYear] = (summary.byYear[e.academicYear] || 0) + pts;
+    const cancelled = reversedIds.has(e.id) || e.reversed === true;
+    if (action === 'milestone' && e.badge && !cancelled) summary.badges.push(e.badge);
+    if (action === 'book_confirmed' && !cancelled) summary.confirmedBooks += 1;
+    if (action === 'hundred_bonus' && !cancelled) summary.hundredBooks += 1;
   }
   summary.badges.sort((a, b) => Number(a.split('_')[1]) - Number(b.split('_')[1]));
   return summary;
+}
+
+// ---------- shanyrak aggregates ----------
+// shanyrak_points/{year__slug}.months['YYYY-MM'] = { total, book, hundred, … }
+// classes['10A'] = total. Sums months that belong to the chosen period.
+export function shanyrakPeriodTotals(doc, period = {}) {
+  const months = doc?.months || {};
+  let keys = Object.keys(months);
+  if (period.month) keys = keys.filter((k) => k === period.month);
+  else if (period.quarter) keys = keys.filter((k) => monthsOfQuarter(period.quarter).includes(k));
+  const out = { total: 0, byKind: {}, byClass: {} };
+  for (const k of keys) {
+    const m = months[k] || {};
+    for (const [field, value] of Object.entries(m)) {
+      if (field === 'classes') {
+        for (const [cls, v] of Object.entries(value || {})) out.byClass[cls] = (out.byClass[cls] || 0) + (Number(v) || 0);
+      } else if (field === 'total') {
+        out.total += Number(value) || 0;
+      } else {
+        out.byKind[field] = (out.byKind[field] || 0) + (Number(value) || 0);
+      }
+    }
+  }
+  return out;
 }
 
 // ---------- rankings ----------
@@ -183,65 +286,4 @@ export function rankRows(rows, valueOf) {
     }
     return { ...item.row, rank, score: item.value };
   });
-}
-
-export function groupTotals(rows, groupKey, labelKey) {
-  const groups = new Map();
-  for (const row of rows) {
-    const key = row[groupKey];
-    if (!key) continue;
-    const g = groups.get(key) || { id: key, name: row[labelKey] || key, points: 0, confirmedBooks: 0, members: 0 };
-    g.points += Number(row.periodScore ?? row.points) || 0;
-    g.confirmedBooks += Number(row.confirmedBooks) || 0;
-    g.members += 1;
-    groups.set(key, g);
-  }
-  return [...groups.values()].map((g) => ({ ...g, perStudent: g.members ? Math.round(g.points / g.members) : 0 }));
-}
-
-// ---------- public names ----------
-// «Аманова Адема» → «А. Адема». Never exposes the full surname or the email.
-export function shortPublicName(fullName) {
-  const parts = String(fullName || '').trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return '';
-  if (parts.length === 1) return parts[0];
-  const [surname, name] = parts;
-  return `${surname.charAt(0).toUpperCase()}. ${name}`;
-}
-
-export function publicLabel(row, hiddenLabel = '—') {
-  if (!row || row.privacyMode === 'hidden' || !row.nameShort) return hiddenLabel;
-  return row.className ? `${row.nameShort}, ${row.className}` : row.nameShort;
-}
-
-// ---------- anti-abuse ----------
-const DAY = 24 * 60 * 60 * 1000;
-
-/**
- * Flags a verification request for manual review.
- * @param request  { uid, review, requestedAt, bookId }
- * @param history  all requests of the same student
- */
-export function suspiciousFlags(request, history = [], settings = DEFAULT_POINT_SETTINGS) {
-  const flags = [];
-  const at = toDate(request.requestedAt) || new Date();
-  const sameDay = history.filter((h) => {
-    const t = toDate(h.requestedAt);
-    return t && Math.abs(at - t) < DAY;
-  });
-  if (sameDay.length > 5) flags.push('many_requests_24h');
-  const review = String(request.review || '').trim().toLowerCase();
-  if (review && review.length < 40) flags.push('short_review');
-  if (review) {
-    const duplicates = history.filter((h) => h.id !== request.id && String(h.review || '').trim().toLowerCase() === review);
-    if (duplicates.length) flags.push('duplicate_review');
-  }
-  if (request.startedAt) {
-    const started = toDate(request.startedAt);
-    if (started && at - started < 60 * 60 * 1000 && !request.loanReturned) flags.push('finished_too_fast');
-  }
-  if (settings && review && !isMeaningfulReview(review, normalizeSettings(settings)) && review.length >= 40) {
-    flags.push('review_not_meaningful');
-  }
-  return flags;
 }

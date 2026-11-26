@@ -1,13 +1,5 @@
 <template>
   <div class="apple-about-page">
-    <!-- Navbar -->
-    <AppleNavbar 
-      :is-logged-in="isLoggedIn"
-      :user-name="userName"
-      :user-avatar="userAvatar"
-      @open-register="showRegister = true"
-      @open-profile="showProfile = true"
-    />
 
     <main class="about-main">
       <div class="about-container">
@@ -113,35 +105,15 @@
     </main>
 
     <!-- Modals -->
-    <div v-if="showRegister" class="apple-modal-overlay" @click="showRegister = false">
-      <div class="modal-wrapper" @click.stop>
-        <button class="modal-close-icon" @click="showRegister = false">✕</button>
-        <Register @registered="onRegistered" @loggedIn="onLoggedIn" />
-      </div>
-    </div>
 
-    <div v-if="showProfile" class="apple-modal-overlay" @click="showProfile = false">
-      <div class="modal-wrapper" @click.stop>
-        <Profile 
-          :email="userEmail" 
-          :name="userName" 
-          @back="showProfile = false" 
-          @updated="onProfileUpdated"
-          @loggedOut="onLoggedOut"
-        />
-      </div>
-    </div>
 
-    <AppleFooter />
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
-import AppleNavbar from '@/components/AppleNavbar.vue';
-import AppleFooter from '@/components/AppleFooter.vue';
-import Register from '@/components/Register.vue';
-import Profile from '@/components/Profile.vue';
+import { watch as watchShell } from 'vue';
+import { openLogin } from '@/stores/ui';
+import { ref, onMounted } from 'vue';
 import { t } from '@/i18n';
 import { bindSessionRefs } from '@/stores/session';
 import { getBooks, getUniqueGenres } from '@/services/bookService';
@@ -149,10 +121,6 @@ import { getBooks, getUniqueGenres } from '@/services/bookService';
 export default {
   name: 'AboutUs',
   components: {
-    AppleNavbar,
-    AppleFooter,
-    Register,
-    Profile,
   },
   setup() {
     const isLoggedIn = ref(false);
@@ -161,6 +129,7 @@ export default {
     const userAvatar = ref('');
 
     const showRegister = ref(false);
+    watchShell(showRegister, (v) => { if (v) { openLogin(); showRegister.value = false; } });
     const showProfile = ref(false);
 
     // Same genre count as the home page and the catalog, calculated from the books.
@@ -256,9 +225,9 @@ export default {
   display: inline-flex;
   padding: 5px 14px;
   border-radius: 9999px;
-  background: rgba(0, 113, 227, 0.14);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  color: #38BDF8;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft);
+  color: var(--accent-text);
   font-size: 13px;
   font-weight: 600;
   margin-bottom: 20px;
@@ -270,19 +239,19 @@ export default {
   line-height: 1.15;
   letter-spacing: -0.025em;
   margin: 0 0 20px;
-  color: #FFFFFF;
+  color: var(--text-1);
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #FFFFFF 20%, #38BDF8 60%, #818CF8 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  background: var(--surface);
+
+
 }
 
 .about-lead {
   font-size: 18px;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-2);
   margin: 0;
 }
 
@@ -301,13 +270,13 @@ export default {
   font-size: 32px;
   font-weight: 700;
   margin: 0 0 18px;
-  color: #FFFFFF;
+  color: var(--text-1);
 }
 
 .story-p {
   font-size: 16px;
   line-height: 1.7;
-  color: rgba(255, 255, 255, 0.75);
+  color: var(--text-2);
   margin: 0 0 16px;
 }
 
@@ -338,13 +307,13 @@ export default {
 .section-title {
   font-size: 32px;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--text-1);
   margin: 0 0 10px;
 }
 
 .section-subtitle {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-2);
   margin: 0 auto 40px;
   max-width: 600px;
 }
@@ -370,14 +339,14 @@ export default {
 .value-title {
   font-size: 18px;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--text-1);
   margin: 0 0 10px;
 }
 
 .value-desc {
   font-size: 14px;
   line-height: 1.6;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-2);
   margin: 0;
 }
 
@@ -402,28 +371,28 @@ export default {
 .stat-number {
   font-size: 36px;
   font-weight: 800;
-  color: #38BDF8;
+  color: var(--accent-text);
   letter-spacing: -0.02em;
 }
 
 .stat-label {
   font-size: 13.5px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-2);
 }
 
 .stat-divider {
   width: 1px;
   height: 40px;
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--surface-3);
 }
 
 /* Modals */
 .apple-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: var(--surface);
+
+
   z-index: 2000;
   display: flex;
   align-items: center;
@@ -438,9 +407,9 @@ export default {
   position: absolute;
   top: 14px;
   right: 14px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-2);
   width: 32px;
   height: 32px;
   border-radius: 50%;

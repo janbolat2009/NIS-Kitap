@@ -3,10 +3,12 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseShanyrakImport, parseStudentImport, normalizeClassName, parseCsv } from '../src/lib/importer.js';
 
-const csv = fs.readFileSync(path.resolve(__dirname, '../import-templates/shanyraks_2026-2027.csv'), 'utf8');
+// Draft built from the curator and shanyrak-leader lists; must be confirmed by the
+// school before it is imported on /admin/classes.
+const csv = fs.readFileSync(path.resolve(__dirname, '../import-templates/class_map_2026-2027_DRAFT.csv'), 'utf8');
 
-describe('shanyrak import', () => {
-  it('imports the 2026-2027 list without errors', () => {
+describe('class map import', () => {
+  it('parses the 2026-2027 draft without errors', () => {
     const result = parseShanyrakImport(csv);
     expect(result.errors).toEqual([]);
     expect(result.shanyraks).toHaveLength(18);
@@ -53,7 +55,7 @@ describe('student import', () => {
   it('reports unknown classes, bad emails and duplicates', () => {
     const text = [
       'email,full_name,class_name,academic_year',
-      'a@school.kz,A B,99Z,2026-2027',
+      'a@school.kz,A B,12Z,2026-2027',
       'not-an-email,A B,9A,2026-2027',
       'c@school.kz,C D,9A,2026-2027',
       'c@school.kz,C D,9A,2026-2027',

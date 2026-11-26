@@ -1,47 +1,15 @@
-# 🍎 NIS Kitap 2.0 — Школьная онлайн-библиотека в стиле Apple
+# NIS Kitap — цифровая библиотека школы
 
-[![Vue 3](https://img.shields.io/badge/Vue-3.5+-4FC08D?style=for-the-badge&logo=vue.js&logoColor=white)](https://vuejs.org/)
-[![Vite](https://img.shields.io/badge/Vite-7.0+-646CFF?style=for-the-badge&logo=vite&logoColor=white)](https://vite.dev/)
-[![Apple Design](https://img.shields.io/badge/Design-Apple%20Glassmorphism-0071E3?style=for-the-badge&logo=apple&logoColor=white)](https://developer.apple.com/design/)
-[![License: ISC](https://img.shields.io/badge/License-ISC-blue.svg?style=for-the-badge)](https://opensource.org/licenses/ISC)
+Каталог школьной библиотеки NIS: поиск книг (в том числе по описанию с помощью ИИ), бронирование экземпляров с удержанием и письмом о получении, проект «100 кітап» с подтверждением прочтения библиотекарем, очки и рейтинг шаңыраков, поощрения и отзывы. Светлая и тёмная темы, три языка интерфейса.
 
-> **NIS Kitap** — это ультрасовременная цифровая библиотека для учащихся и преподавателей Назарбаев Интеллектуальной Школы. Веб-приложение полностью переработано в эстетике **Apple Design Language** (Glassmorphism, плавные микроанимации, мягкие многослойные тени и премиальная типографика).
-
----
-
-## ✨ Ключевые особенности и нововведения
-
-### 🎨 Apple Design Language (UI/UX)
-- **Glassmorphism & Frosted Glass**: многослойные полупрозрачные поверхности с размытием заднего плана (`backdrop-filter: blur(24px) saturate(190%)`) и тонкими светящимися границами.
-- **Премиальная палитра**: сохранение фирменного глубокого синего цвета школы NIS (`#003060`) в гармонии с космической ночной палитрой Apple Dark Midnight (`#060B14`, `#0E1626`), акцентными градиентами (`#0071E3`, `#38BDF8`, `#818CF8`) и теплыми кремовыми тонами (`#F6EEE1`).
-- **Шрифтовая иерархия**: гармоничное сочетание шрифтов **Gilroy** и Apple System Font (`-apple-system, "SF Pro Display", "SF Pro Text"`).
-- **Микроанимации и тактильный отклик**: пружинные переходы (`cubic-bezier(0.16, 1, 0.3, 1)`), динамический подъем карточек при наведении, масштабирование кнопок при нажатии, скелетоны загрузки.
-
-### 🧠 Умный поиск с ИИ
-- Семантический поиск по сюжету, эмоциям и ключевым словам («Антиутопия», «Космические путешествия», «Психология», «Тарих»).
-- Поддержка подключения к OpenAI API на бэкенде с автоматическим интеллектуальным клиентским fallback-движком (работает даже без сервера!).
-
-### 📚 Автономность и база данных
-- **2 097 оцифрованных книг**: полная база данных школьной библиотеки встроена в `public/data/books.json` и автоматически доступна в статическом деплое.
-- **Гибридный сервис данных (`src/services/bookService.js`)**: обращается к MongoDB API, если бэкенд запущен, или мгновенно переключается на встроенный JSON-бандл.
-- **Онлайн-бронирование**: интерактивный выбор срока бронирования (7, 14, 21 день) с сохранением в `localStorage`, таймером срока сдачи и управлением в личном кабинете.
-
-### 🌐 Триязычная коллекция
-- Отдельные специализированные разделы для литературы на **казахском (Қазақ тілі)**, **русском** и **английском (English)** языках.
-- 7 жанровых отделений: Фантастика, Фэнтези, Детектив, Приключения, Биография, Романтика, Поэзия.
-
-### 📱 100% Адаптивность
-- Идеальное отображение на смартфонах (iPhone), планшетах (iPad) и десктопах (MacBook / ПК).
-- Мобильное шторка-меню в стиле iOS Control Center с эффектом размытия.
-
----
-
-> Проект «100 кітап», лидерборд, аналитика и награды: роли, импорт и настройка — см. [docs/ADMIN_GUIDE.md](docs/ADMIN_GUIDE.md).
+- Роли, права, процессы, переменные окружения, миграция: [docs/ADMIN_GUIDE.md](docs/ADMIN_GUIDE.md)
+- Сервер: `api/v2` (Vercel Functions + Firebase Admin SDK). Браузер только читает Firestore; изменения — через API.
+- Тесты: `npm test` и `npm run test:emulator` (сценарии на эмуляторах Firebase).
 
 ## 🛠 Технологический стек
 
 - **Фронтенд**: Vue 3 (Composition API & Options API), Vue Router 4 (Lazy loading & code splitting), Vite 7
-- **Стилизация**: Модульный CSS3 с дизайн-токенами Apple, Glassmorphism utilities, Gilroy Fonts
+- **Стилизация**: CSS-токены светлой и тёмной темы (src/assets/main.css), шрифты Inter и Literata
 - **Аутентификация**: Firebase Auth + Firestore + локальный сессионный fallback
 - **Бэкенд (опционально)**: Node.js, Express 5, Mongoose / MongoDB, OpenAI API
 - **Деплой**: Vercel (`vercel.json`), GitHub Pages (`.github/workflows/deploy.yml`)
@@ -110,15 +78,15 @@ NIS/
 ├── src/
 │   ├── assets/
 │   │   ├── fonts/          # Шрифты Gilroy (Thin, Regular, Bold и др.)
-│   │   └── main.css        # Дизайн-система Apple, CSS-переменные, Glassmorphism
+│   │   └── main.css        # дизайн-токены тем
 │   ├── components/
-│   │   ├── AppleNavbar.vue      # Плавающий стеклянный навбар с мобильным меню
-│   │   ├── AppleFooter.vue      # Лаконичный Apple-подвал со ссылками
+│   │   ├── SiteHeader.vue       # шапка сайта, тема, язык
+│   │   ├── SiteFooter.vue       # подвал
 │   │   ├── BookCard.vue         # Интерактивная карточка книги
 │   │   ├── GenreBookView.vue    # Шаблон для страниц жанров
 │   │   ├── LanguageBookView.vue # Шаблон для страниц языков
-│   │   ├── FilterModal.vue      # Модальное окно фильтров (Apple Sheet)
-│   │   ├── Register.vue         # Apple ID модалка авторизации / входа
+│   │   ├── FilterModal.vue      # Модальное окно фильтров 
+│   │   ├── Register.vue         # окно входа
 │   │   ├── Profile.vue          # Личный кабинет читателя и активные брони
 │   │   └── SearchResults.vue    # Результаты умного поиска ИИ
 │   ├── pages/

@@ -159,14 +159,14 @@ export default {
 .apple-search-results {
   width: 100%;
   max-width: 660px;
-  background: rgba(14, 22, 38, 0.96);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--surface);
+
+
+  border: 1px solid var(--line);
   border-radius: 24px;
   padding: 24px 26px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65);
-  color: #FFFFFF;
+  box-shadow: var(--shadow-2);
+  color: var(--text-1);
   position: relative;
   box-sizing: border-box;
 }
@@ -178,7 +178,7 @@ export default {
   gap: 14px;
   margin-bottom: 20px;
   padding-bottom: 16px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--line);
 }
 
 .header-left {
@@ -192,8 +192,8 @@ export default {
 .header-icon {
   width: 44px;
   height: 44px;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -205,17 +205,17 @@ export default {
   margin: 0;
   font-size: 19px;
   font-weight: 700;
-  color: #FFFFFF;
+  color: var(--text-1);
   letter-spacing: -0.3px;
 }
 
 .results-subtitle {
   margin: 3px 0 0;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-2);
 }
 .results-subtitle b {
-  color: #38BDF8;
+  color: var(--accent-text);
 }
 
 /* Polished Close Button */
@@ -227,9 +227,9 @@ export default {
   height: 36px;
   min-width: 36px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: rgba(255, 255, 255, 0.85);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-1);
   cursor: pointer;
   outline: none;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
@@ -238,15 +238,15 @@ export default {
 }
 
 .modal-close-btn:hover {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.35);
-  color: #FFFFFF;
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+  color: var(--text-1);
   transform: scale(1.06);
 }
 
 .modal-close-btn:active {
   transform: scale(0.92);
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--surface-3);
 }
 
 .results-container {
@@ -265,19 +265,19 @@ export default {
   background: transparent;
 }
 .results-container::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--surface-3);
   border-radius: 3px;
 }
 .results-container::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--surface-3);
 }
 
 .result-item-card {
   display: flex;
   align-items: center;
   gap: 14px;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.09);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
   border-radius: 16px;
   padding: 14px 16px;
   cursor: pointer;
@@ -285,17 +285,17 @@ export default {
 }
 
 .result-item-card:hover {
-  background: rgba(255, 255, 255, 0.09);
-  border-color: rgba(56, 189, 248, 0.35);
+  background: var(--surface-2);
+  border-color: var(--accent-soft);
   transform: translateX(4px);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--shadow-2);
 }
 
 .item-rank-badge {
   font-size: 12px;
   font-weight: 700;
-  color: #38BDF8;
-  background: rgba(0, 113, 227, 0.15);
+  color: var(--accent-text);
+  background: var(--accent-soft);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -314,8 +314,8 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: var(--shadow-2);
+  border: 1px solid var(--line);
   overflow: hidden;
 }
 
@@ -325,13 +325,13 @@ export default {
   top: 0;
   bottom: 0;
   width: 4px;
-  background: rgba(255, 255, 255, 0.22);
+  background: var(--surface-3);
 }
 
 .mini-cover-letter {
   font-size: 15px;
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--text-1);
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
 }
 
@@ -351,23 +351,23 @@ export default {
 .item-genre-pill {
   font-size: 11px;
   font-weight: 600;
-  color: #818CF8;
-  background: rgba(99, 102, 241, 0.15);
+  color: var(--accent-text);
+  background: var(--accent-soft);
   padding: 2px 8px;
   border-radius: 9999px;
 }
 
 .item-lang-pill {
   font-size: 10.5px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-2);
 }
 
 .item-match-pill {
   font-size: 10.5px;
   font-weight: 700;
-  color: #38BDF8;
-  background: rgba(56, 189, 248, 0.14);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft);
   padding: 1px 7px;
   border-radius: 9999px;
   letter-spacing: 0.2px;
@@ -377,7 +377,7 @@ export default {
   margin: 0 0 4px;
   font-size: 15px;
   font-weight: 600;
-  color: #FFFFFF;
+  color: var(--text-1);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -386,7 +386,7 @@ export default {
 .item-author {
   margin: 0 0 6px;
   font-size: 12.5px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-2);
   display: flex;
   align-items: center;
   gap: 5px;
@@ -398,8 +398,8 @@ export default {
   gap: 6px;
   margin-top: 5px;
   padding: 6px 10px;
-  background: rgba(56, 189, 248, 0.08);
-  border: 1px solid rgba(56, 189, 248, 0.2);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft);
   border-radius: 10px;
   font-size: 12px;
   color: #BAE6FD;
@@ -418,7 +418,7 @@ export default {
 .item-desc {
   margin: 0;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-2);
   line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -427,12 +427,12 @@ export default {
 }
 
 .item-arrow {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-3);
   transition: transform 0.2s ease, color 0.2s ease;
   flex-shrink: 0;
 }
 .result-item-card:hover .item-arrow {
-  color: #38BDF8;
+  color: var(--accent-text);
   transform: translateX(3px);
 }
 
@@ -446,22 +446,22 @@ export default {
   height: 56px;
   margin: 0 auto 14px;
   border-radius: 50%;
-  background: rgba(56, 189, 248, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .no-results-title {
-  color: #FFFFFF;
+  color: var(--text-1);
   font-size: 15px;
   font-weight: 600;
   margin: 0 0 6px;
 }
 
 .no-results-subtitle {
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-2);
   font-size: 13px;
   margin: 0;
   max-width: 420px;

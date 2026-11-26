@@ -1,1175 +1,319 @@
 <template>
-  <div class="apple-book-detail-page">
-    <!-- Navbar -->
-    <AppleNavbar 
-      :is-logged-in="isLoggedIn"
-      :user-name="userName"
-      :user-avatar="userAvatar"
-      @open-register="showRegister = true"
-      @open-profile="showProfile = true"
-    />
+  <div class="page container book-page">
+    <button type="button" class="btn btn-ghost btn-sm back" @click="$router.back()">← {{ t('book.back') }}</button>
 
-    <main class="detail-main">
-      <div class="detail-container">
-        <!-- Breadcrumbs & Back -->
-        <div class="detail-top-nav">
-          <button class="back-link-btn" @click="handleBack">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-              <polyline points="15 18 9 12 15 6"></polyline>
-            </svg>
-            <span>{{ t('bookDetail.backToCatalog') }}</span>
-          </button>
-          <div class="breadcrumbs">
-            <router-link to="/">{{ t('nav.home') }}</router-link>
-            <span>/</span>
-            <router-link to="/catalog">{{ t('nav.catalog') }}</router-link>
-            <span>/</span>
-            <span class="curr-crumb">{{ book?.title || t('common.book') }}</span>
-          </div>
-        </div>
+    <div v-if="loading" class="layout"><div class="skeleton cover-sk" /><div><div class="skeleton" style="height: 40px; width: 70%" /><div class="skeleton" style="height: 20px; width: 40%; margin-top: 12px" /></div></div>
 
-        <!-- Loading State -->
-        <div v-if="loading" class="detail-loading glass-panel">
-          <div class="loading-spinner"></div>
-          <p>{{ t('bookDetail.loading') }}</p>
-        </div>
-
-        <!-- Book Not Found -->
-        <div v-else-if="!book" class="detail-not-found glass-panel">
-          <h2>{{ t('bookDetail.notFoundTitle') }}</h2>
-          <p>«{{ decodedTitle }}» {{ t('bookDetail.notFoundDesc') }}</p>
-          <button class="apple-btn-primary" @click="$router.push('/catalog')">
-            {{ t('bookDetail.returnCatalog') }}
-          </button>
-        </div>
-
-        <!-- Product Showcase Layout -->
-        <div v-else class="book-showcase-grid">
-          <!-- Left Col: Book Cover & Artwork -->
-          <div class="showcase-cover-side">
-            <div class="cover-art-container" :style="coverGradientStyle">
-              <div class="spine-line"></div>
-              <div class="cover-inner">
-                <div class="cover-badge">NIS LIBRARY</div>
-                <h2 class="cover-art-title">{{ book.title }}</h2>
-                <p class="cover-art-author">{{ book.author }}</p>
-                <div class="cover-art-footer">
-                  <span>{{ book.language }}</span>
-                  <span>{{ book.year }}</span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Status card under cover -->
-            <div class="availability-status-card glass-panel">
-              <div class="status-left">
-                <span class="status-circle" :class="book.copies > 0 ? 'available' : 'busy'"></span>
-                <div>
-                  <strong v-if="book.copies > 0">{{ t('bookDetail.availableStatus') }}</strong>
-                  <strong v-else>{{ t('bookDetail.busyStatus') }}</strong>
-                  <p>{{ book.copies > 0 ? `${book.copies} ${t('bookDetail.storageCopies')}` : t('bookDetail.busyDesc') }}</p>
-                </div>
-              </div>
-              <span class="copies-badge">{{ book.copies }} {{ t('bookCard.available') }}</span>
-            </div>
-          </div>
-
-          <!-- Right Col: Information & Actions -->
-          <div class="showcase-info-side">
-            <!-- Genre Pills -->
-            <div class="genre-tag-row">
-              <span v-for="g in genresList" :key="g" class="genre-tag">
-                {{ g }}
-              </span>
-              <span class="language-tag">{{ book.language || 'Русский' }}</span>
-            </div>
-
-            <h1 class="book-main-title">{{ book.title }}</h1>
-
-            <div class="author-row">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                <circle cx="12" cy="7" r="4"></circle>
-              </svg>
-              <span class="author-name">{{ book.author }}</span>
-            </div>
-
-            <!-- Specifications Tiles Grid -->
-            <div class="specs-grid">
-              <div class="spec-tile glass-card">
-                <span class="spec-label">{{ t('bookDetail.yearLabel') }}</span>
-                <strong class="spec-value">{{ book.year || '—' }}</strong>
-              </div>
-              <div class="spec-tile glass-card">
-                <span class="spec-label">{{ t('bookDetail.langLabel') }}</span>
-                <strong class="spec-value">{{ book.language || 'Русский' }}</strong>
-              </div>
-              <div class="spec-tile glass-card">
-                <span class="spec-label">{{ t('bookDetail.copiesLabel') }}</span>
-                <strong class="spec-value" :class="book.copies > 0 ? 'green' : 'red'">
-                  {{ book.copies > 0 ? `${book.copies} ${t('bookCard.available')}` : t('bookCard.busy') }}
-                </strong>
-              </div>
-              <div class="spec-tile glass-card">
-                <span class="spec-label">{{ t('bookDetail.libraryLabel') }}</span>
-                <strong class="spec-value">NIS Digital</strong>
-              </div>
-            </div>
-
-            <!-- Description -->
-            <div class="book-description-section glass-panel">
-              <h3 class="desc-heading">{{ t('bookDetail.annotationHeading') }}</h3>
-              <p class="desc-text">
-                {{ book.description || t('bookDetail.noDesc') }}
-              </p>
-            </div>
-
-            <!-- Action Buttons Row -->
-            <div class="action-buttons-row">
-              <button 
-                v-if="!isReserved" 
-                class="apple-btn-primary reserve-cta-btn" 
-                :disabled="book.copies <= 0"
-                @click="openReservationModal"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
-                </svg>
-                <span>{{ book.copies > 0 ? t('bookDetail.reserveBtn') : t('bookDetail.noCopiesBtn') }}</span>
-              </button>
-
-              <button v-else class="reserved-success-btn" @click="$emit('open-profile')">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-                  <polyline points="20 6 9 17 4 12"></polyline>
-                </svg>
-                <span>{{ t('bookDetail.alreadyReservedBtn') }}</span>
-              </button>
-
-              <button class="apple-btn-secondary fav-btn" :class="{ active: isFavorite }" @click="toggleFavorite">
-                <svg width="18" height="18" viewBox="0 0 24 24" :fill="isFavorite ? '#EF4444' : 'none'" :stroke="isFavorite ? '#EF4444' : 'currentColor'" stroke-width="2">
-                  <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
-                </svg>
-                <span>{{ isFavorite ? t('bookDetail.inFavorites') : t('bookDetail.toFavorites') }}</span>
-              </button>
-
-              <button class="apple-btn-secondary share-btn" @click="shareBook" title="Share">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <circle cx="18" cy="5" r="3"></circle>
-                  <circle cx="6" cy="12" r="3"></circle>
-                  <circle cx="18" cy="19" r="3"></circle>
-                  <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
-                  <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
-                </svg>
-              </button>
-            </div>
-
-            <!-- Toast alert -->
-            <div v-if="toastMessage" class="detail-toast">
-              <span>{{ toastMessage }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Related Books Section -->
-        <div v-if="relatedBooks.length" class="related-section">
-          <h2 class="section-title">{{ t('bookDetail.relatedTitle') }}</h2>
-          <div class="related-grid">
-            <BookCard 
-              v-for="rel in relatedBooks" 
-              :key="rel._id" 
-              :book="rel" 
-              @select="onSelectRelated"
-            />
-          </div>
-        </div>
-      </div>
-    </main>
-
-    <!-- Reservation Sheet Modal -->
-    <div v-if="showReservationModal" class="apple-modal-overlay" @click="showReservationModal = false">
-      <div class="reservation-modal-box glass-panel" @click.stop>
-        <div class="modal-handle"></div>
-        <div class="res-modal-header">
-          <h3>{{ t('bookDetail.reserveModalTitle') }}</h3>
-          <button class="sheet-close-btn" @click="showReservationModal = false">✕</button>
-        </div>
-
-        <div class="res-modal-body">
-          <div class="book-mini-summary">
-            <div class="mini-spine"></div>
-            <div>
-              <h4>{{ book.title }}</h4>
-              <p>{{ book.author }}</p>
-            </div>
-          </div>
-
-          <div class="duration-select-group">
-            <label class="duration-label">{{ t('bookDetail.durationLabel') }}</label>
-            <div class="duration-pills">
-              <button 
-                v-for="days in [7, 14, 21]" 
-                :key="days"
-                class="duration-pill"
-                :class="{ active: reservationDays === days }"
-                @click="reservationDays = days"
-              >
-                {{ days }} {{ t('bookDetail.daysWord') }}
-              </button>
-            </div>
-            <p class="due-hint">
-              {{ t('bookDetail.dueDateLabel') }} <b>{{ calculatedDueDate }}</b>
-            </p>
-          </div>
-
-          <div class="user-reservation-card">
-            <div class="user-res-header">
-              <span class="res-card-label">{{ t('bookDetail.readerInfoLabel') || 'Данные читателя для бронирования' }}</span>
-              <span v-if="book.isbn" class="res-isbn-badge">ISBN: {{ book.isbn }}</span>
-            </div>
-            <div class="user-res-row">
-              <span class="user-res-name">{{ userName || t('nav.reader') }}</span>
-              <span class="user-res-email">{{ userEmail }}</span>
-            </div>
-            <div class="email-notice-badge">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
-                <polyline points="22,6 12,13 2,6"></polyline>
-              </svg>
-              <span>{{ t('bookDetail.emailNoticeText') || 'Уведомление с деталями брони будет отправлено библиотекарю' }}</span>
-            </div>
-          </div>
-
-          <div class="nis-rules-notice">
-            <span class="notice-icon">ℹ️</span>
-            <span>{{ t('bookDetail.rulesNotice') }}</span>
-          </div>
-        </div>
-
-        <div class="res-modal-footer">
-          <button class="btn-cancel" :disabled="isReserving" @click="showReservationModal = false">{{ t('bookDetail.cancelBtn') }}</button>
-          <button class="btn-confirm-reserve" :disabled="isReserving" @click="confirmReservation">
-            <span v-if="isReserving" class="btn-loading-spinner"></span>
-            <span>{{ isReserving ? (t('bookDetail.reservingProgress') || 'Оформление...') : t('bookDetail.confirmReserveBtn') }}</span>
-          </button>
-        </div>
-      </div>
+    <div v-else-if="!book" class="empty">
+      <h3>{{ t('book.notFound') }}</h3><p>{{ t('book.notFoundLead') }}</p>
+      <router-link to="/catalog" class="btn btn-primary">{{ t('nav.catalog') }}</router-link>
     </div>
 
-    <!-- Register Modal -->
-    <div v-if="showRegister" class="apple-modal-overlay" @click="showRegister = false">
-      <div class="modal-wrapper" @click.stop>
-        <button class="modal-close-icon" @click="showRegister = false">✕</button>
-        <Register @registered="onRegistered" @loggedIn="onLoggedIn" />
-      </div>
-    </div>
+    <template v-else>
+      <article class="layout">
+        <div class="cover" :style="{ '--c': coverColor }" aria-hidden="true">
+          <span class="cover-title">{{ book.title }}</span><span class="cover-author">{{ book.author }}</span>
+        </div>
+        <div class="info">
+          <p v-if="hundred" class="badge badge-warm">{{ t('book.hundredBadge') }}</p>
+          <h1 class="title">{{ book.title }}</h1>
+          <p class="author">{{ book.author }}</p>
+          <dl class="meta">
+            <div v-if="book.language"><dt>{{ t('book.language') }}</dt><dd>{{ book.language }}</dd></div>
+            <div v-if="genre"><dt>{{ t('book.genre') }}</dt><dd>{{ genre }}</dd></div>
+            <div v-if="book.year"><dt>{{ t('book.year') }}</dt><dd>{{ book.year }}</dd></div>
+            <div v-if="book.isbn"><dt>{{ t('book.isbn') }}</dt><dd>{{ book.isbn }}</dd></div>
+          </dl>
 
-    <!-- Profile Modal -->
-    <div v-if="showProfile" class="apple-modal-overlay" @click="showProfile = false">
-      <div class="modal-wrapper" @click.stop>
-        <Profile 
-          :email="userEmail" 
-          :name="userName" 
-          @back="showProfile = false" 
-          @updated="onProfileUpdated"
-          @loggedOut="onLoggedOut"
-        />
-      </div>
-    </div>
+          <section id="reserve" class="fund" :aria-label="t('book.fund')">
+            <h2 class="h3">{{ t('book.fund') }}</h2>
+            <dl class="counters">
+              <div><dt>{{ t('loan.total') }}</dt><dd class="tabular">{{ av.total }}</dd></div>
+              <div class="ok"><dt>{{ t('loan.available') }}</dt><dd class="tabular">{{ av.available }}</dd></div>
+              <div><dt>{{ t('loan.held') }}</dt><dd class="tabular">{{ av.held }}</dd></div>
+              <div><dt>{{ t('loan.issuedCount') }}</dt><dd class="tabular">{{ av.issued }}</dd></div>
+            </dl>
 
-    <!-- Footer -->
-    <AppleFooter />
+            <div v-if="myLoan" class="loan" :class="`is-${myLoan.status}`">
+              <div class="loan-head"><span class="badge badge-info">{{ t(`loan.${myLoan.status}`) }}</span><span class="muted">{{ t('loan.code') }}: <b class="tabular">{{ myLoan.code }}</b></span></div>
+              <p v-if="myLoan.pickup" class="loan-line">{{ t('loan.pickup') }}: {{ fmtDate(myLoan.pickup.start) }}, {{ myLoan.pickup.from }}–{{ myLoan.pickup.to }}, {{ myLoan.pickup.place }}</p>
+              <p v-if="myLoan.holdUntil && ['requested', 'ready'].includes(myLoan.status)" class="loan-line">{{ t('loan.holdUntil') }}: {{ fmtDateTime(myLoan.holdUntil) }}</p>
+              <p v-if="myLoan.dueDate && myLoan.status === 'issued'" class="loan-line">{{ t('loan.due') }}: {{ fmtDate(myLoan.dueDate) }}</p>
+              <button v-if="['requested', 'ready'].includes(myLoan.status)" type="button" class="btn btn-danger btn-sm" :disabled="busy" @click="cancel">{{ t('loan.cancel') }}</button>
+            </div>
+            <template v-else>
+              <button type="button" class="btn btn-primary btn-lg reserve-btn" :class="{ done: justReserved }" :disabled="busy || av.available < 1" @click="reserve">
+                <span v-if="busy" class="spinner" />
+                <svg v-else-if="justReserved" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4"><path class="check" d="M5 12.5l4.5 4.5L19 7.5" /></svg>
+                <span>{{ av.available < 1 ? t('loan.none') : t('loan.reserve') }}</span>
+              </button>
+              <p class="hint">{{ t('loan.holdNote', { hours: holdHours }) }}</p>
+            </template>
+          </section>
+
+          <section class="status" :aria-label="t('book.yourStatus')">
+            <h2 class="h3">{{ t('book.yourStatus') }}: <span class="muted">{{ t(`status.${displayState}`) }}</span></h2>
+            <div class="seg">
+              <button v-for="s in ['want', 'reading', 'finished']" :key="s" type="button" :aria-pressed="progress?.status === s" :disabled="busy || locked" @click="setStatus(s)">{{ t(`status.${s}`) }}</button>
+            </div>
+            <router-link v-if="hundred && progress?.status === 'finished' && !locked" to="/100-kitap" class="link-sm">{{ t('hundred.sendForReview') }} →</router-link>
+          </section>
+        </div>
+      </article>
+
+      <section v-if="book.description" class="desc">
+        <h2 class="section-title">{{ t('book.description') }}</h2>
+        <p>{{ book.description }}</p>
+      </section>
+
+      <section class="reviews">
+        <div class="rev-head">
+          <h2 class="section-title">{{ t('book.reviews') }}<span v-if="avgRating" class="avg"> · ★ {{ avgRating }}</span></h2>
+          <button v-if="!editing" type="button" class="btn btn-secondary btn-sm" @click="startReview">{{ myReview ? t('book.editReview') : t('book.writeReview') }}</button>
+        </div>
+        <p v-if="myReview && !editing" class="notice" :class="{ 'notice-warning': myReview.status === 'pending', 'notice-success': myReview.status === 'published', 'notice-danger': myReview.status === 'rejected' }">
+          {{ myReview.status === 'published' ? t('book.reviewPublished') : myReview.status === 'rejected' ? t('book.reviewRejected', { note: myReview.moderationNote }) : t('book.reviewPending') }}
+        </p>
+        <form v-if="editing" class="review-form" @submit.prevent="submitReview">
+          <div class="stars" role="radiogroup" :aria-label="t('hundred.verify.rating')">
+            <button v-for="n in 5" :key="n" type="button" role="radio" :aria-checked="rForm.rating === n" :class="{ on: n <= rForm.rating }" @click="rForm.rating = n">★</button>
+          </div>
+          <label class="visually-hidden" for="rev-text">{{ t('book.reviewText') }}</label>
+          <textarea id="rev-text" v-model="rForm.text" class="textarea" maxlength="2000" required />
+          <p class="hint">{{ t('book.reviewRules') }}</p>
+          <p v-if="rError" class="error-text" role="alert">{{ rError }}</p>
+          <div class="row-actions">
+            <button type="submit" class="btn btn-primary btn-sm" :disabled="busy">{{ t('book.save') }}</button>
+            <button type="button" class="btn btn-ghost btn-sm" @click="editing = false">{{ t('common.cancel') }}</button>
+            <button v-if="myReview" type="button" class="btn btn-danger btn-sm" :disabled="busy" @click="removeReview">{{ t('book.delete') }}</button>
+          </div>
+        </form>
+        <ul v-if="reviews.length" class="rev-list">
+          <li v-for="r in reviews" :key="r.id" class="rev">
+            <div class="rev-meta"><b>{{ r.authorLabel }}</b><span class="stars-ro" :aria-label="`${r.rating}/5`">{{ '★'.repeat(r.rating) }}<span class="dim">{{ '★'.repeat(5 - r.rating) }}</span></span><span class="muted">{{ fmtDate(r.publishedAt) }}</span></div>
+            <p class="rev-text">{{ r.text }}</p>
+          </li>
+        </ul>
+        <p v-else-if="!editing" class="muted">{{ t('book.noReviews') }}</p>
+      </section>
+    </template>
   </div>
 </template>
 
-<script>
-import { ref, computed, onMounted, watch } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import AppleNavbar from '@/components/AppleNavbar.vue';
-import AppleFooter from '@/components/AppleFooter.vue';
-import BookCard from '@/components/BookCard.vue';
-import Register from '@/components/Register.vue';
-import Profile from '@/components/Profile.vue';
-import { getBookByTitle, getBooks, reserveBook, isBookReserved, hasActiveReservation, getAvailableCopies } from '@/services/bookService';
+<script setup>
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { t, currentLocale } from '@/i18n';
-import { session, bindSessionRefs } from '@/stores/session';
-import { setBookmark, isBookmarked, logReadingEvent } from '@/services/progressService';
+import { session } from '@/stores/session';
+import { openLogin, toast } from '@/stores/ui';
+import { getBookByTitle } from '@/services/bookService';
+import { getBookId } from '@/lib/bookId';
+import { displayStatus } from '@/lib/workflow';
+import { errorMessage } from '@/services/api';
+import { getSchoolSettings } from '@/services/schoolService';
+import {
+  watchAvailability, watchMyReservations, watchMyProgress, reserveBook, cancelReservation, setReadingStatus,
+  listPublishedReviews, getMyReview, saveReview, deleteReview, loadHundredBooks, logView,
+} from '@/services/library';
 
-export default {
-  name: 'BookDetail',
-  components: {
-    AppleNavbar,
-    AppleFooter,
-    BookCard,
-    Register,
-    Profile,
-  },
-  setup() {
-    const route = useRoute();
-    const router = useRouter();
+const route = useRoute();
+const book = ref(null);
+const loading = ref(true);
+const av = ref({ total: 0, held: 0, issued: 0, available: 0 });
+const loans = ref([]);
+const progressMap = ref(new Map());
+const hundred = ref(null);
+const busy = ref(false);
+const justReserved = ref(false);
+const reviews = ref([]);
+const myReview = ref(null);
+const editing = ref(false);
+const rForm = reactive({ rating: 5, text: '' });
+const rError = ref('');
+const holdHours = ref(48);
+let stops = [];
 
-    const book = ref(null);
-    const loading = ref(true);
-    const relatedBooks = ref([]);
+const bookId = computed(() => (book.value ? getBookId(book.value) : ''));
+const genre = computed(() => (Array.isArray(book.value?.genre) ? book.value.genre.join(', ') : book.value?.genre || ''));
+const progress = computed(() => progressMap.value.get(bookId.value) || null);
+const displayState = computed(() => displayStatus(progress.value));
+const locked = computed(() => ['pending', 'confirmed'].includes(progress.value?.verificationStatus));
+const myLoan = computed(() => loans.value.find((l) => l.bookId === bookId.value && ['requested', 'ready', 'issued'].includes(l.status)) || null);
+const avgRating = computed(() => (reviews.value.length ? (reviews.value.reduce((s, r) => s + r.rating, 0) / reviews.value.length).toFixed(1) : ''));
+const coverColor = computed(() => {
+  let h = 0;
+  for (const ch of String(book.value?.title || '')) h = (h * 31 + ch.charCodeAt(0)) % 5;
+  return `var(--cover-${h + 1})`;
+});
 
-    const isLoggedIn = ref(false);
-    const userEmail = ref('');
-    const userName = ref('');
-    const userAvatar = ref('');
+const locale = () => ({ kz: 'kk-KZ', en: 'en-GB' }[currentLocale.value] || 'ru-RU');
+const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString(locale(), { day: 'numeric', month: 'long' }) : '');
+const fmtDateTime = (iso) => (iso ? new Date(iso).toLocaleString(locale(), { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' }) : '');
 
-    const showRegister = ref(false);
-    const showProfile = ref(false);
-    const showReservationModal = ref(false);
-    const reservationDays = ref(14);
-    const isReserved = ref(false);
-    const isReserving = ref(false);
-    const isFavorite = ref(false);
-    const toastMessage = ref('');
+function needUser() {
+  if (!session.uid) {
+    openLogin('login');
+    return false;
+  }
+  return true;
+}
 
-    // Auth state comes only from Firebase (src/stores/session.js).
-    bindSessionRefs({ isLoggedIn, userEmail, userName, userAvatar });
+async function reserve() {
+  if (!needUser()) return;
+  busy.value = true;
+  try {
+    const r = await reserveBook(bookId.value);
+    justReserved.value = true;
+    toast(`${t('loan.reserved')} · ${t('loan.code')}: ${r.code}`, { timeout: 6000 });
+  } catch (err) {
+    toast(errorMessage(err, currentLocale.value), { type: 'error' });
+  } finally {
+    busy.value = false;
+  }
+}
 
-    const decodedTitle = computed(() => {
-      return decodeURIComponent(route.params.title || '');
-    });
+async function cancel() {
+  busy.value = true;
+  try {
+    await cancelReservation(myLoan.value.id);
+    justReserved.value = false;
+    toast(t('loan.cancelled'));
+  } catch (err) {
+    toast(errorMessage(err, currentLocale.value), { type: 'error' });
+  } finally {
+    busy.value = false;
+  }
+}
 
-    const genresList = computed(() => {
-      if (!book.value) return [];
-      if (Array.isArray(book.value.genre)) return book.value.genre;
-      if (typeof book.value.genre === 'string') return [book.value.genre];
-      return [t('common.book') || 'Книга'];
-    });
+async function setStatus(s) {
+  if (!needUser()) return;
+  busy.value = true;
+  try {
+    await setReadingStatus(bookId.value, progress.value?.status === s ? 'none' : s, hundred.value?.id || '');
+  } catch (err) {
+    toast(errorMessage(err, currentLocale.value), { type: 'error' });
+  } finally {
+    busy.value = false;
+  }
+}
 
-    const coverGradientStyle = computed(() => {
-      const title = book.value?.title || 'Book';
-      const gradients = [
-        'linear-gradient(145deg, #1e3c72 0%, #2a5298 100%)',
-        'linear-gradient(145deg, #09203f 0%, #537895 100%)',
-        'linear-gradient(145deg, #141e30 0%, #243b55 100%)',
-        'linear-gradient(145deg, #134e5e 0%, #71b280 100%)',
-        'linear-gradient(145deg, #2c3e50 0%, #3498db 100%)',
-      ];
-      let hash = 0;
-      for (let i = 0; i < title.length; i++) hash = title.charCodeAt(i) + ((hash << 5) - hash);
-      return { background: gradients[Math.abs(hash) % gradients.length] };
-    });
+function startReview() {
+  if (!needUser()) return;
+  rForm.rating = myReview.value?.rating || 5;
+  rForm.text = myReview.value?.text || '';
+  rError.value = '';
+  editing.value = true;
+}
 
-    const calculatedDueDate = computed(() => {
-      const d = new Date(Date.now() + reservationDays.value * 24 * 60 * 60 * 1000);
-      const loc = currentLocale.value === 'kz' ? 'kk-KZ' : currentLocale.value === 'en' ? 'en-US' : 'ru-RU';
-      return d.toLocaleDateString(loc, { day: 'numeric', month: 'long', year: 'numeric' });
-    });
+async function submitReview() {
+  busy.value = true;
+  rError.value = '';
+  try {
+    await saveReview(bookId.value, rForm.rating, rForm.text, hundred.value?.id || '');
+    myReview.value = await getMyReview(bookId.value);
+    editing.value = false;
+  } catch (err) {
+    rError.value = err.code === 'invalid_review' ? `${t('book.reviewRules')}` : errorMessage(err, currentLocale.value);
+  } finally {
+    busy.value = false;
+  }
+}
 
-    const loadBookData = async () => {
-      loading.value = true;
-      try {
-        const found = await getBookByTitle(decodedTitle.value);
-        // Copies on the shelf = catalog copies minus copies the librarian marked as issued.
-        book.value = found ? { ...found, copies: await getAvailableCopies(found) } : found;
-        if (found) {
-          isReserved.value = isBookReserved(found.title) || await hasActiveReservation(found);
-          // Похожие книги
-          const all = await getBooks();
-          const targetGenre = Array.isArray(found.genre) ? found.genre[0] : found.genre;
-          relatedBooks.value = all
-            .filter((b) => b.title !== found.title && (b.genre.includes(targetGenre) || b.author === found.author))
-            .slice(0, 4);
-        }
-      } catch (err) {
-        console.error('Ошибка загрузки книги:', err);
-      } finally {
-        loading.value = false;
-      }
-    };
+async function removeReview() {
+  busy.value = true;
+  try {
+    await deleteReview(bookId.value);
+    myReview.value = null;
+    editing.value = false;
+  } catch (err) {
+    rError.value = errorMessage(err, currentLocale.value);
+  } finally {
+    busy.value = false;
+  }
+}
 
-    onMounted(async () => {
-      loadBookData();
-    });
+async function load() {
+  stops.forEach((s) => s());
+  stops = [];
+  loading.value = true;
+  justReserved.value = false;
+  try {
+    book.value = await getBookByTitle(route.params.title);
+  } catch {
+    book.value = null;
+  }
+  loading.value = false;
+  if (!book.value) return;
+  const id = getBookId(book.value);
+  stops.push(watchAvailability(book.value, (a) => { av.value = a; }));
+  getSchoolSettings().then((s) => { holdHours.value = s.holdHours || 48; });
+  loadHundredBooks().then((d) => { hundred.value = d.books.find((h) => h.catalogBookId === id) || null; }).catch(() => {});
+  listPublishedReviews(id).then((r) => { reviews.value = r; }).catch(() => { reviews.value = []; });
+  logView(book.value);
+}
 
-    watch(() => route.params.title, () => {
-      loadBookData();
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    });
-
-    const openReservationModal = () => {
-      if (!isLoggedIn.value) {
-        showToast(t('bookDetail.loginRequiredNotice') || 'Для бронирования книги необходимо войти в аккаунт', 'warn');
-        showRegister.value = true;
-        return;
-      }
-      showReservationModal.value = true;
-    };
-
-    const confirmReservation = async () => {
-      if (!isLoggedIn.value) {
-        showRegister.value = true;
-        return;
-      }
-
-      if (!userEmail.value || !userEmail.value.includes('@')) {
-        showToast(t('common.loginRequiredDesc'), 'warn');
-        showRegister.value = true;
-        return;
-      }
-
-      isReserving.value = true;
-      try {
-        const due = new Date(Date.now() + reservationDays.value * 24 * 60 * 60 * 1000).toISOString();
-        const res = await reserveBook(book.value, due, {
-          name: userName.value,
-          email: userEmail.value,
-        });
-        showReservationModal.value = false;
-        if (res.success) {
-          isReserved.value = true;
-          if (res.emailSent) {
-            showToast(t('bookDetail.reservedSuccess'), 'success');
-          } else if (res.emailError) {
-            showToast(t('bookDetail.reservedSuccess'), 'success');
-          } else {
-            showToast(t('bookDetail.reservedSuccess'), 'success');
-          }
-        } else {
-          showToast(res.code === 'already_reserved' ? t('bookDetail.alreadyReservedBtn') : t('admin.errors.default'), 'warn');
-        }
-      } catch (err) {
-        showToast(t('admin.errors.default'), 'warn');
-      } finally {
-        isReserving.value = false;
-      }
-    };
-
-    // Bookmarks are stored in Firestore (bookmarks/{uid}__{bookId}), not only in memory.
-    const toggleFavorite = async () => {
-      if (!isLoggedIn.value) {
-        showRegister.value = true;
-        return;
-      }
-      const next = !isFavorite.value;
-      isFavorite.value = next;
-      try {
-        await setBookmark(book.value, next);
-        showToast(next ? t('bookDetail.inFavorites') : t('bookDetail.toFavorites'));
-      } catch (err) {
-        isFavorite.value = !next;
-        showToast(err?.code === 'email_not_verified' ? t('common.verifyEmailDesc') : t('admin.errors.default'), 'warn');
-      }
-    };
-
-    // Per-user state for the opened book: bookmark + one analytics "view" event.
-    const syncUserBookState = async () => {
-      if (!book.value || !session.uid) {
-        isFavorite.value = false;
-        return;
-      }
-      isFavorite.value = await isBookmarked(book.value);
-      logReadingEvent('view', book.value);
-    };
-    watch(() => [book.value?.title, session.uid], syncUserBookState);
-
-    const shareBook = () => {
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(window.location.href);
-        showToast(t('bookDetail.shareToast'));
-      }
-    };
-
-    const showToast = (msg, _type = '') => {
-      toastMessage.value = msg;
-      setTimeout(() => {
-        toastMessage.value = '';
-      }, 3500);
-    };
-
-    const onSelectRelated = (relBook) => {
-      router.push(`/book/${encodeURIComponent(relBook.title)}`);
-    };
-
-    const handleBack = () => {
-      if (window.history.length > 1) {
-        router.back();
-      } else {
-        router.push('/catalog');
-      }
-    };
-
-    const onRegistered = (payload) => {
-      userEmail.value = payload.email;
-      userName.value = payload.name;
-      userAvatar.value = payload.avatar || '';
-      isLoggedIn.value = true;
-      showRegister.value = false;
-      localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: userAvatar.value }));
-      localStorage.setItem('isLoggedIn', 'true');
-      showReservationModal.value = true;
-    };
-
-    const onLoggedIn = (payload) => {
-      userEmail.value = payload.email;
-      userName.value = payload.name;
-      userAvatar.value = payload.avatar || '';
-      isLoggedIn.value = true;
-      showRegister.value = false;
-      localStorage.setItem('user', JSON.stringify({ email: payload.email, name: payload.name, avatar: userAvatar.value }));
-      localStorage.setItem('isLoggedIn', 'true');
-      showReservationModal.value = true;
-    };
-
-    const onProfileUpdated = (data) => {
-      if (data.name) userName.value = data.name;
-      if (data.avatar) userAvatar.value = data.avatar;
-    };
-
-    const onLoggedOut = () => {
-      isLoggedIn.value = false;
-      userEmail.value = '';
-      userName.value = '';
-      userAvatar.value = '';
-    };
-
-    return {
-      book,
-      loading,
-      relatedBooks,
-      decodedTitle,
-      genresList,
-      coverGradientStyle,
-      calculatedDueDate,
-      isLoggedIn,
-      userEmail,
-      userName,
-      userAvatar,
-      showRegister,
-      showProfile,
-      showReservationModal,
-      reservationDays,
-      isReserved,
-      isReserving,
-      isFavorite,
-      toastMessage,
-      openReservationModal,
-      confirmReservation,
-      toggleFavorite,
-      shareBook,
-      handleBack,
-      onSelectRelated,
-      onRegistered,
-      onLoggedIn,
-      onProfileUpdated,
-      onLoggedOut,
-      t,
-    };
-  },
-};
+watch(() => route.params.title, load, { immediate: true });
+watch(() => [session.uid, bookId.value], async () => {
+  if (!bookId.value) return;
+  stops.push(watchMyReservations((l) => { loans.value = l; }));
+  stops.push(watchMyProgress((m) => { progressMap.value = m; }));
+  myReview.value = await getMyReview(bookId.value);
+}, { immediate: true });
+onBeforeUnmount(() => stops.forEach((s) => s()));
 </script>
 
 <style scoped>
-.apple-book-detail-page {
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.detail-main {
-  flex: 1;
-  padding: 100px 0 80px;
-}
-
-.detail-container {
-  max-width: 1240px;
-  margin: 0 auto;
-  padding: 0 24px;
-}
-
-/* Top Nav */
-.detail-top-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 32px;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.back-link-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #FFFFFF;
-  padding: 8px 16px;
-  border-radius: 9999px;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.back-link-btn:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateX(-3px);
-}
-
-.breadcrumbs {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
-}
-.breadcrumbs a {
-  color: #38BDF8;
-  text-decoration: none;
-}
-.curr-crumb {
-  color: rgba(255, 255, 255, 0.85);
-  max-width: 250px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Showcase Grid */
-.book-showcase-grid {
-  display: grid;
-  grid-template-columns: 380px 1fr;
-  gap: 50px;
-  margin-bottom: 70px;
-}
-
-/* Left Col: Cover */
-.showcase-cover-side {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.cover-art-container {
-  width: 100%;
-  height: 480px;
-  border-radius: 24px;
-  position: relative;
-  box-shadow: 
-    -10px 15px 35px rgba(0, 0, 0, 0.6),
-    0 0 35px rgba(0, 113, 227, 0.25);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  padding: 32px;
-  overflow: hidden;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-}
-
-.spine-line {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 12px;
-  background: linear-gradient(to right, rgba(255, 255, 255, 0.3), rgba(0, 0, 0, 0.4));
-  box-shadow: 2px 0 4px rgba(0, 0, 0, 0.4);
-}
-
-.cover-inner {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  justify-content: space-between;
-}
-
-.cover-badge {
-  font-size: 11px;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.cover-art-title {
-  margin: 0 0 8px;
-  font-size: 26px;
-  font-weight: 800;
-  line-height: 1.25;
-  color: #FFFFFF;
-  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
-}
-
-.cover-art-author {
-  margin: 0;
-  font-size: 16px;
-  color: rgba(255, 255, 255, 0.9);
-  font-weight: 500;
-}
-
-.cover-art-footer {
-  display: flex;
-  justify-content: space-between;
-  font-size: 13px;
-  font-weight: 600;
-  color: rgba(255, 255, 255, 0.7);
-}
-
-.availability-status-card {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 20px;
-  border-radius: 18px;
-}
-.status-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.status-circle {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-}
-.status-circle.available {
-  background: #10B981;
-  box-shadow: 0 0 10px #10B981;
-}
-.status-circle.busy {
-  background: #EF4444;
-}
-.status-left strong {
-  display: block;
-  font-size: 14px;
-  color: #FFFFFF;
-}
-.status-left p {
-  margin: 2px 0 0;
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.55);
-}
-.copies-badge {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  padding: 4px 10px;
-  border-radius: 9999px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #38BDF8;
-}
-
-/* Right Col: Info */
-.showcase-info-side {
-  display: flex;
-  flex-direction: column;
-}
-
-.genre-tag-row {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-}
-.genre-tag {
-  background: rgba(0, 113, 227, 0.16);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  color: #38BDF8;
-  font-size: 12px;
-  font-weight: 600;
-  padding: 4px 12px;
-  border-radius: 9999px;
-}
-.language-tag {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.7);
-  font-size: 12px;
-  padding: 4px 12px;
-  border-radius: 9999px;
-}
-
-.book-main-title {
-  font-size: 40px;
-  font-weight: 800;
-  letter-spacing: -0.02em;
-  margin: 0 0 12px;
-  color: #FFFFFF;
-  line-height: 1.18;
-}
-
-.author-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  color: #38BDF8;
-  font-size: 18px;
-  font-weight: 500;
-  margin-bottom: 28px;
-}
-
-/* Specs Grid */
-.specs-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 14px;
-  margin-bottom: 28px;
-}
-
-.spec-tile {
-  padding: 14px;
-  border-radius: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-.spec-label {
-  font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.5);
-}
-.spec-value {
-  font-size: 15px;
-  color: #FFFFFF;
-}
-.spec-value.green {
-  color: #34D399;
-}
-.spec-value.red {
-  color: #F87171;
-}
-
-/* Description */
-.book-description-section {
-  padding: 24px;
-  border-radius: 20px;
-  margin-bottom: 32px;
-}
-.desc-heading {
-  margin: 0 0 10px;
-  font-size: 17px;
-  font-weight: 600;
-  color: #FFFFFF;
-}
-.desc-text {
-  margin: 0;
-  font-size: 15px;
-  line-height: 1.7;
-  color: rgba(255, 255, 255, 0.75);
-}
-
-/* Action Buttons */
-.action-buttons-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.reserve-cta-btn {
-  padding: 14px 28px;
-  font-size: 15px;
-}
-.reserve-cta-btn:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.reserved-success-btn {
-  background: rgba(16, 185, 129, 0.2);
-  border: 1px solid rgba(16, 185, 129, 0.45);
-  color: #34D399;
-  padding: 14px 24px;
-  border-radius: 9999px;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-}
-
-.fav-btn.active {
-  color: #FCA5A5;
-  border-color: rgba(239, 68, 68, 0.4);
-}
-
-.share-btn {
-  padding: 12px 14px;
-}
-
-/* Toast */
-.detail-toast {
-  margin-top: 16px;
-  padding: 10px 16px;
-  border-radius: 12px;
-  background: rgba(0, 113, 227, 0.2);
-  border: 1px solid rgba(56, 189, 248, 0.4);
-  color: #FFFFFF;
-  font-size: 13.5px;
-  width: fit-content;
-}
-
-/* Related */
-.related-section {
-  margin-top: 60px;
-}
-.related-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 24px;
-  margin-top: 24px;
-}
-
-/* Reservation Modal */
-.reservation-modal-box {
-  width: 100%;
-  max-width: 460px;
-  border-radius: 24px;
-  padding: 24px;
-}
-.modal-handle {
-  width: 36px;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 9999px;
-  margin: 0 auto 16px;
-}
-.res-modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 20px;
-}
-.res-modal-header h3 {
-  margin: 0;
-  font-size: 19px;
-  font-weight: 700;
-}
-.sheet-close-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.7);
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  cursor: pointer;
-}
-
-.book-mini-summary {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  background: rgba(255, 255, 255, 0.05);
-  border-radius: 14px;
-  padding: 12px 16px;
-  margin-bottom: 20px;
-}
-.mini-spine {
-  width: 4px;
-  height: 36px;
-  border-radius: 2px;
-  background: #38BDF8;
-}
-.book-mini-summary h4 {
-  margin: 0 0 2px;
-  font-size: 14.5px;
-}
-.book-mini-summary p {
-  margin: 0;
-  font-size: 12.5px;
-  color: rgba(255, 255, 255, 0.6);
-}
-
-.duration-select-group {
-  margin-bottom: 20px;
-}
-.duration-label {
-  font-size: 13px;
-  font-weight: 600;
-  margin-bottom: 10px;
-  display: block;
-}
-.duration-pills {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-.duration-pill {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.8);
-  padding: 10px;
-  border-radius: 12px;
-  font-family: inherit;
-  font-size: 13.5px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-.duration-pill.active {
-  background: #0071E3;
-  color: #FFFFFF;
-  border-color: rgba(56, 189, 248, 0.5);
-}
-.due-hint {
-  font-size: 13px;
-  color: #38BDF8;
-  margin: 0;
-}
-
-.user-reservation-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  padding: 14px;
-  margin-bottom: 16px;
-}
-.user-res-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 8px;
-}
-.res-card-label {
-  font-size: 11px;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  font-weight: 700;
-  color: #38BDF8;
-}
-.res-isbn-badge {
-  font-size: 11px;
-  font-family: monospace;
-  background: rgba(255, 255, 255, 0.08);
-  padding: 2px 8px;
-  border-radius: 6px;
-  color: #E2E8F0;
-}
-.user-res-row {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  margin-bottom: 8px;
-}
-.user-res-name {
-  font-size: 14px;
-  font-weight: 600;
-  color: #FFFFFF;
-}
-.user-res-email {
-  font-size: 12.5px;
-  color: #94A3B8;
-}
-.email-notice-badge {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 11.5px;
-  color: #10B981;
-  background: rgba(16, 185, 129, 0.1);
-  padding: 6px 10px;
-  border-radius: 8px;
-  border: 1px solid rgba(16, 185, 129, 0.2);
-}
-.btn-loading-spinner {
-  display: inline-block;
-  width: 14px;
-  height: 14px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #FFFFFF;
-  border-radius: 50%;
-  animation: btnSpin 0.7s linear infinite;
-  margin-right: 6px;
-  vertical-align: middle;
-}
-@keyframes btnSpin {
-  to { transform: rotate(360deg); }
-}
-
-.nis-rules-notice {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  background: rgba(0, 113, 227, 0.1);
-  border: 1px solid rgba(56, 189, 248, 0.25);
-  border-radius: 12px;
-  padding: 12px;
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.75);
-  margin-bottom: 24px;
-}
-
-.res-modal-footer {
-  display: flex;
-  gap: 10px;
-}
-.btn-cancel {
-  flex: 1;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #FFFFFF;
-  padding: 12px;
-  border-radius: 12px;
-  font-family: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-.btn-confirm-reserve {
-  flex: 1.6;
-  background: linear-gradient(135deg, #0071E3 0%, #0056B3 100%);
-  color: #FFFFFF;
-  border: none;
-  padding: 12px;
-  border-radius: 12px;
-  font-family: inherit;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-/* Modals */
-.apple-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  z-index: 2000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
-.modal-wrapper {
-  position: relative;
-  max-width: 100%;
-}
-.modal-close-icon {
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.7);
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-  z-index: 10;
-}
-
-@media (max-width: 900px) {
-  .book-showcase-grid {
-    grid-template-columns: 1fr;
-  }
-  .cover-art-container {
-    height: 380px;
-    max-width: 320px;
-    margin: 0 auto;
-  }
-  .specs-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+.back { margin-bottom: 16px; }
+.layout { display: grid; grid-template-columns: 260px 1fr; gap: 40px; align-items: start; }
+.cover-sk { aspect-ratio: 2 / 3; border-radius: 6px 14px 14px 6px; }
+.cover { aspect-ratio: 2 / 3; border-radius: 4px 14px 14px 4px; background: var(--c); color: #fff; padding: 24px 20px; display: flex; flex-direction: column; justify-content: flex-end; gap: 8px; box-shadow: var(--shadow-2), inset 6px 0 0 rgba(0, 0, 0, 0.18); position: sticky; top: calc(var(--nav-h) + 20px); animation: rise var(--dur-3) var(--ease-out) both; }
+.cover-title { font-family: var(--font-serif); font-size: 1.3rem; line-height: 1.25; font-weight: 600; overflow-wrap: anywhere; }
+.cover-author { font-size: var(--fs-sm); opacity: 0.85; }
+.title { font-size: var(--fs-2xl); margin: 10px 0 6px; overflow-wrap: anywhere; }
+.author { font-size: var(--fs-lg); color: var(--text-2); }
+.meta { display: flex; flex-wrap: wrap; gap: 8px 28px; margin: 20px 0 0; }
+.meta dt { font-size: var(--fs-xs); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; }
+.meta dd { margin: 2px 0 0; font-weight: 550; }
+.h3 { font-family: var(--font-sans); font-size: var(--fs-md); font-weight: 650; margin-bottom: 12px; }
+.fund, .status { margin-top: 28px; padding-top: 24px; border-top: 1px solid var(--line); }
+.counters { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 16px; }
+.counters div { padding: 12px; border-radius: var(--r-md); background: var(--surface-2); }
+.counters dt { font-size: var(--fs-xs); color: var(--text-3); }
+.counters dd { margin: 2px 0 0; font-size: 1.4rem; font-weight: 700; }
+.counters .ok dd { color: var(--success); }
+.reserve-btn { min-width: 220px; }
+.reserve-btn.done { background: var(--success); animation: pop 0.45s var(--ease-out); }
+.check { stroke-dasharray: 24; stroke-dashoffset: 24; animation: draw 0.4s var(--ease-out) forwards; }
+.fund .hint { margin-top: 10px; max-width: 520px; }
+.loan { padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); display: flex; flex-direction: column; gap: 8px; align-items: flex-start; animation: rise var(--dur-3) var(--ease-out) both; }
+.loan-head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.loan-line { font-size: var(--fs-sm); color: var(--text-2); }
+.seg { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 460px; border: 1px solid var(--line-strong); border-radius: var(--r-md); overflow: hidden; }
+.seg button { min-height: 42px; border: none; background: var(--surface); color: var(--text-2); font-weight: 600; font-size: var(--fs-sm); cursor: pointer; }
+.seg button + button { border-left: 1px solid var(--line-strong); }
+.seg button[aria-pressed='true'] { background: var(--text-1); color: var(--bg); }
+.seg button:disabled { opacity: 0.5; }
+.link-sm { display: inline-block; margin-top: 10px; font-size: var(--fs-sm); font-weight: 600; }
+.desc { margin-top: 48px; max-width: 760px; }
+.desc p { color: var(--text-2); line-height: 1.75; white-space: pre-line; }
+.reviews { margin-top: 48px; max-width: 760px; }
+.rev-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.avg { color: var(--warm); font-family: var(--font-sans); font-size: var(--fs-md); }
+.review-form { display: flex; flex-direction: column; gap: 10px; margin: 8px 0 20px; }
+.stars { display: flex; gap: 2px; }
+.stars button { width: 40px; height: 40px; border: none; background: none; font-size: 26px; color: var(--line-strong); cursor: pointer; }
+.stars button.on { color: var(--warm); }
+.rev-list { list-style: none; padding: 0; margin: 12px 0 0; display: flex; flex-direction: column; }
+.rev { padding: 16px 0; border-bottom: 1px solid var(--line); }
+.rev-meta { display: flex; gap: 12px; flex-wrap: wrap; align-items: baseline; font-size: var(--fs-sm); }
+.stars-ro { color: var(--warm); letter-spacing: 1px; }
+.stars-ro .dim { color: var(--line-strong); }
+.rev-text { margin-top: 6px; color: var(--text-1); white-space: pre-line; overflow-wrap: anywhere; }
+.notice { margin: 10px 0; }
+@media (max-width: 760px) {
+  .layout { grid-template-columns: 1fr; gap: 20px; }
+  .cover { position: static; width: 150px; }
+  .counters { grid-template-columns: repeat(2, 1fr); }
+  .reserve-btn { width: 100%; }
 }
 </style>

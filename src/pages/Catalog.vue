@@ -1,14 +1,5 @@
 <template>
   <div class="apple-catalog-page">
-    <!-- Navbar -->
-    <AppleNavbar 
-      :is-logged-in="isLoggedIn"
-      :user-name="userName"
-      :user-avatar="userAvatar"
-      @open-register="showRegister = true"
-      @open-profile="showProfile = true"
-      @open-search="focusSearch"
-    />
 
     <!-- Main Content -->
     <main class="catalog-main">
@@ -168,40 +159,20 @@
     />
 
     <!-- Register Modal -->
-    <div v-if="showRegister" class="apple-modal-overlay" @click="showRegister = false">
-      <div class="modal-wrapper" @click.stop>
-        <button class="modal-close-icon" @click="showRegister = false">✕</button>
-        <Register @registered="onRegistered" @loggedIn="onLoggedIn" />
-      </div>
-    </div>
 
     <!-- Profile Modal -->
-    <div v-if="showProfile" class="apple-modal-overlay" @click="showProfile = false">
-      <div class="modal-wrapper" @click.stop>
-        <Profile 
-          :email="userEmail" 
-          :name="userName" 
-          @back="showProfile = false" 
-          @updated="onProfileUpdated"
-          @loggedOut="onLoggedOut"
-        />
-      </div>
-    </div>
 
     <!-- Footer -->
-    <AppleFooter />
   </div>
 </template>
 
 <script>
+import { watch as watchShell } from 'vue';
+import { openLogin } from '@/stores/ui';
 import { ref, computed, watch, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
-import AppleNavbar from '@/components/AppleNavbar.vue';
-import AppleFooter from '@/components/AppleFooter.vue';
 import BookCard from '@/components/BookCard.vue';
 import FilterModal from '@/components/FilterModal.vue';
-import Register from '@/components/Register.vue';
-import Profile from '@/components/Profile.vue';
 import { getBooks, matchLanguage, matchGenre, getUniqueGenres } from '@/services/bookService';
 import { t } from '@/i18n';
 import { bindSessionRefs } from '@/stores/session';
@@ -209,12 +180,8 @@ import { bindSessionRefs } from '@/stores/session';
 export default {
   name: 'Catalog',
   components: {
-    AppleNavbar,
-    AppleFooter,
     BookCard,
     FilterModal,
-    Register,
-    Profile,
   },
   setup() {
     const router = useRouter();
@@ -226,6 +193,7 @@ export default {
     const userAvatar = ref('');
 
     const showRegister = ref(false);
+    watchShell(showRegister, (v) => { if (v) { openLogin(); showRegister.value = false; } });
     const showProfile = ref(false);
     const showFilterModal = ref(false);
 
@@ -521,15 +489,15 @@ export default {
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-2);
   margin-bottom: 12px;
 }
 .header-breadcrumbs a {
-  color: #38BDF8;
+  color: var(--accent-text);
   text-decoration: none;
 }
 .header-breadcrumbs .current {
-  color: rgba(255, 255, 255, 0.8);
+  color: var(--text-2);
 }
 
 .catalog-title {
@@ -537,12 +505,12 @@ export default {
   font-weight: 800;
   letter-spacing: -0.02em;
   margin: 0 0 10px;
-  color: #FFFFFF;
+  color: var(--text-1);
 }
 
 .catalog-subtitle {
   font-size: 16px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-2);
   margin: 0;
   max-width: 680px;
   line-height: 1.5;
@@ -565,31 +533,31 @@ export default {
   gap: 12px;
   flex: 1;
   min-width: 0;
-  color: #38BDF8;
+  color: var(--accent-text);
 }
 
 .catalog-search {
   width: 100%;
   background: transparent;
   border: none;
-  color: #FFFFFF;
+  color: var(--text-1);
   font-family: inherit;
   font-size: 15px;
   outline: none;
 }
 .catalog-search::placeholder {
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-3);
 }
 
 .clear-btn {
   background: transparent;
   border: none;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-2);
   font-size: 14px;
   cursor: pointer;
 }
 .clear-btn:hover {
-  color: #FFFFFF;
+  color: var(--text-1);
 }
 
 .toolbar-actions {
@@ -606,9 +574,9 @@ export default {
 .apple-select {
   width: 100%;
   max-width: 220px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: #FFFFFF;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-1);
   padding: 9px 14px;
   border-radius: 12px;
   font-family: inherit;
@@ -620,17 +588,17 @@ export default {
   text-overflow: ellipsis;
 }
 .apple-select option {
-  background: #0e1626;
-  color: #FFFFFF;
+  background: var(--surface);
+  color: var(--text-1);
 }
 
 .filter-sheet-btn {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: #FFFFFF;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-1);
   padding: 9px 16px;
   border-radius: 12px;
   font-family: inherit;
@@ -642,7 +610,7 @@ export default {
   flex-shrink: 0;
 }
 .filter-sheet-btn:hover {
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--surface-3);
 }
 .filter-svg {
   width: 14px;
@@ -653,7 +621,7 @@ export default {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: #38BDF8;
+  background: var(--accent);
   box-shadow: 0 0 6px #38BDF8;
 }
 
@@ -672,9 +640,9 @@ export default {
 }
 
 .pill-btn {
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-2);
   padding: 7px 16px;
   border-radius: 9999px;
   font-family: inherit;
@@ -685,13 +653,13 @@ export default {
   transition: all 0.2s ease;
 }
 .pill-btn:hover {
-  background: rgba(255, 255, 255, 0.1);
-  color: #FFFFFF;
+  background: var(--surface-2);
+  color: var(--text-1);
 }
 .pill-btn.active {
-  background: #0071E3;
-  border-color: rgba(56, 189, 248, 0.5);
-  color: #FFFFFF;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
   font-weight: 600;
 }
 
@@ -702,7 +670,7 @@ export default {
 .pills-divider {
   width: 1px;
   height: 20px;
-  background: rgba(255, 255, 255, 0.14);
+  background: var(--surface-3);
   flex-shrink: 0;
   margin: 0 4px;
 }
@@ -714,16 +682,16 @@ export default {
   justify-content: space-between;
   margin-bottom: 24px;
   font-size: 13.5px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-2);
   flex-wrap: wrap;
   gap: 12px;
 }
 
 .results-count b {
-  color: #FFFFFF;
+  color: var(--text-1);
 }
 .filter-tag-hint {
-  color: #38BDF8;
+  color: var(--accent-text);
   margin-left: 6px;
 }
 
@@ -735,16 +703,16 @@ export default {
 }
 
 .active-chip {
-  background: rgba(0, 113, 227, 0.15);
-  border: 1px solid rgba(56, 189, 248, 0.3);
-  color: #38BDF8;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft);
+  color: var(--accent-text);
   padding: 3px 10px;
   border-radius: 9999px;
   font-size: 12px;
   cursor: pointer;
 }
 .active-chip:hover {
-  background: rgba(239, 68, 68, 0.2);
+  background: var(--danger-soft);
   border-color: rgba(239, 68, 68, 0.4);
   color: #FCA5A5;
 }
@@ -752,13 +720,13 @@ export default {
 .reset-all-link {
   background: none;
   border: none;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-2);
   cursor: pointer;
   font-size: 12.5px;
   text-decoration: underline;
 }
 .reset-all-link:hover {
-  color: #FFFFFF;
+  color: var(--text-1);
 }
 
 /* Grid */
@@ -789,10 +757,10 @@ export default {
 .no-books-state h3 {
   margin: 0;
   font-size: 22px;
-  color: #FFFFFF;
+  color: var(--text-1);
 }
 .no-books-state p {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-2);
   max-width: 440px;
   margin: 0 0 12px;
 }
@@ -813,9 +781,9 @@ export default {
 .apple-modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
+  background: var(--surface);
+
+
   z-index: 2000;
   display: flex;
   align-items: center;
@@ -832,9 +800,9 @@ export default {
   position: absolute;
   top: 14px;
   right: 14px;
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-2);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -847,8 +815,8 @@ export default {
   transition: all 0.2s ease;
 }
 .modal-close-icon:hover {
-  background: rgba(255, 255, 255, 0.18);
-  color: #FFFFFF;
+  background: var(--surface-3);
+  color: var(--text-1);
 }
 
 @media (max-width: 768px) {

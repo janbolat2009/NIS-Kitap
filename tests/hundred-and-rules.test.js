@@ -41,29 +41,33 @@ describe('generated Firestore rules', () => {
     expect(rules).not.toMatch(/_EMAIL_HERE/);
   });
 
-  it('keeps the points ledger append-only', () => {
-    const ledger = rules.slice(rules.indexOf('match /points_ledger/{id}'), rules.indexOf('match /leaderboard/{uid}'));
-    expect(ledger).toContain('allow update, delete: if false;');
-    expect(ledger).toContain('can_reading_verify() || can_points_adjust()');
+  const block = (name) => {
+    const start = rules.indexOf(`match /${name}/`);
+    return rules.slice(start, rules.indexOf('    }\n', start));
+  };
+
+  it('points, stock, reservations, profiles, roles and audit are written only by the server', () => {
+    for (const name of ['points_ledger', 'student_points', 'leaderboard', 'shanyrak_points', 'inventory', 'reservations',
+      'reading_progress', 'profiles', 'class_map', 'roles', 'reviews', 'reward_issues', 'admin_audit_logs', 'settings']) {
+      expect(block(name), name).toContain('allow write: if false;');
+    }
   });
 
-  it('never lets a user write their own role and keeps the audit log immutable', () => {
-    const roles = rules.slice(rules.indexOf('match /roles/{email}'), rules.indexOf('// ---------- roster'));
-    expect(roles).toContain('email != myEmail()');
-    expect(roles).toContain('can_roles_manage()');
-    const audit = rules.slice(rules.indexOf('match /admin_audit_logs/{id}'));
-    expect(audit).toContain('allow update, delete: if false;');
+  it('the staff roles come from config/access.json; a stored role can never be tech_admin', () => {
+    expect(rules).toContain("myEmail() in ['janbolatique.kz@gmail.com'] ? 'tech_admin'");
+    expect(rules).toContain("myEmail() in ['muldasheva_v@ast.nis.edu.kz'] ? 'librarian'");
+    expect(rules).toContain("get(rolePath()).data.role in ['student', 'librarian', 'deputy', 'director']");
+    expect(rules).toContain('request.auth.token.email_verified == true');
   });
 
-  it('students can only send a book for review, not confirm it', () => {
-    const progress = rules.slice(rules.indexOf('function studentProgressValid'), rules.indexOf('match /reading_events/{id}'));
-    expect(progress).toContain("request.resource.data.verificationStatus in ['none', 'pending']");
-    expect(progress).toContain("request.resource.data.verificationStatus in ['confirmed', 'rejected']");
+  it('only published reviews are visible to other readers', () => {
+    expect(block('reviews')).toContain("resource.data.status == 'published' || owner() || can_reviews_moderate()");
   });
 
-  it('a reward cannot be approved by a student role and grades are never touched', () => {
-    expect(rules).toContain("request.resource.data.affectsGrade == false");
-    expect(rules).toContain("function can_rewards_approve() { return hasAny(['director', 'project_admin', 'super_admin']); }");
+  it('a reader writes only own bookmarks, basic account fields and view events', () => {
+    expect(block('bookmarks')).toContain("id.matches(request.auth.uid + '__.*')");
+    expect(block('users')).toContain("onlyKeys(['name', 'email', 'avatar', 'provider', 'lastLogin', 'createdAt', 'updatedAt'])");
+    expect(block('reading_events')).toContain("request.resource.data.type in ['view', 'bookmark', 'unbookmark']");
   });
 
   it('closes every other collection by default', () => {

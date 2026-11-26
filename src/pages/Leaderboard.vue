@@ -1,240 +1,165 @@
 <template>
-  <PageShell>
-    <header class="kp-head" v-reveal>
+  <div class="page container board">
+    <header class="page-head">
       <div>
-        <span class="kp-eyebrow">{{ t('hundred.title') }} · NIS Kitap</span>
-        <h1 class="kp-title">{{ t('lb.title') }}</h1>
-        <p class="kp-subtitle">{{ t('lb.subtitle') }}</p>
+        <span class="eyebrow">{{ year }}</span>
+        <h1 class="page-title">{{ t('board.title') }}</h1>
+        <p class="page-lead">{{ t('board.lead') }}</p>
       </div>
     </header>
 
-    <StaffGate>
-      <div class="lb-controls">
-        <div class="kp-tabs" role="tablist" :aria-label="t('lb.title')">
-          <button v-for="tab in tabs" :key="tab" role="tab" class="kp-tab" :class="{ active: activeTab === tab }" :aria-selected="activeTab === tab" @click="activeTab = tab">
-            {{ t(`lb.tab${tab}`) }}
-          </button>
-        </div>
-        <div class="kp-tabs" role="tablist" :aria-label="t('common.period')">
-          <button v-for="p in periods" :key="p" role="tab" class="kp-tab" :class="{ active: period === p }" :aria-selected="period === p" @click="period = p">
-            {{ t(`lb.period${p}`) }}
-          </button>
-        </div>
+    <div class="controls">
+      <div class="tabs" role="tablist">
+        <button type="button" class="tab" role="tab" :aria-selected="view === 'shanyraks'" @click="view = 'shanyraks'">{{ t('cabinet.shanyrak') }}</button>
+        <button type="button" class="tab" role="tab" :aria-selected="view === 'students'" @click="view = 'students'">{{ t('board.students') }}</button>
       </div>
+      <div class="period">
+        <select v-model="periodType" class="select" :aria-label="t('board.year')">
+          <option value="year">{{ t('board.year') }}</option>
+          <option value="quarter">{{ t('board.quarter') }}</option>
+          <option value="month">{{ t('board.month') }}</option>
+        </select>
+        <select v-if="periodType === 'quarter'" v-model="quarter" class="select" :aria-label="t('board.quarter')">
+          <option v-for="n in 4" :key="n" :value="`${year}-Q${n}`">{{ t('board.q', { n }) }}</option>
+        </select>
+        <select v-if="periodType === 'month'" v-model="month" class="select" :aria-label="t('board.month')">
+          <option v-for="m in months" :key="m" :value="m">{{ monthLabel(m) }}</option>
+        </select>
+      </div>
+    </div>
 
-      <div v-if="loading" class="lb-podium">
-        <div v-for="n in 3" :key="n" class="kp-skeleton" style="height: 170px"></div>
-      </div>
-      <div v-else-if="error" class="kp-state" role="alert">
-        <h3>{{ t('common.errorTitle') }}</h3>
-        <p>{{ t('common.errorDesc') }}</p>
-        <button class="kp-btn" @click="load">{{ t('common.retry') }}</button>
-      </div>
-      <div v-else-if="!ranked.length" class="kp-state">
-        <h3>{{ t('lb.empty') }}</h3>
-        <p>{{ t('lb.rules') }}</p>
-      </div>
+    <div v-if="loading" class="list"><div v-for="n in 5" :key="n" class="skeleton" style="height: 64px" /></div>
+
+    <template v-else-if="view === 'shanyraks'">
+      <p v-if="!ranked.length" class="empty">{{ t('board.empty') }}</p>
+      <ol v-else class="list rise-in">
+        <li v-for="s in ranked" :key="s.id" class="row" :class="{ open: openId === s.id }">
+          <button type="button" class="row-btn" :aria-expanded="openId === s.id" @click="openId = openId === s.id ? '' : s.id">
+            <span class="rank tabular">{{ s.rank }}</span>
+            <span class="name">{{ s.name }}</span>
+            <span class="bar" aria-hidden="true"><i :style="{ width: `${Math.max(4, (s.score / maxScore) * 100)}%` }" /></span>
+            <span class="score tabular">{{ s.score }}</span>
+            <span class="chev" aria-hidden="true">›</span>
+          </button>
+          <div v-if="openId === s.id" class="details">
+            <div>
+              <h3>{{ t('board.composition') }}</h3>
+              <ul class="kv">
+                <li v-for="(v, k) in s.byKind" :key="k"><span>{{ t(`board.kinds.${k}`) }}</span><b class="tabular" :class="{ neg: v < 0 }">{{ v > 0 ? '+' : '' }}{{ v }}</b></li>
+              </ul>
+            </div>
+            <div>
+              <h3>{{ t('board.byClass') }}</h3>
+              <ul class="kv">
+                <li v-for="c in sortedClasses(s.byClass)" :key="c[0]"><span>{{ c[0] }}</span><b class="tabular">{{ c[1] }}</b></li>
+              </ul>
+            </div>
+          </div>
+        </li>
+      </ol>
+    </template>
+
+    <template v-else>
+      <p v-if="!session.uid" class="notice notice-info">{{ t('board.signInForStudents') }} <button type="button" class="btn btn-sm btn-primary" @click="openLogin()">{{ t('nav.signIn') }}</button></p>
       <template v-else>
-        <ol class="lb-podium" :key="`${activeTab}-${period}`">
-          <li v-for="(row, i) in podium" :key="row.id" class="lb-place kp-card" :class="[`place-${i + 1}`, { me: row.id === session.uid }]">
-            <span class="lb-medal" aria-hidden="true">{{ row.rank }}</span>
-            <strong class="lb-name">{{ labelOf(row) }}</strong>
-            <span class="lb-sub">{{ subOf(row) }}</span>
-            <span class="lb-score">{{ row.score }} <small>{{ scoreUnit }}</small></span>
-            <span v-if="row.badges?.length" class="lb-badges">
-              <span v-for="b in row.badges.slice(-3)" :key="b" class="lb-badge" :title="t(`badge.${b}`)">{{ b.split('_')[1] }}</span>
-            </span>
-          </li>
+        <p class="muted hint">{{ t('board.studentsHint') }}</p>
+        <p v-if="!students.length" class="empty">{{ t('board.empty') }}</p>
+        <ol v-else class="list">
+          <li v-for="r in students" :key="r.id" class="row"><div class="row-btn static">
+            <span class="rank tabular">{{ r.rank }}</span>
+            <span class="name">{{ r.nameShort || t('onboarding.title') }}<small class="muted"> · {{ r.className }}<template v-if="r.shanyrakName"> · {{ r.shanyrakName }}</template></small></span>
+            <span class="score tabular">{{ r.score }}</span>
+          </div></li>
         </ol>
-
-        <div v-if="rest.length" class="kp-table-wrap kp-section">
-          <table class="kp-table">
-            <thead>
-              <tr>
-                <th>{{ t('lb.place') }}</th>
-                <th>{{ activeTab === 'Students' || activeTab === 'Hundred' ? t('lb.participant') : activeTab === 'Classes' ? t('common.class') : t('common.shanyrak') }}</th>
-                <th v-if="activeTab === 'Students' || activeTab === 'Hundred'">{{ t('common.shanyrak') }}</th>
-                <th v-else class="kp-num">{{ t('lb.members') }}</th>
-                <th class="kp-num">{{ t('lb.confirmedBooks') }}</th>
-                <th class="kp-num">{{ activeTab === 'Hundred' ? t('hundred.title') : t('lb.points') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr v-for="row in rest" :key="row.id" :class="{ 'lb-me': row.id === session.uid }">
-                <td>{{ row.rank }}</td>
-                <td><strong>{{ labelOf(row) }}</strong><span v-if="row.id === session.uid" class="kp-pill blue lb-you">{{ t('lb.you') }}</span></td>
-                <td v-if="activeTab === 'Students' || activeTab === 'Hundred'">{{ row.shanyrakName || '—' }}</td>
-                <td v-else class="kp-num">{{ row.members }}</td>
-                <td class="kp-num">{{ row.confirmedBooks }}</td>
-                <td class="kp-num"><strong>{{ row.score }}</strong></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <p class="kp-muted lb-rules">{{ t('lb.rules') }}</p>
       </template>
-
-      <section v-if="session.role === 'student' || myRow" class="kp-card kp-section lb-privacy">
-        <h2 class="kp-h2">{{ t('lb.privacyTitle') }}</h2>
-        <div class="kp-chips" role="radiogroup" :aria-label="t('lb.privacyTitle')">
-          <button class="kp-chip" role="radio" :aria-checked="privacy === 'short'" :class="{ active: privacy === 'short' }" :disabled="!session.roster || savingPrivacy" @click="savePrivacy('short')">{{ t('lb.privacyShort') }}</button>
-          <button class="kp-chip" role="radio" :aria-checked="privacy === 'hidden'" :class="{ active: privacy === 'hidden' }" :disabled="savingPrivacy" @click="savePrivacy('hidden')">{{ t('lb.privacyHidden') }}</button>
-        </div>
-        <p v-if="!session.roster" class="kp-muted">{{ t('lb.privacyNoRoster') }}</p>
-      </section>
-    </StaffGate>
-
-    <div v-if="toast" class="kp-toast" role="status">{{ toast }}</div>
-  </PageShell>
+    </template>
+  </div>
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
-import PageShell from '@/components/PageShell.vue';
-import StaffGate from '@/components/StaffGate.vue';
+import { computed, onMounted, ref, watch } from 'vue';
+import { t, currentLocale } from '@/i18n';
 import { session } from '@/stores/session';
-import { t } from '@/i18n';
-import { rankRows, groupTotals, monthOf, quarterOf, academicYearOf } from '@/lib/points';
-import { getLeaderboard, setMyPrivacy } from '@/services/progressService';
+import { openLogin } from '@/stores/ui';
+import { shanyrakPeriodTotals, monthsOfAcademicYear, monthOf, quarterOf, rankRows } from '@/lib/points';
+import { getSchoolSettings, listShanyrakPoints, listShanyraks } from '@/services/schoolService';
+import { listLeaderboardRows } from '@/services/library';
 
-const tabs = ['Students', 'Classes', 'Shanyraks', 'Hundred'];
-const periods = ['Month', 'Quarter', 'Year', 'All'];
-const activeTab = ref('Students');
-const period = ref('Year');
+const view = ref('shanyraks');
+const year = ref('');
+const periodType = ref('year');
+const quarter = ref('');
+const month = ref('');
+const docs = ref([]);
+const names = ref([]);
 const rows = ref([]);
 const loading = ref(true);
-const error = ref(false);
-const toast = ref('');
-const savingPrivacy = ref(false);
+const openId = ref('');
 
-const periodKey = computed(() => {
-  const now = new Date();
-  return { Month: monthOf(now), Quarter: quarterOf(now), Year: academicYearOf(now), All: '' }[period.value];
-});
-
-function periodScore(row) {
-  return periodKey.value ? Number(row.byPeriod?.[periodKey.value] || 0) : Number(row.points || 0);
-}
-
+const months = computed(() => monthsOfAcademicYear(year.value));
+const period = computed(() => (periodType.value === 'quarter' ? { quarter: quarter.value } : periodType.value === 'month' ? { month: month.value } : {}));
 const ranked = computed(() => {
-  const withScore = rows.value.map((r) => ({ ...r, periodScore: periodScore(r) }));
-  if (activeTab.value === 'Students') return rankRows(withScore, (r) => r.periodScore);
-  if (activeTab.value === 'Hundred') return rankRows(withScore, (r) => r.hundredBooks);
-  if (activeTab.value === 'Classes') return rankRows(groupTotals(withScore, 'classId', 'className'), (g) => g.points);
-  return rankRows(groupTotals(withScore, 'shanyrakId', 'shanyrakName'), (g) => g.points);
+  const totals = new Map(docs.value.map((d) => [d.id, shanyrakPeriodTotals(d, period.value)]));
+  const all = names.value.map((s) => ({ id: s.id, name: s.name, ...(totals.get(s.id) || { total: 0, byKind: {}, byClass: {} }) }));
+  for (const d of docs.value) if (!all.some((a) => a.id === d.id)) all.push({ id: d.id, name: d.name, ...totals.get(d.id) });
+  return rankRows(all, (r) => r.total);
 });
-const podium = computed(() => ranked.value.slice(0, 3));
-const rest = computed(() => ranked.value.slice(3));
-const scoreUnit = computed(() => (activeTab.value === 'Hundred' ? t('common.books') : t('common.points')));
-const myRow = computed(() => rows.value.find((r) => r.id === session.uid));
-const privacy = ref('short');
+const maxScore = computed(() => Math.max(1, ...ranked.value.map((r) => r.score)));
+const students = computed(() => rankRows(rows.value.filter((r) => r.privacyMode !== 'hidden'), (r) => r.years?.[year.value]?.points).slice(0, 50));
 
-function labelOf(row) {
-  if (activeTab.value === 'Classes' || activeTab.value === 'Shanyraks') return row.name;
-  if (row.privacyMode === 'hidden' || !row.nameShort) return row.id === session.uid ? t('lb.you') : t('lb.hidden');
-  return row.nameShort;
-}
-function subOf(row) {
-  if (activeTab.value === 'Classes' || activeTab.value === 'Shanyraks') return `${row.members} · ${row.confirmedBooks} ${t('common.books')}`;
-  return [row.className, row.shanyrakName].filter(Boolean).join(' · ') || '—';
-}
+const sortedClasses = (obj) => Object.entries(obj || {}).sort((a, b) => b[1] - a[1]);
+const monthLabel = (m) => new Date(`${m}-01T00:00:00`).toLocaleDateString({ kz: 'kk-KZ', en: 'en-GB' }[currentLocale.value] || 'ru-RU', { month: 'long', year: 'numeric' });
 
 async function load() {
-  if (!session.uid || !session.emailVerified) return;
   loading.value = true;
-  error.value = false;
+  const school = await getSchoolSettings();
+  year.value = school.currentAcademicYear;
+  quarter.value = quarterOf(new Date()) || `${year.value}-Q1`;
+  month.value = monthOf(new Date());
   try {
-    rows.value = await getLeaderboard();
-    privacy.value = myRow.value?.privacyMode || 'short';
+    [docs.value, names.value] = await Promise.all([listShanyrakPoints(year.value), listShanyraks(year.value)]);
   } catch {
-    error.value = true;
-  } finally {
-    loading.value = false;
+    docs.value = [];
   }
+  loading.value = false;
 }
 
-async function savePrivacy(mode) {
-  savingPrivacy.value = true;
-  try {
-    await setMyPrivacy(mode);
-    privacy.value = mode;
-    await load();
-    toast.value = t('common.saved');
-  } catch {
-    toast.value = t('admin.errors.default');
-  } finally {
-    savingPrivacy.value = false;
-    setTimeout(() => { toast.value = ''; }, 2500);
+watch([view, () => session.uid], async () => {
+  if (view.value === 'students' && session.uid && session.emailVerified && !rows.value.length) {
+    try { rows.value = await listLeaderboardRows(); } catch { rows.value = []; }
   }
-}
-
-watch(() => [session.ready, session.uid], load, { immediate: true });
+});
+onMounted(load);
 </script>
 
 <style scoped>
-.lb-controls { display: flex; gap: 12px; flex-wrap: wrap; justify-content: space-between; margin-bottom: 22px; }
-.lb-podium {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 14px;
-  align-items: end;
-}
-.lb-place {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 6px;
-  animation: kp-rise 0.5s var(--apple-spring) both;
-  min-width: 0;
-}
-.lb-place.place-1 { order: 2; padding-top: 30px; padding-bottom: 30px; border-color: rgba(246, 238, 225, 0.35); }
-.lb-place.place-2 { order: 1; animation-delay: 80ms; }
-.lb-place.place-3 { order: 3; animation-delay: 140ms; }
-.lb-place.me { box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.5) inset; }
-.lb-medal {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  font-weight: 800;
-  font-size: 18px;
-  color: #0b1424;
-  background: #CBD5E1;
-}
-.place-1 .lb-medal { background: var(--apple-cream); width: 52px; height: 52px; font-size: 20px; }
-.place-3 .lb-medal { background: #D6A77A; }
-.lb-name { font-size: 16px; overflow-wrap: anywhere; }
-.lb-sub { font-size: 13px; color: var(--apple-text-muted); }
-.lb-score { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.lb-score small { font-size: 12px; font-weight: 500; color: var(--apple-text-muted); }
-.lb-badges { display: flex; gap: 4px; }
-.lb-badge {
-  min-width: 26px;
-  height: 26px;
-  padding: 0 6px;
-  border-radius: 13px;
-  display: grid;
-  place-items: center;
-  font-size: 11px;
-  font-weight: 700;
-  border: 1px solid rgba(246, 238, 225, 0.4);
-  color: var(--apple-cream);
-  transition: transform 0.25s var(--apple-spring);
-}
-.lb-badge:hover { transform: scale(1.12); }
-.lb-me td { background: rgba(56, 189, 248, 0.06); }
-.lb-you { margin-left: 8px; }
-.lb-rules { margin-top: 14px; }
-.lb-privacy .kp-chips { margin-bottom: 8px; }
-
-@media (max-width: 640px) {
-  .lb-podium { grid-template-columns: 1fr; }
-  .lb-place.place-1, .lb-place.place-2, .lb-place.place-3 { order: 0; padding: 16px; }
-  .lb-controls .kp-tabs { width: 100%; }
+.controls { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-end; margin-bottom: 20px; }
+.controls .tabs { border-bottom: none; }
+.period { display: flex; gap: 8px; }
+.period .select { min-width: 150px; }
+.list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.row { border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); overflow: hidden; }
+.row-btn { width: 100%; display: grid; grid-template-columns: 36px minmax(0, 1fr) minmax(60px, 2fr) 70px 18px; gap: 12px; align-items: center; padding: 14px 16px; background: none; border: none; color: inherit; text-align: left; cursor: pointer; }
+.row-btn.static { grid-template-columns: 36px 1fr 70px; cursor: default; }
+.rank { font-family: var(--font-serif); font-size: 1.1rem; color: var(--text-3); }
+.row:nth-child(1) .rank { color: var(--warm); }
+.name { font-weight: 600; overflow-wrap: anywhere; }
+.bar { height: 8px; border-radius: 8px; background: var(--surface-2); overflow: hidden; }
+.bar i { display: block; height: 100%; background: var(--accent); border-radius: 8px; transition: width var(--dur-3) var(--ease-out); }
+.score { text-align: right; font-weight: 700; }
+.chev { color: var(--text-3); transition: transform var(--dur-2) var(--ease-out); }
+.open .chev { transform: rotate(90deg); }
+.details { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 4px 16px 18px 64px; animation: rise var(--dur-2) var(--ease-out); }
+.details h3 { font-size: var(--fs-sm); color: var(--text-3); margin-bottom: 8px; }
+.kv { list-style: none; padding: 0; margin: 0; }
+.kv li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: var(--fs-sm); }
+.kv .neg { color: var(--danger); }
+.hint { margin-bottom: 12px; }
+@media (max-width: 600px) {
+  .row-btn { grid-template-columns: 28px 1fr 56px 14px; }
+  .bar { display: none; }
+  .details { grid-template-columns: 1fr; padding-left: 16px; }
+  .period { width: 100%; }
+  .period .select { flex: 1; min-width: 0; }
 }
 </style>

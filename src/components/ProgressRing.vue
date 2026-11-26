@@ -44,7 +44,7 @@ watch(() => props.value, (v) => { shown.value = v; });
 
 <style scoped>
 .ring { position: relative; flex: 0 0 auto; }
-.ring-track { fill: none; stroke: rgba(255, 255, 255, 0.08); }
+.ring-track { fill: none; stroke: var(--text-3); }
 .ring-value {
   fill: none;
   stroke: var(--apple-blue-light);

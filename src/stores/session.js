@@ -1,11 +1,13 @@
-// Single source of truth for the signed-in user and their role.
-// The role is resolved from Firebase Auth (verified email) + config/access.json +
-// roles/{email} in Firestore. Nothing stored in localStorage is trusted.
+// Signed-in user, role and profile.
+// Firebase Auth says who the user is; the role, permissions, class and shanyrak
+// come from the server (/api/v2/me), which resolves them from the verified token.
+// Nothing stored in the browser is trusted for access decisions.
 import { reactive, watch } from 'vue';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { doc, setDoc } from 'firebase/firestore';
 import { auth, db } from '@/firebase';
 import { resolveRole, can, cleanEmail } from '@/lib/roles';
+import { api } from '@/services/api';
 
 export const session = reactive({
   ready: false,
@@ -15,6 +17,12 @@ export const session = reactive({
   avatar: '',
   emailVerified: false,
   role: 'guest',
+  permissions: [],
+  profile: null,
+  needsClass: false,
+  school: null,
+  serverOk: true,
+  // kept for older pages
   subject: '',
   roster: null,
 });
@@ -31,21 +39,41 @@ function clearLegacyStorage() {
   }
 }
 
-async function loadStoredRole(email) {
+export async function refreshMe() {
+  if (!auth.currentUser) return null;
   try {
-    const snap = await getDoc(doc(db, 'roles', cleanEmail(email)));
-    return snap.exists() ? snap.data() : null;
-  } catch {
+    const me = await api('me');
+    Object.assign(session, {
+      role: me.role,
+      permissions: me.permissions || [],
+      profile: me.profile || null,
+      needsClass: Boolean(me.needsClass),
+      school: me.school || null,
+      emailVerified: me.emailVerified,
+      serverOk: true,
+    });
+    if (me.profile?.firstName) session.name = [me.profile.firstName, me.profile.lastName].filter(Boolean).join(' ');
+    return me;
+  } catch (err) {
+    // Server unavailable: show the account, but no staff tools (the server would refuse anyway).
+    if (err?.code === 'server_not_configured' || err?.code === 'network_error') session.serverOk = false;
+    session.role = resolveRole({ email: session.email, emailVerified: session.emailVerified });
+    session.permissions = [];
     return null;
   }
 }
 
-async function loadRoster(email) {
+async function saveAccount(user) {
   try {
-    const snap = await getDoc(doc(db, 'students', cleanEmail(email)));
-    return snap.exists() ? snap.data() : null;
+    await setDoc(doc(db, 'users', user.uid), {
+      name: String(user.displayName || '').slice(0, 120),
+      email: cleanEmail(user.email),
+      avatar: String(user.photoURL || '').slice(0, 500),
+      provider: user.providerData?.[0]?.providerId || 'password',
+      lastLogin: new Date().toISOString(),
+    }, { merge: true });
   } catch {
-    return null;
+    // optional
   }
 }
 
@@ -54,22 +82,22 @@ export function startSession() {
   started = true;
   onAuthStateChanged(auth, async (user) => {
     if (!user) {
-      Object.assign(session, { uid: '', email: '', name: '', avatar: '', emailVerified: false, role: 'guest', subject: '', roster: null });
+      Object.assign(session, {
+        uid: '', email: '', name: '', avatar: '', emailVerified: false, role: 'guest', permissions: [], profile: null, needsClass: false,
+      });
       clearLegacyStorage();
     } else {
       const email = cleanEmail(user.email);
-      const stored = user.emailVerified ? await loadStoredRole(email) : null;
-      const roster = user.emailVerified ? await loadRoster(email) : null;
       Object.assign(session, {
         uid: user.uid,
         email,
         name: user.displayName || email.split('@')[0],
         avatar: user.photoURL || '',
         emailVerified: Boolean(user.emailVerified),
-        role: resolveRole({ email, emailVerified: user.emailVerified, storedRole: stored?.role }),
-        subject: stored?.subject || '',
-        roster,
+        role: resolveRole({ email, emailVerified: user.emailVerified }),
       });
+      saveAccount(user);
+      await refreshMe();
       try {
         localStorage.setItem('user', JSON.stringify({ email, name: session.name, avatar: session.avatar }));
         localStorage.setItem('isLoggedIn', 'true');
@@ -94,7 +122,12 @@ export function isSignedIn() {
 }
 
 export function hasPermission(permission) {
+  if (session.permissions?.length) return session.permissions.includes(permission);
   return can(session.role, permission);
+}
+
+export function isStaffUser() {
+  return (session.permissions || []).length > 0;
 }
 
 export async function getIdToken() {
@@ -103,14 +136,14 @@ export async function getIdToken() {
 }
 
 export async function refreshSessionRole() {
-  if (!auth.currentUser) return;
-  const stored = await loadStoredRole(session.email);
-  session.role = resolveRole({ email: session.email, emailVerified: session.emailVerified, storedRole: stored?.role });
-  session.subject = stored?.subject || '';
+  await refreshMe();
 }
 
-// Keeps the per-page refs used by existing pages (isLoggedIn, userEmail, ...)
-// in sync with the real Firebase session.
+export async function logout() {
+  await signOut(auth);
+}
+
+// Keeps the per-page refs used by older pages (isLoggedIn, userEmail, ...) in sync.
 export function bindSessionRefs(refs) {
   startSession();
   return watch(

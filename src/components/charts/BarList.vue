@@ -49,7 +49,7 @@ const maxValue = computed(() => Math.max(1, ...rows.value.map((r) => r.value)));
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.bar-track { height: 10px; border-radius: 4px; background: rgba(255, 255, 255, 0.05); overflow: hidden; }
+.bar-track { height: 10px; border-radius: 4px; background: var(--surface-2); overflow: hidden; }
 .bar-fill {
   display: block;
   height: 100%;

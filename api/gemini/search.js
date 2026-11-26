@@ -1,6 +1,9 @@
 import fs from 'fs';
 import path from 'path';
 import { verifyFirebaseToken, bearerToken } from '../_lib/firebaseAuth.js';
+import { adminConfigured } from '../_lib/admin.js';
+import { rateLimit } from '../_lib/rateLimit.js';
+import { setCommonHeaders } from '../_lib/http.js';
 
 // Stopwords in Kazakh, Russian, and English that distort book search relevance
 const STOP_WORDS = new Set([
@@ -178,41 +181,42 @@ function checkLimit(email) {
   return { allowed: true, limit: WEEKLY_LIMIT, used: userRecord.count, remaining: Math.max(0, WEEKLY_LIMIT - userRecord.count), resetAt: new Date(userRecord.resetAt).toISOString() };
 }
 
+async function persistentLimit(key) {
+  if (!adminConfigured()) return checkLimit(key);
+  try {
+    const r = await rateLimit(`gemini_${key}`, { limit: WEEKLY_LIMIT, windowSec: SEVEN_DAYS_MS / 1000 });
+    return { allowed: true, limit: WEEKLY_LIMIT, used: WEEKLY_LIMIT - r.remaining, remaining: r.remaining, resetAt: r.resetAt };
+  } catch (err) {
+    if (err?.status === 429) {
+      const resetInMs = (Number(err.extra?.retryAfter) || 0) * 1000;
+      return {
+        allowed: false,
+        limit: WEEKLY_LIMIT,
+        used: WEEKLY_LIMIT,
+        remaining: 0,
+        resetAt: new Date(Date.now() + resetInMs).toISOString(),
+        resetInMs,
+        message: `Weekly limit of ${WEEKLY_LIMIT} Gemini search requests has been reached.`,
+      };
+    }
+    return checkLimit(key);
+  }
+}
+
 export default async function handler(req, res) {
-  // CORS Headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, HEAD');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, x-user-email');
+  setCommonHeaders(req, res);
 
   if (req.method === 'OPTIONS' || req.method === 'HEAD') {
     return res.status(200).end();
   }
 
   if (req.method === 'GET') {
+    // Status only. Usage of a particular person is never returned by e-mail.
     const apiKey = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || process.env.VITE_GEMINI_API_KEY;
-    const email = req.query?.email || req.headers['x-user-email'];
-    let userLimit = null;
-    if (email) {
-      const cleanEmail = String(email).toLowerCase().trim();
-      const rec = serverlessLimits.get(cleanEmail);
-      if (rec && Date.now() < rec.resetAt) {
-        userLimit = {
-          limit: WEEKLY_LIMIT,
-          used: rec.count,
-          remaining: Math.max(0, WEEKLY_LIMIT - rec.count),
-          resetAt: new Date(rec.resetAt).toISOString(),
-        };
-      } else {
-        userLimit = { limit: WEEKLY_LIMIT, used: 0, remaining: WEEKLY_LIMIT, resetAt: null };
-      }
-    }
     return res.status(200).json({
       status: 'OK',
-      message: 'NIS Kitap Gemini Multilingual AI Search Serverless Endpoint',
       hasApiKey: !!apiKey,
-      model: 'gemini-2.5-flash',
       weeklyLimit: WEEKLY_LIMIT,
-      userLimit,
       timestamp: new Date().toISOString(),
     });
   }
@@ -248,7 +252,9 @@ export default async function handler(req, res) {
   }
 
   // 2. CHECK 3-REQUESTS-PER-WEEK LIMIT WITH AUTOMATIC 7-DAY RESET
-  const limitCheck = checkLimit(userEmail);
+  // Stored in Firestore (rate_limits) when the server has credentials, so the
+  // limit holds across serverless instances; otherwise per instance.
+  const limitCheck = await persistentLimit(userEmail);
   if (!limitCheck.allowed) {
     return res.status(429).json({
       error: 'limit_reached',
@@ -264,6 +270,9 @@ export default async function handler(req, res) {
   const prompt = body?.prompt || body?.query || '';
   if (!prompt || typeof prompt !== 'string' || !prompt.trim()) {
     return res.status(400).json({ error: 'Поле "prompt" обязательно' });
+  }
+  if (prompt.length > 500) {
+    return res.status(400).json({ error: 'prompt_too_long' });
   }
 
   const cleanPrompt = prompt.trim();

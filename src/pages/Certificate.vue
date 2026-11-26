@@ -28,7 +28,7 @@
             <h2 id="cert-title" class="cert-title">{{ t('cert.title') }}</h2>
             <p class="cert-kind">{{ t(`rewards.types.${cert.type}`) }}</p>
             <p class="cert-small">{{ t('cert.awardedTo') }}</p>
-            <p class="cert-name">{{ cert.recipientName }}<span v-if="cert.className">, {{ cert.className }}</span></p>
+            <p class="cert-name">{{ (cert.recipientShort || cert.recipientName) }}<span v-if="cert.className">, {{ cert.className }}</span></p>
             <p class="cert-small">{{ t('cert.forText') }}</p>
             <p class="cert-reason">{{ cert.title }}</p>
             <p v-if="cert.reason && cert.reason !== cert.title" class="cert-reason-small">{{ cert.reason }}</p>
@@ -62,7 +62,7 @@ import { useRoute } from 'vue-router';
 import QRCode from 'qrcode';
 import PageShell from '@/components/PageShell.vue';
 import { t, currentLocale } from '@/i18n';
-import { getCertificate } from '@/services/rewardsService';
+import { getCertificate } from '@/services/library';
 
 const route = useRoute();
 const number = computed(() => String(route.params.number || '').toUpperCase());
@@ -103,12 +103,12 @@ watch(number, load, { immediate: true });
 <style scoped>
 .cert-page { max-width: 900px; margin: 0 auto; }
 .cert-status { display: inline-block; margin: 0 0 16px; padding: 6px 14px; border-radius: var(--apple-radius-pill); font-weight: 600; font-size: 14px; }
-.cert-status.ok { background: rgba(16, 185, 129, 0.12); color: #6EE7B7; border: 1px solid rgba(16, 185, 129, 0.4); }
-.cert-status.bad { background: rgba(244, 63, 94, 0.12); color: #FDA4AF; border: 1px solid rgba(244, 63, 94, 0.4); }
+.cert-status.ok { background: var(--success-soft); color: var(--success); border: 1px solid rgba(16, 185, 129, 0.4); }
+.cert-status.bad { background: var(--danger-soft); color: #FDA4AF; border: 1px solid rgba(244, 63, 94, 0.4); }
 
 .certificate {
-  background: #FBF7F0;
-  color: #0b1424;
+  background: var(--surface);
+  color: var(--text-1);
   border-radius: var(--apple-radius-lg);
   padding: 18px;
   box-shadow: var(--apple-shadow-lg);
@@ -145,7 +145,7 @@ watch(number, load, { immediate: true });
 .cert-meta dd { margin: 0; font-weight: 600; }
 .cert-signs { display: grid; gap: 16px; }
 .cert-signs div { display: flex; flex-direction: column; gap: 4px; }
-.cert-line { display: block; height: 1px; background: #0b1424; opacity: 0.5; width: 100%; }
+.cert-line { display: block; height: 1px; background: var(--surface); opacity: 0.5; width: 100%; }
 .cert-signs small { font-size: 12px; color: #48576b; }
 .cert-qr { margin: 0; width: 104px; text-align: center; }
 .cert-qr div :deep(svg) { width: 96px; height: 96px; }

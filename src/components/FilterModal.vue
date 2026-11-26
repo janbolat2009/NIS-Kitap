@@ -168,9 +168,9 @@ export default {
 .apple-modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(0, 0, 0, 0.65);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background: var(--surface);
+
+
   z-index: 2000;
   display: flex;
   align-items: center;
@@ -183,14 +183,14 @@ export default {
 .apple-sheet-container {
   width: 100%;
   max-width: 480px;
-  background: rgba(14, 22, 38, 0.96);
-  backdrop-filter: blur(28px) saturate(190%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: var(--surface);
+
+
+  border: 1px solid var(--line);
   border-radius: 24px;
   padding: 24px;
-  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
-  color: #FFFFFF;
+  box-shadow: var(--shadow-2);
+  color: var(--text-1);
   box-sizing: border-box;
   max-height: calc(100dvh - 32px);
   display: flex;
@@ -207,7 +207,7 @@ export default {
 .sheet-handle {
   width: 36px;
   height: 4px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--surface-3);
   border-radius: 9999px;
   margin: 0 auto 12px;
 }
@@ -226,9 +226,9 @@ export default {
 }
 
 .sheet-close-btn {
-  background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-2);
   width: 32px;
   height: 32px;
   border-radius: 50%;
@@ -240,8 +240,8 @@ export default {
   transition: all 0.2s ease;
 }
 .sheet-close-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  color: #FFFFFF;
+  background: var(--surface-3);
+  color: var(--text-1);
 }
 
 .sheet-body {
@@ -269,15 +269,15 @@ export default {
   justify-content: space-between;
   font-size: 13.5px;
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-1);
 }
 
 .active-badge {
   font-size: 11px;
   font-weight: 600;
-  background: rgba(0, 113, 227, 0.2);
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  color: #38BDF8;
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft);
+  color: var(--accent-text);
   padding: 2px 8px;
   border-radius: 9999px;
 }
@@ -289,9 +289,9 @@ export default {
 }
 
 .filter-tag-pill {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: rgba(255, 255, 255, 0.75);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-2);
   padding: 8px 16px;
   border-radius: 9999px;
   font-family: inherit;
@@ -302,18 +302,18 @@ export default {
 }
 
 .filter-tag-pill:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.25);
-  color: #FFFFFF;
+  background: var(--surface-3);
+  border-color: var(--line-strong);
+  color: var(--text-1);
   transform: translateY(-1px);
 }
 
 .filter-tag-pill.active {
-  background: #0071E3;
-  border-color: rgba(56, 189, 248, 0.6);
-  color: #FFFFFF;
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
   font-weight: 600;
-  box-shadow: 0 4px 14px rgba(0, 113, 227, 0.4);
+  box-shadow: none;
 }
 
 .sheet-footer {
@@ -323,14 +323,14 @@ export default {
   flex-shrink: 0;
   margin-top: auto;
   padding-top: 14px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--line);
 }
 
 .btn-reset {
   flex: 1;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.75);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--text-2);
   padding: 12px;
   border-radius: 12px;
   font-family: inherit;
@@ -340,15 +340,15 @@ export default {
   transition: all 0.2s ease;
 }
 .btn-reset:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #FFFFFF;
+  background: var(--surface-3);
+  color: var(--text-1);
 }
 
 .btn-apply {
   flex: 1.5;
-  background: linear-gradient(135deg, #0071E3 0%, #0056B3 100%);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #FFFFFF;
+  background: var(--accent);
+  border: 1px solid var(--line-strong);
+  color: var(--on-accent);
   padding: 12px;
   border-radius: 12px;
   font-family: inherit;
@@ -356,10 +356,10 @@ export default {
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 4px 14px rgba(0, 113, 227, 0.35);
+  box-shadow: none;
 }
 .btn-apply:hover {
-  box-shadow: 0 6px 20px rgba(0, 113, 227, 0.5);
+  box-shadow: none;
   transform: translateY(-1px);
 }
 

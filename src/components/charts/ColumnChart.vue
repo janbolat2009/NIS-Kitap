@@ -77,8 +77,8 @@ function formatLabel(key, short = false) {
   grid-auto-columns: minmax(0, 1fr);
   gap: 2px;
   align-items: end;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-  background-image: linear-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+  border-bottom: 1px solid var(--line);
+  background-image: none; background-color: var(--surface-2);
   background-size: 100% 50%;
   background-position: 0 -1px;
   padding-bottom: 0;
@@ -121,7 +121,7 @@ function formatLabel(key, short = false) {
   z-index: 2;
   padding: 6px 10px;
   border-radius: 10px;
-  background: rgba(10, 20, 38, 0.96);
+  background: var(--surface);
   border: 1px solid var(--apple-glass-border);
   font-size: 12px;
   white-space: nowrap;

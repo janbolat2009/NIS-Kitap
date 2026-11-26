@@ -53,11 +53,35 @@ describe('AI search API', () => {
   });
 });
 
-describe('reservations API', () => {
-  it('rejects a reservation without sign-in', async () => {
-    const { default: handler } = await import('../api/reservations/index.js');
+describe('API v2 routing without server credentials', () => {
+  const call = async (method, path, headers = {}) => {
+    const { default: handler } = await import('../api/v2/index.js');
     const res = mockRes();
-    await handler({ method: 'POST', headers: {}, body: { book: { title: 'X' }, user: { email: 'fake@school.kz' } } }, res);
-    expect(res.statusCode).toBe(401);
+    let raw = '';
+    res.end = (chunk) => { raw = chunk || ''; return res; };
+    await handler({ method, url: `/api/v2/${path}`, headers, query: { path } }, res);
+    return { status: res.statusCode, body: raw ? JSON.parse(raw) : null, headers: res.headers };
+  };
+
+  it('never runs a protected action when the server has no Firebase credentials', async () => {
+    delete process.env.FIREBASE_SERVICE_ACCOUNT;
+    delete process.env.FIRESTORE_EMULATOR_HOST;
+    const r = await call('POST', 'reservations', { authorization: 'Bearer x' });
+    expect(r.status).toBe(503);
+    expect(r.body.error).toBe('server_not_configured');
+    const health = await call('GET', 'health');
+    expect(health.body.data.adminConfigured).toBe(false);
+  });
+
+  it('answers CORS only for the school site and local development', async () => {
+    const own = await call('OPTIONS', 'health', { origin: 'https://www.niskitap.site' });
+    expect(own.headers['Access-Control-Allow-Origin']).toBe('https://www.niskitap.site');
+    const evil = await call('OPTIONS', 'health', { origin: 'https://evil.example' });
+    expect(evil.headers['Access-Control-Allow-Origin']).toBeUndefined();
+  });
+
+  it('rejects unknown routes and wrong methods', async () => {
+    expect((await call('GET', 'nope')).status).toBe(404);
+    expect((await call('GET', 'reservations')).status).toBe(405);
   });
 });

@@ -3,8 +3,12 @@ rules_version = '2';
 // NIS Kitap — Firestore Security Rules.
 // Source: firestore.rules.template. Run `npm run rules:build` to produce firestore.rules.
 // Role lists come from config/access.json; permissions from src/lib/permissions.js.
-// Roles are never taken from client data: they come from this file or from
-// roles/{email} documents that only a super admin can write.
+//
+// Since API v2 every write that needs trust (points, stock, reservations, reading
+// verification, classes, rewards, reviews, roles, settings) is done by the server
+// (api/v2) with the Admin SDK, which is not subject to these rules. Browsers get
+// read access to their own data and to public data, and may write only their
+// bookmarks, their basic account fields and their own analytics events.
 
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -18,253 +22,188 @@ service cloud.firestore {
     }
     function myEmail() { return request.auth.token.email.lower(); }
     function isMe(uid) { return signedIn() && request.auth.uid == uid; }
+    function owner() { return signedIn() && resource.data.uid == request.auth.uid; }
 
     function rolePath() { return /databases/$(database)/documents/roles/$(myEmail()); }
-    function storedRole() { return exists(rolePath()) ? get(rolePath()).data.role : 'student'; }
-    function storedSubject() { return exists(rolePath()) ? get(rolePath()).data.get('subject', '') : ''; }
+    function storedRole() {
+      return exists(rolePath()) && get(rolePath()).data.role in ['student', 'librarian', 'deputy', 'director']
+        ? get(rolePath()).data.role : 'student';
+    }
 
     function role() {
       return !verified() ? 'none'
-        : myEmail() in [] ? 'super_admin'
-        : myEmail() in [] ? 'director'
-        : myEmail() in [] ? 'project_admin'
-        : myEmail() in [] ? 'librarian'
+        : myEmail() in ['janbolatique.kz@gmail.com'] ? 'tech_admin'
+        : myEmail() in ['bekbolatov_zh@ast.nis.edu.kz'] ? 'director'
+        : myEmail() in ['nurysheva_a@ast.nis.edu.kz'] ? 'deputy'
+        : myEmail() in ['muldasheva_v@ast.nis.edu.kz'] ? 'librarian'
         : storedRole();
     }
     function hasAny(roles) { return verified() && role() in roles; }
 
-    function can_analytics_view() { return hasAny(['librarian', 'director', 'project_admin', 'super_admin']); }
-    function can_reading_verify() { return hasAny(['librarian', 'project_admin', 'super_admin']); }
-    function can_loans_manage() { return hasAny(['librarian', 'super_admin']); }
-    function can_points_adjust() { return hasAny(['project_admin', 'super_admin']); }
-    function can_points_settings() { return hasAny(['project_admin', 'super_admin']); }
-    function can_rewards_view() { return hasAny(['librarian', 'director', 'project_admin', 'super_admin', 'teacher']); }
-    function can_rewards_propose() { return hasAny(['librarian', 'director', 'project_admin', 'super_admin']); }
-    function can_rewards_approve() { return hasAny(['director', 'project_admin', 'super_admin']); }
-    function can_rewards_review_subject() { return hasAny(['teacher', 'director', 'project_admin', 'super_admin']); }
-    function can_rewards_issue() { return hasAny(['librarian', 'project_admin', 'super_admin']); }
-    function can_roster_manage() { return hasAny(['director', 'project_admin', 'super_admin']); }
-    function can_roles_manage() { return hasAny(['super_admin']); }
-    function can_audit_view() { return hasAny(['director', 'project_admin', 'super_admin']); }
-
-    function isStaff() { return hasAny(['librarian', 'director', 'project_admin', 'super_admin', 'teacher', 'curator']); }
+    function can_fund_manage() { return hasAny(['librarian']); }
+    function can_loans_manage() { return hasAny(['librarian']); }
+    function can_notifications_send() { return hasAny(['librarian']); }
+    function can_reading_verify() { return hasAny(['librarian']); }
+    function can_reviews_moderate() { return hasAny(['librarian']); }
+    function can_points_adjust() { return hasAny(['librarian']); }
+    function can_rewards_manage() { return hasAny(['librarian', 'deputy', 'director']); }
+    function can_rewards_issue() { return hasAny(['librarian']); }
+    function can_rewards_approve() { return hasAny(['deputy', 'director']); }
+    function can_students_view() { return hasAny(['librarian', 'deputy', 'director', 'tech_admin']); }
+    function can_points_view_all() { return hasAny(['librarian', 'deputy', 'director', 'tech_admin']); }
+    function can_reports_view() { return hasAny(['librarian', 'deputy', 'director']); }
+    function can_audit_view() { return hasAny(['deputy', 'director', 'tech_admin']); }
+    function can_students_class_change() { return hasAny(['tech_admin']); }
+    function can_classes_manage() { return hasAny(['tech_admin']); }
+    function can_settings_manage() { return hasAny(['tech_admin']); }
+    function can_roles_manage() { return hasAny(['tech_admin']); }
 
     function onlyKeys(keys) { return request.resource.data.keys().hasOnly(keys); }
-    function changedOnly(keys) { return request.resource.data.diff(resource.data).affectedKeys().hasOnly(keys); }
-    function unchanged(key) { return request.resource.data.get(key, null) == resource.data.get(key, null); }
-    function isInt(v) { return v is int; }
 
-    // ---------- profiles & roles ----------
+    // ---------- account ----------
+    // Basic account fields only; class, shanyrak and role live elsewhere.
     match /users/{uid} {
-      allow read: if isMe(uid) || can_analytics_view();
+      allow read: if isMe(uid) || can_students_view();
       allow create, update: if isMe(uid)
-        && onlyKeys(['name', 'email', 'avatar', 'provider', 'lastLogin', 'createdAt', 'privacyMode', 'updatedAt'])
+        && onlyKeys(['name', 'email', 'avatar', 'provider', 'lastLogin', 'createdAt', 'updatedAt'])
         && (!('email' in request.resource.data) || request.resource.data.email.lower() == myEmail())
-        && (!('privacyMode' in request.resource.data) || request.resource.data.privacyMode in ['short', 'hidden']);
+        && request.resource.data.get('name', '').size() <= 120
+        && request.resource.data.get('avatar', '').size() <= 500;
       allow delete: if false;
     }
 
+    // Profile with class and shanyrak: written only by the server.
+    match /profiles/{uid} {
+      allow read: if isMe(uid) || can_students_view();
+      allow write: if false;
+    }
+    match /class_history/{id} {
+      allow read: if owner() || can_students_view();
+      allow write: if false;
+    }
     match /roles/{email} {
-      allow read: if (verified() && email == myEmail()) || isStaff();
-      // Only a super admin assigns roles, and never to themselves.
-      allow create, update: if can_roles_manage()
-        && email != myEmail()
-        && request.resource.data.role in ['student', 'curator', 'teacher', 'librarian', 'director', 'project_admin', 'super_admin']
-        && request.resource.data.assignedBy == request.auth.uid;
-      allow delete: if can_roles_manage() && email != myEmail();
+      allow read: if (verified() && email == myEmail()) || can_roles_manage();
+      allow write: if false;
     }
 
-    // ---------- roster ----------
-    match /students/{email} {
-      allow read: if (verified() && email == myEmail()) || can_analytics_view() || can_roster_manage() || can_rewards_view();
-      allow write: if can_roster_manage();
-    }
-    match /memberships/{id} {
-      allow read: if (verified() && resource.data.email == myEmail()) || can_analytics_view() || can_roster_manage();
-      allow create, update: if can_roster_manage();
-      allow delete: if false;
-    }
-    match /classes/{id} {
-      allow read: if signedIn();
-      allow write: if can_roster_manage();
+    // ---------- school structure (public) ----------
+    match /class_map/{id} {
+      allow read: if true;
+      allow write: if false;
     }
     match /shanyraks/{id} {
-      allow read: if signedIn();
-      allow write: if can_roster_manage();
+      allow read: if true;
+      allow write: if false;
     }
-    match /academic_years/{id} {
-      allow read: if signedIn();
-      allow write: if can_roster_manage();
+    match /settings/{doc} {
+      allow read: if doc in ['school', 'points'] || can_settings_manage();
+      allow write: if false;
+    }
+    match /settings_history/{id} {
+      allow read: if can_settings_manage() || can_audit_view();
+      allow write: if false;
+    }
+    // Roster imported by staff (old version); read by the server.
+    match /students/{email} {
+      allow read: if (verified() && email == myEmail()) || can_students_view();
+      allow write: if false;
+    }
+    match /memberships/{id} {
+      allow read: if can_students_view();
+      allow write: if false;
     }
 
     // ---------- reading ----------
-    // Document id: {uid}__{bookId}. One document per student and book, so a
-    // book can be confirmed (and rewarded) only once.
-    function progressIdOk(id) { return id == request.auth.uid + '__' + request.resource.data.bookId; }
-    function studentProgressFields() {
-      return onlyKeys(['uid', 'email', 'bookId', 'bookTitle', 'bookAuthor', 'language', 'genre', 'isHundred', 'hundredId',
-        'status', 'verificationStatus', 'method', 'review', 'startedAt', 'finishedAt', 'requestedAt', 'updatedAt', 'createdAt',
-        'verifiedBy', 'verifiedAt', 'decisionNote', 'reviewAccepted', 'flags']);
-    }
-    function noStaffFields() {
-      return !request.resource.data.keys().hasAny(['verifiedBy', 'verifiedAt', 'decisionNote', 'reviewAccepted', 'flags']);
-    }
-    function staffFieldsUnchanged() {
-      return unchanged('verifiedBy') && unchanged('verifiedAt') && unchanged('decisionNote')
-        && unchanged('reviewAccepted') && unchanged('flags');
-    }
-    function studentProgressValid() {
-      return request.resource.data.uid == request.auth.uid
-        && request.resource.data.status in ['want', 'reading', 'finished']
-        && request.resource.data.verificationStatus in ['none', 'pending']
-        && (request.resource.data.verificationStatus == 'none' || request.resource.data.status == 'finished')
-        && request.resource.data.get('review', '').size() <= 4000;
-    }
-
     match /reading_progress/{id} {
-      allow read: if (signedIn() && resource.data.uid == request.auth.uid) || can_analytics_view() || can_reading_verify();
-      allow create: if (verified() && progressIdOk(id) && studentProgressFields() && noStaffFields() && studentProgressValid())
-        || (can_reading_verify()
-            && request.resource.data.verificationStatus == 'confirmed'
-            && request.resource.data.verifiedBy == request.auth.uid);
-      allow update: if (verified()
-            && resource.data.uid == request.auth.uid
-            && resource.data.verificationStatus in ['none', 'rejected']
-            && unchanged('uid') && unchanged('bookId') && staffFieldsUnchanged()
-            && studentProgressFields() && studentProgressValid())
-        || (can_reading_verify()
-            && resource.data.verificationStatus == 'pending'
-            && request.resource.data.verificationStatus in ['confirmed', 'rejected']
-            && request.resource.data.verifiedBy == request.auth.uid
-            && unchanged('uid') && unchanged('bookId'));
-      allow delete: if signedIn() && resource.data.uid == request.auth.uid && resource.data.verificationStatus == 'none';
+      allow read: if owner() || can_reading_verify() || can_students_view();
+      allow write: if false;
     }
-
     match /reading_events/{id} {
-      allow read: if (signedIn() && resource.data.uid == request.auth.uid) || can_analytics_view();
-      allow create: if (verified()
-            && request.resource.data.uid == request.auth.uid
-            && request.resource.data.type in ['view', 'bookmark', 'unbookmark', 'reservation', 'verification_request', 'cancel_reservation'])
-        || ((can_loans_manage() || can_reading_verify())
-            && request.resource.data.actorUid == request.auth.uid
-            && request.resource.data.type in ['issue', 'return', 'confirmed', 'rejected']);
-      allow update, delete: if false;
-    }
-
-    match /bookmarks/{id} {
-      allow read: if (signedIn() && id.matches(request.auth.uid + '__.*')) || can_analytics_view();
-      allow create, update: if verified() && id.matches(request.auth.uid + '__.*') && request.resource.data.uid == request.auth.uid;
-      allow delete: if signedIn() && id.matches(request.auth.uid + '__.*');
-    }
-
-    match /reservations/{id} {
-      allow read: if (signedIn() && resource.data.get('uid', '') == request.auth.uid) || can_loans_manage() || can_analytics_view();
+      allow read: if owner() || can_reports_view();
+      // A reader may log their own page views and bookmarks for statistics.
       allow create: if verified()
         && request.resource.data.uid == request.auth.uid
-        && request.resource.data.userEmail.lower() == myEmail()
-        && request.resource.data.status == 'active';
-      allow update: if (signedIn()
-            && resource.data.get('uid', '') == request.auth.uid
-            && resource.data.status == 'active'
-            && request.resource.data.status == 'cancelled'
-            && changedOnly(['status', 'updatedAt', 'cancelledAt']))
-        || (can_loans_manage()
-            && request.resource.data.status in ['active', 'issued', 'returned', 'cancelled']
-            && unchanged('uid'));
-      allow delete: if false;
+        && request.resource.data.type in ['view', 'bookmark', 'unbookmark']
+        && request.resource.data.keys().hasOnly(['uid', 'type', 'source', 'occurredAt', 'metadata', 'bookId', 'bookTitle', 'bookAuthor', 'language', 'genre', 'isHundred', 'hundredId']);
+      allow update, delete: if false;
+    }
+    match /bookmarks/{id} {
+      allow read: if signedIn() && id.matches(request.auth.uid + '__.*');
+      allow create, update: if verified()
+        && id.matches(request.auth.uid + '__.*')
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.keys().hasOnly(['uid', 'bookId', 'bookTitle', 'bookAuthor', 'language', 'genre', 'isHundred', 'hundredId', 'createdAt']);
+      allow delete: if signedIn() && id.matches(request.auth.uid + '__.*');
+    }
+    match /reviews/{id} {
+      allow read: if resource.data.status == 'published' || owner() || can_reviews_moderate();
+      allow write: if false;
     }
 
-    // Copies currently on loan, maintained by the librarian when marking issue/return.
+    // ---------- fund & reservations ----------
+    match /inventory/{bookId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /inventory_log/{id} {
+      allow read: if can_fund_manage() || can_loans_manage();
+      allow write: if false;
+    }
     match /book_stock/{bookId} {
       allow read: if true;
-      allow write: if can_loans_manage() && isInt(request.resource.data.issued) && request.resource.data.issued >= 0;
+      allow write: if false;
+    }
+    match /reservations/{id} {
+      allow read: if owner() || can_loans_manage() || can_students_view();
+      allow write: if false;
+    }
+    match /mail_log/{id} {
+      allow read: if can_notifications_send() || can_settings_manage();
+      allow write: if false;
     }
 
     // ---------- points ----------
-    // Append-only journal. Deterministic ids + no updates = no double crediting.
     match /points_ledger/{id} {
-      allow read: if (signedIn() && resource.data.uid == request.auth.uid) || can_analytics_view();
-      allow create: if (can_reading_verify() || can_points_adjust())
-        && request.resource.data.createdBy == request.auth.uid
-        && isInt(request.resource.data.points)
-        && request.resource.data.points >= -1000 && request.resource.data.points <= 1000
-        && (request.resource.data.kind != 'manual' || (can_points_adjust() && request.resource.data.reason.size() >= 5));
-      allow update, delete: if false;
+      allow read: if owner() || can_points_view_all();
+      allow write: if false;
     }
-
-    // Public-safe summary used by /leaderboard. No emails, no full names.
+    match /student_points/{uid} {
+      allow read: if isMe(uid) || can_points_view_all();
+      allow write: if false;
+    }
+    // Short public rows («Имя Ф., 10A»), only for signed-in readers.
     match /leaderboard/{uid} {
       allow read: if verified();
-      allow create, update: if (can_reading_verify() || can_points_adjust() || can_roster_manage())
-        || (isMe(uid)
-            && changedOnly(['privacyMode', 'nameShort'])
-            && (request.resource.data.privacyMode == 'hidden'
-                ? request.resource.data.nameShort == ''
-                : (request.resource.data.privacyMode == 'short'
-                   && request.resource.data.nameShort == get(/databases/$(database)/documents/students/$(myEmail())).data.shortName)));
-      allow delete: if can_roster_manage();
+      allow write: if false;
     }
-
-    match /settings/{doc} {
-      allow read: if signedIn();
-      allow write: if can_points_settings();
+    // Shanyrak totals by month, kind and class — no personal data.
+    match /shanyrak_points/{id} {
+      allow read: if true;
+      allow write: if false;
     }
 
     // ---------- rewards ----------
     match /rewards/{id} {
-      allow read: if signedIn();
-      allow write: if can_rewards_propose();
+      allow read: if true;
+      allow write: if false;
     }
-
-    function rewardFrom() { return resource.data.status; }
-    function rewardTo() { return request.resource.data.status; }
-    function approverOk() {
-      return resource.data.type == 'subject_points'
-        ? (can_rewards_review_subject()
-           && (role() != 'teacher' || storedSubject() == resource.data.get('subject', '')))
-        : can_rewards_approve();
-    }
-
     match /reward_issues/{id} {
-      allow read: if (signedIn() && resource.data.uid == request.auth.uid) || can_rewards_view();
-      allow create: if can_rewards_propose()
-        && request.resource.data.status in ['draft', 'proposed']
-        && request.resource.data.proposedBy == request.auth.uid
-        && request.resource.data.affectsGrade == false;
-      allow update: if unchanged('uid') && unchanged('type') && unchanged('proposedBy')
-        && request.resource.data.affectsGrade == false
-        && (
-          (rewardFrom() == rewardTo() && rewardFrom() in ['draft', 'proposed'] && can_rewards_propose())
-          || (rewardFrom() == 'draft' && rewardTo() == 'proposed' && can_rewards_propose())
-          || (rewardFrom() == 'proposed' && rewardTo() == 'awaiting_approval' && can_rewards_propose())
-          || (rewardFrom() == 'awaiting_approval' && rewardTo() == 'approved' && approverOk()
-              && request.resource.data.approvedBy == request.auth.uid
-              && (resource.data.proposedBy != request.auth.uid || role() == 'super_admin'))
-          || (rewardFrom() in ['draft', 'proposed', 'awaiting_approval'] && rewardTo() == 'rejected' && approverOk())
-          || (rewardFrom() == 'approved' && rewardTo() == 'issued' && can_rewards_issue()
-              && request.resource.data.issuedBy == request.auth.uid)
-          || (rewardFrom() == 'issued' && rewardTo() == 'claimed' && can_rewards_issue())
-          || (rewardFrom() in ['approved', 'issued'] && rewardTo() == 'expired' && can_rewards_issue())
-        );
-      allow delete: if false;
+      allow read: if owner() || can_rewards_manage() || can_rewards_issue() || can_rewards_approve();
+      allow write: if false;
     }
-
-    // Public certificate check by number (no listing).
     match /certificates/{number} {
       allow get: if true;
-      allow list: if can_rewards_view();
-      allow create, update: if can_rewards_issue();
-      allow delete: if false;
+      allow list: if can_rewards_manage();
+      allow write: if false;
     }
 
     // ---------- audit ----------
     match /admin_audit_logs/{id} {
       allow read: if can_audit_view();
-      allow create: if isStaff() && request.resource.data.actorUid == request.auth.uid;
-      allow update, delete: if false;
+      allow write: if false;
     }
 
-    // Everything else is closed.
+    // Everything else (rate_limits, reservation_locks, migration_*) is server-only.
     match /{document=**} {
       allow read, write: if false;
     }

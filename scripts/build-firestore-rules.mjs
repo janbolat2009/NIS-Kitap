@@ -1,16 +1,18 @@
 // Generates firestore.rules from firestore.rules.template + config/access.json
-// + src/lib/permissions.js, so the UI and the server use one permission matrix.
+// + src/lib/permissions.js, so the API, the UI and the rules share one matrix.
 // Usage: npm run rules:build
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PERMISSIONS } from '../src/lib/permissions.js';
+import { PERMISSIONS, STAFF_ROLES, ASSIGNABLE_ROLES } from '../src/lib/permissions.js';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const access = JSON.parse(fs.readFileSync(path.join(root, 'config/access.json'), 'utf8'));
 let rules = fs.readFileSync(path.join(root, 'firestore.rules.template'), 'utf8');
 
 const EMAIL = /^[^\s@'"\\]+@[^\s@'"\\]+\.[^\s@'"\\]+$/;
+const quoteList = (items) => `[${items.map((e) => `'${e}'`).join(', ')}]`;
+
 function list(key) {
   const emails = (access[key] || [])
     .map((e) => String(e).trim().toLowerCase())
@@ -18,15 +20,17 @@ function list(key) {
   for (const e of emails) {
     if (!EMAIL.test(e)) throw new Error(`config/access.json ${key}: invalid email "${e}"`);
   }
-  return `[${emails.map((e) => `'${e}'`).join(', ')}]`;
+  return quoteList(emails);
 }
 
-for (const key of ['SUPER_ADMIN_EMAILS', 'DIRECTOR_EMAILS', 'PROJECT_ADMIN_EMAILS', 'LIBRARIAN_EMAILS']) {
+for (const key of ['TECH_ADMIN_EMAILS', 'DIRECTOR_EMAILS', 'DEPUTY_EMAILS', 'LIBRARIAN_EMAILS']) {
   rules = rules.replaceAll(`__${key}__`, list(key));
 }
+rules = rules.replaceAll('__STAFF_ROLES__', quoteList(STAFF_ROLES));
+rules = rules.replaceAll('__ASSIGNABLE_ROLES__', quoteList(ASSIGNABLE_ROLES));
 
 const fns = Object.entries(PERMISSIONS)
-  .map(([perm, roles]) => `    function can_${perm.replace(/\./g, '_')}() { return hasAny([${roles.map((r) => `'${r}'`).join(', ')}]); }`)
+  .map(([perm, roles]) => `    function can_${perm.replace(/\./g, '_')}() { return hasAny(${quoteList(roles)}); }`)
   .join('\n');
 rules = rules.replace('__PERMISSION_FUNCTIONS__', fns);
 

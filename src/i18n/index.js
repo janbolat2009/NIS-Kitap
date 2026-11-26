@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue';
 import { extra } from './extra.js';
+import { v2 } from './v2.js';
 
 const LOCALE_KEY = 'nis_kitap_locale';
 
@@ -48,7 +49,7 @@ export const translations = {
     // AI Search
     aiSearch: {
       assistantTag: 'Интеллектуальный помощник',
-      title: 'Умный поиск на базе Gemini AI',
+      title: 'Подбор книги по описанию',
       subtitle: 'Опишите своими словами тему, эмоцию или сюжет на любом языке, и Gemini найдет наиболее подходящие книги',
       placeholder: 'Например: хочу захватывающую книгу про космические путешествия или антиутопию...',
       clear: 'Очистить',
@@ -191,8 +192,8 @@ export const translations = {
       valBookingDesc: 'Забронируйте нужный экземпляр учебника или художественной литературы со смартфона прямо во время урока или дома.',
       valTrilingualTitle: 'Триязычная коллекция',
       valTrilingualDesc: 'Богатейший выбор произведений на казахском, русском и английском языках, включая ресурсы для олимпиад и экзаменов IELTS/SAT.',
-      valAppleTitle: 'Дизайн в стиле Apple',
-      valAppleDesc: 'Минималистичный интерфейс, матовое стекло, адаптивность под любые устройства и поддержка работы без интернета.',
+      valAppleTitle: 'Удобно с любого устройства',
+      valAppleDesc: 'Каталог, брони и список чтения одинаково работают на телефоне и компьютере, в светлой и тёмной теме.',
       statConvenience: 'Удобство для учащихся',
     },
     // Catalog
@@ -331,7 +332,7 @@ export const translations = {
     },
     // Footer
     footer: {
-      tagline: 'Цифровая библиотека нового поколения для школы NIS. Читайте, исследуйте и бронируйте лучшие книги со всего мира.',
+      tagline: 'Каталог школьной библиотеки NIS: найдите книгу, забронируйте и заберите в удобное время.',
       schoolName: 'Назарбаев Интеллектуальная Школа',
       navCol: 'Навигация',
       genresCol: 'Жанры',
@@ -339,7 +340,7 @@ export const translations = {
       kzLink: 'Қазақ тілінде',
       ruLink: 'На русском языке',
       enLink: 'In English',
-      rights: 'Все права защищены. Разработано в стиле Apple.',
+      rights: 'Школьная библиотека NIS.',
     },
   },
 
@@ -372,7 +373,7 @@ export const translations = {
     },
     aiSearch: {
       assistantTag: 'Зияткерлік көмекші',
-      title: 'Gemini AI негізіндегі ақылды іздеу',
+      title: 'Сипаттама бойынша кітап таңдау',
       subtitle: 'Қалаған тақырыпты, көңіл-күйді немесе оқиға желісін кез келген тілде жазыңыз, Gemini ең қолайлы кітаптарды ұсынады',
       placeholder: 'Мысалы: ғарыштық саяхаттар, батырлар жыры немесе психология туралы қызықты кітап...',
       clear: 'Тазарту',
@@ -510,8 +511,8 @@ export const translations = {
       valBookingDesc: 'Оқулықты немесе көркем кітапты сабақ кезінде немесе үйде смартфоннан бір батырмамен брондаңыз.',
       valTrilingualTitle: 'Үштілді топтама',
       valTrilingualDesc: 'Қазақ, орыс және ағылшын тілдеріндегі бай әдебиет қоры, соның ішінде олимпиадалар мен IELTS/SAT дайындық материалдары.',
-      valAppleTitle: 'Apple стиліндегі дизайн',
-      valAppleDesc: 'Минималистік интерфейс, күңгірт әйнек (Glassmorphism), барлық құрылғыларға бейімделу және офлайн жұмыс істеу мүмкіндігі.',
+      valAppleTitle: 'Кез келген құрылғыдан ыңғайлы',
+      valAppleDesc: 'Каталог, брондау және оқу тізімі телефонда да, компьютерде де, ашық және қараңғы тақырыпта да бірдей жұмыс істейді.',
       statConvenience: 'Оқушыларға 100% қолайлылық',
     },
     catalog: {
@@ -650,7 +651,7 @@ export const translations = {
       kzLink: 'Қазақ тілінде',
       ruLink: 'Орыс тілінде',
       enLink: 'In English',
-      rights: 'Барлық құқықтар қорғалған. Apple стилінде жасалған.',
+      rights: 'NIS мектеп кітапханасы.',
     },
   },
 
@@ -683,7 +684,7 @@ export const translations = {
     },
     aiSearch: {
       assistantTag: 'Intelligent Assistant',
-      title: 'Gemini AI-Powered Smart Search',
+      title: 'Find a book by description',
       subtitle: 'Describe a topic, emotion, or story in any language, and Gemini will discover the most relevant books from the library',
       placeholder: 'For example: I want an exciting novel about deep space exploration or a dystopian future...',
       clear: 'Clear',
@@ -821,8 +822,8 @@ export const translations = {
       valBookingDesc: 'Reserve required textbooks or novels right from your smartphone in class or from home with a single tap.',
       valTrilingualTitle: 'Trilingual Collection',
       valTrilingualDesc: 'Rich selection in Kazakh, Russian, and English, including olympiad resources and IELTS/SAT prep materials.',
-      valAppleTitle: 'Apple-Inspired Design',
-      valAppleDesc: 'Minimalist frosted glass interface (Glassmorphism), full responsive design, and offline capability.',
+      valAppleTitle: 'Works on any device',
+      valAppleDesc: 'The catalog, reservations and reading list work the same on a phone and a computer, in light and dark themes.',
       statConvenience: '100% Student-Friendly',
     },
     catalog: {
@@ -961,7 +962,7 @@ export const translations = {
       kzLink: 'Қазақ тілінде',
       ruLink: 'На русском языке',
       enLink: 'In English',
-      rights: 'All rights reserved. Designed in Apple aesthetic.',
+      rights: 'NIS school library.',
     },
   },
 };
@@ -979,6 +980,7 @@ function deepMerge(target, source) {
   return target;
 }
 for (const loc of Object.keys(extra)) deepMerge(translations[loc], extra[loc]);
+for (const loc of Object.keys(v2)) deepMerge(translations[loc], v2[loc]);
 
 /**
  * Функция перевода t(key)

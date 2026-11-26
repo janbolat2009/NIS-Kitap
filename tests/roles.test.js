@@ -1,63 +1,74 @@
 import { describe, it, expect } from 'vitest';
-import { resolveRole, roleFromConfig, can, canAssignRole, PERMISSIONS } from '../src/lib/roles.js';
+import { resolveRole, roleFromConfig, can, canAssignRole, permissionsOf, isStaff } from '../src/lib/roles.js';
+import { PERMISSIONS, ROLES } from '../src/lib/permissions.js';
 
 const config = {
-  DIRECTOR_EMAILS: ['director@school.kz'],
-  LIBRARIAN_EMAILS: ['LIBRARIAN_EMAIL_HERE', 'lib@school.kz'],
-  PROJECT_ADMIN_EMAILS: ['ardak@school.kz'],
-  SUPER_ADMIN_EMAILS: ['root@school.kz'],
+  TECH_ADMIN_EMAILS: ['tech@school.kz'],
+  DIRECTOR_EMAILS: ['Director@School.kz'],
+  DEPUTY_EMAILS: ['deputy@school.kz'],
+  LIBRARIAN_EMAILS: ['lib@school.kz', 'LIBRARIAN_EMAIL_HERE'],
 };
 
 describe('role resolution', () => {
-  it('ignores placeholders in config/access.json', () => {
+  it('maps configured emails case-insensitively and ignores placeholders', () => {
+    expect(roleFromConfig('director@school.kz', config)).toBe('director');
+    expect(roleFromConfig(' TECH@school.kz ', config)).toBe('tech_admin');
     expect(roleFromConfig('librarian_email_here', config)).toBe(null);
   });
 
-  it('maps configured emails case-insensitively', () => {
-    expect(resolveRole({ email: 'Director@School.kz', emailVerified: true }, config)).toBe('director');
-    expect(resolveRole({ email: 'ardak@school.kz', emailVerified: true }, config)).toBe('project_admin');
-    expect(resolveRole({ email: 'lib@school.kz', emailVerified: true }, config)).toBe('librarian');
-    expect(resolveRole({ email: 'root@school.kz', emailVerified: true }, config)).toBe('super_admin');
-  });
-
-  it('treats everyone else as a student and unverified emails as unverified', () => {
-    expect(resolveRole({ email: 'pupil@school.kz', emailVerified: true }, config)).toBe('student');
+  it('needs a verified e-mail for any role', () => {
     expect(resolveRole({ email: 'director@school.kz', emailVerified: false }, config)).toBe('unverified');
-    expect(resolveRole({}, config)).toBe('guest');
+    expect(resolveRole({ email: '', emailVerified: true }, config)).toBe('guest');
+    expect(resolveRole({ email: 'pupil@school.kz', emailVerified: true }, config)).toBe('student');
   });
 
-  it('ignores unknown roles stored for a user', () => {
-    expect(resolveRole({ email: 'x@school.kz', emailVerified: true, storedRole: 'god' }, config)).toBe('student');
-    expect(resolveRole({ email: 'x@school.kz', emailVerified: true, storedRole: 'teacher' }, config)).toBe('teacher');
+  it('accepts only assignable roles from roles/{email}; tech_admin only from config', () => {
+    expect(resolveRole({ email: 'x@school.kz', emailVerified: true, storedRole: 'librarian' }, config)).toBe('librarian');
+    expect(resolveRole({ email: 'x@school.kz', emailVerified: true, storedRole: 'tech_admin' }, config)).toBe('student');
+    expect(resolveRole({ email: 'x@school.kz', emailVerified: true, storedRole: 'super_admin' }, config)).toBe('student');
+    // config wins over a stored role
+    expect(resolveRole({ email: 'lib@school.kz', emailVerified: true, storedRole: 'director' }, config)).toBe('librarian');
   });
 });
 
 describe('permissions', () => {
-  it('a student cannot use any admin capability', () => {
-    for (const perm of Object.keys(PERMISSIONS)) expect(can('student', perm)).toBe(false);
-    for (const perm of Object.keys(PERMISSIONS)) expect(can('guest', perm)).toBe(false);
+  it('a student has no staff permission', () => {
+    expect(permissionsOf('student')).toEqual([]);
+    expect(isStaff('student')).toBe(false);
   });
 
-  it('full analytics only for director, librarian, project admin and super admin', () => {
-    expect(PERMISSIONS['analytics.view'].sort()).toEqual(['director', 'librarian', 'project_admin', 'super_admin']);
-    expect(can('curator', 'analytics.view')).toBe(false);
-    expect(can('teacher', 'analytics.view')).toBe(false);
+  it('the librarian runs the desk: fund, loans, e-mails, verification, reviews', () => {
+    for (const p of ['fund.manage', 'loans.manage', 'notifications.send', 'reading.verify', 'reviews.moderate', 'points.adjust']) {
+      expect(can('librarian', p)).toBe(true);
+    }
+    expect(can('librarian', 'classes.manage')).toBe(false);
+    expect(can('librarian', 'roles.manage')).toBe(false);
   });
 
-  it('librarian confirms reading, director does not', () => {
-    expect(can('librarian', 'reading.verify')).toBe(true);
-    expect(can('director', 'reading.verify')).toBe(false);
+  it('director and deputy see reports and approve rewards but do not change points or stock', () => {
+    for (const role of ['director', 'deputy']) {
+      expect(can(role, 'reports.view')).toBe(true);
+      expect(can(role, 'rewards.approve')).toBe(true);
+      expect(can(role, 'points.adjust')).toBe(false);
+      expect(can(role, 'loans.manage')).toBe(false);
+      expect(can(role, 'reading.verify')).toBe(false);
+    }
   });
 
-  it('only project admin and super admin adjust points', () => {
-    expect(can('librarian', 'points.adjust')).toBe(false);
-    expect(can('project_admin', 'points.adjust')).toBe(true);
+  it('the tech admin configures classes, rules and roles but does not touch points or loans', () => {
+    for (const p of ['classes.manage', 'settings.manage', 'roles.manage', 'students.class_change']) expect(can('tech_admin', p)).toBe(true);
+    for (const p of ['points.adjust', 'reading.verify', 'loans.manage', 'rewards.issue']) expect(can('tech_admin', p)).toBe(false);
   });
 
-  it('nobody can assign a role to themselves; only super admin assigns roles', () => {
-    expect(canAssignRole('super_admin', 'root@school.kz', 'root@school.kz', 'student')).toBe(false);
-    expect(canAssignRole('super_admin', 'root@school.kz', 'lib@school.kz', 'librarian')).toBe(true);
-    expect(canAssignRole('director', 'director@school.kz', 'x@school.kz', 'librarian')).toBe(false);
-    expect(canAssignRole('student', 'pupil@school.kz', 'pupil@school.kz', 'super_admin')).toBe(false);
+  it('every permission names only known roles', () => {
+    for (const roles of Object.values(PERMISSIONS)) for (const r of roles) expect(ROLES).toContain(r);
+  });
+
+  it('only a tech admin assigns roles, never to self, never tech_admin, never over config', () => {
+    expect(canAssignRole('tech_admin', 'tech@school.kz', 'new@school.kz', 'librarian', config)).toBe(true);
+    expect(canAssignRole('tech_admin', 'tech@school.kz', 'tech@school.kz', 'director', config)).toBe(false);
+    expect(canAssignRole('tech_admin', 'tech@school.kz', 'new@school.kz', 'tech_admin', config)).toBe(false);
+    expect(canAssignRole('tech_admin', 'tech@school.kz', 'lib@school.kz', 'student', config)).toBe(false);
+    expect(canAssignRole('director', 'director@school.kz', 'new@school.kz', 'librarian', config)).toBe(false);
   });
 });

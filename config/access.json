@@ -1,7 +1,7 @@
 {
-  "_comment": "Bootstrap role lists. Replace the placeholders with real lowercase emails, then run `npm run rules:build` and deploy the rules. Roles can also be assigned later on /admin/roster (stored in Firestore roles/{email}).",
-  "DIRECTOR_EMAILS": ["DIRECTOR_EMAIL_HERE"],
-  "LIBRARIAN_EMAILS": ["LIBRARIAN_EMAIL_HERE"],
-  "PROJECT_ADMIN_EMAILS": ["ARDAK_EMAIL_HERE"],
-  "SUPER_ADMIN_EMAILS": ["SUPER_ADMIN_EMAIL_HERE"]
+  "_comment": "Staff accounts by role. Lowercase emails. A role applies only after the person signs in with this address AND the address is verified by Firebase Auth (Google sign-in or the e-mail link). Listing an address never creates an account. After editing run `npm run rules:build`, deploy the Firestore rules and the site. Extra librarians/deputies/directors can also be assigned on /admin/settings (roles/{email}); tech_admin is granted only here.",
+  "DIRECTOR_EMAILS": ["bekbolatov_zh@ast.nis.edu.kz"],
+  "DEPUTY_EMAILS": ["nurysheva_a@ast.nis.edu.kz"],
+  "LIBRARIAN_EMAILS": ["muldasheva_v@ast.nis.edu.kz"],
+  "TECH_ADMIN_EMAILS": ["janbolatique.kz@gmail.com"]
 }

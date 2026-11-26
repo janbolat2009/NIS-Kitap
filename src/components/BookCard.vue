@@ -112,24 +112,24 @@ export default {
 <style scoped>
 .apple-book-card {
   position: relative;
-  background: rgba(255, 255, 255, 0.04);
-  backdrop-filter: blur(18px) saturate(180%);
-  -webkit-backdrop-filter: blur(18px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: var(--surface-2);
+
+
+  border: 1px solid var(--line);
   border-radius: 20px;
   overflow: hidden;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  box-shadow: var(--shadow-2);
 }
 
 .apple-book-card:hover {
   transform: translateY(-6px) scale(1.01);
-  background: rgba(255, 255, 255, 0.07);
-  border-color: rgba(56, 189, 248, 0.35);
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4), 0 0 24px rgba(0, 113, 227, 0.2);
+  background: var(--surface-2);
+  border-color: var(--accent-soft);
+  box-shadow: none;
 }
 
 .apple-book-card:active {
@@ -140,7 +140,7 @@ export default {
 .card-cover-wrapper {
   position: relative;
   padding: 16px;
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--backdrop);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -151,9 +151,7 @@ export default {
   height: 180px;
   border-radius: 12px;
   position: relative;
-  box-shadow: 
-    -4px 4px 14px rgba(0, 0, 0, 0.5),
-    inset -1px 0 2px rgba(255, 255, 255, 0.2);
+  box-shadow: var(--shadow-2);
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -172,8 +170,8 @@ export default {
   left: 0;
   bottom: 0;
   width: 8px;
-  background: linear-gradient(to right, rgba(255, 255, 255, 0.25), rgba(0, 0, 0, 0.3));
-  box-shadow: 1px 0 2px rgba(0, 0, 0, 0.4);
+  background: var(--surface-3);
+  box-shadow: var(--shadow-2);
 }
 
 .cover-content {
@@ -185,7 +183,7 @@ export default {
   font-size: 9px;
   font-weight: 800;
   letter-spacing: 0.12em;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-2);
   margin-bottom: 6px;
 }
 
@@ -194,7 +192,7 @@ export default {
   font-size: 14.5px;
   font-weight: 700;
   line-height: 1.25;
-  color: #FFFFFF;
+  color: var(--text-1);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
@@ -205,7 +203,7 @@ export default {
 .cover-author {
   margin: 0;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.85);
+  color: var(--text-1);
   font-weight: 500;
   display: -webkit-box;
   -webkit-line-clamp: 1;
@@ -218,7 +216,7 @@ export default {
   justify-content: space-between;
   align-items: center;
   font-size: 11px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-2);
   font-weight: 600;
 }
 
@@ -234,29 +232,29 @@ export default {
   border-radius: 9999px;
   font-size: 11px;
   font-weight: 600;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+
+
   z-index: 2;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--shadow-2);
 }
 
 .availability-badge.available {
-  background: rgba(16, 185, 129, 0.25);
+  background: var(--success-soft);
   border: 1px solid rgba(16, 185, 129, 0.45);
-  color: #34D399;
+  color: var(--success);
 }
 .availability-badge.available .status-dot {
-  background: #10B981;
+  background: var(--success-soft);
   box-shadow: 0 0 6px #10B981;
 }
 
 .availability-badge.unavailable {
-  background: rgba(239, 68, 68, 0.25);
+  background: var(--danger-soft);
   border: 1px solid rgba(239, 68, 68, 0.45);
-  color: #F87171;
+  color: var(--danger);
 }
 .availability-badge.unavailable .status-dot {
-  background: #EF4444;
+  background: var(--danger-soft);
 }
 
 .status-dot {
@@ -283,9 +281,9 @@ export default {
 .genre-pill {
   font-size: 11px;
   font-weight: 500;
-  color: #38BDF8;
-  background: rgba(0, 113, 227, 0.12);
-  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: var(--accent-text);
+  background: var(--accent-soft);
+  border: 1px solid var(--accent-soft);
   padding: 2px 8px;
   border-radius: 9999px;
 }
@@ -294,7 +292,7 @@ export default {
   margin: 2px 0 0;
   font-size: 15.5px;
   font-weight: 600;
-  color: #FFFFFF;
+  color: var(--text-1);
   line-height: 1.35;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -304,7 +302,7 @@ export default {
 }
 
 .apple-book-card:hover .book-title {
-  color: #38BDF8;
+  color: var(--accent-text);
 }
 
 .book-author {
@@ -312,16 +310,16 @@ export default {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  color: rgba(255, 255, 255, 0.65);
+  color: var(--text-2);
 }
 .author-icon {
-  stroke: rgba(255, 255, 255, 0.5);
+  stroke: var(--text-2);
 }
 
 .card-meta-row {
   margin-top: auto;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-top: 1px solid var(--line);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -329,10 +327,10 @@ export default {
 
 .meta-tag {
   font-size: 11.5px;
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--text-3);
 }
 .language-tag {
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-2);
 }
 </style>
