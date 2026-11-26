@@ -49,8 +49,9 @@
           <div class="m-row">
             <span class="m-label">{{ t('theme.label') }}</span>
             <div class="seg" role="group" :aria-label="t('theme.label')">
-              <button type="button" :aria-pressed="themePref === 'light'" @click="setTheme('light')">{{ t('theme.toLight') }}</button>
-              <button type="button" :aria-pressed="themePref === 'dark'" @click="setTheme('dark')">{{ t('theme.toDark') }}</button>
+              <!-- The theme in use is marked even when it comes from the device setting. -->
+              <button type="button" :aria-pressed="theme === 'light'" @click="setTheme('light')">{{ t('theme.toLight') }}</button>
+              <button type="button" :aria-pressed="theme === 'dark'" @click="setTheme('dark')">{{ t('theme.toDark') }}</button>
             </div>
           </div>
           <div class="m-row">
@@ -73,7 +74,7 @@ import BrandMark from '@/components/BrandMark.vue';
 import { t, currentLocale, setLocale } from '@/i18n';
 import { session } from '@/stores/session';
 import { openLogin } from '@/stores/ui';
-import { theme, themePref, setTheme, toggleTheme } from '@/stores/theme';
+import { theme, setTheme, toggleTheme } from '@/stores/theme';
 
 const links = [
   { to: '/', label: 'nav.home' },
@@ -213,7 +214,7 @@ watch(() => route.fullPath, () => { open.value = false; });
   border: 1px solid var(--line-strong);
   border-radius: var(--r-lg);
   background: var(--bg-elevated);
-  clip-path: inset(0);
+  box-shadow: var(--shadow-2);
 }
 .m-links { display: grid; gap: 3px; padding-bottom: 8px; }
 .m-link { display: flex; align-items: center; min-height: 44px; padding: 7px 11px; color: var(--text-1); text-decoration: none; font-weight: 610; border-radius: var(--r-sm); }
@@ -221,19 +222,40 @@ watch(() => route.fullPath, () => { open.value = false; });
 .m-link:is(:hover, :active) { background: var(--accent-soft); color: var(--accent-text); }
 .m-row { display: flex; flex-direction: column; gap: 7px; padding: 10px 3px; border-top: 1px solid var(--line); }
 .m-label { font-size: var(--fs-xs); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 650; }
-.seg { display: flex; border: 1px solid var(--line-strong); border-radius: var(--r-md); overflow: hidden; }
-.seg button { flex: 1; min-height: 44px; border: none; background: var(--surface); color: var(--text-2); font-weight: 600; font-size: var(--fs-sm); cursor: pointer; }
-.seg button + button { border-left: 1px solid var(--line-strong); }
-.seg button[aria-pressed='true'] { background: var(--text-1); color: var(--bg); }
-.seg button:hover:not([aria-pressed='true']) { background: var(--accent-soft); color: var(--accent-text); }
-.seg button:focus-visible { outline-offset: -3px; }
-.mobile-panel .btn-block { margin-top: 8px; }
+/* Theme and language switches share the primary blue of «Войти» (--button-fill /
+   --accent-text): the selected option is a tinted blue segment, «Войти» stays the
+   only solid blue button, so the hierarchy is kept while the hue is one. */
+.seg {
+  display: flex; gap: 4px; padding: 4px;
+  border: 1px solid color-mix(in srgb, var(--accent-text) 22%, var(--line));
+  border-radius: var(--r-md);
+  background: var(--surface);
+}
+.seg button {
+  flex: 1; min-height: 44px; border: 1px solid transparent; border-radius: calc(var(--r-md) - 4px);
+  background: transparent; color: var(--text-2); font-weight: 600; font-size: var(--fs-sm); cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.seg button[aria-pressed='true'] {
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--button-fill) 55%, transparent);
+  color: var(--accent-text);
+  font-weight: 700;
+}
+.seg button:hover:not([aria-pressed='true']) { background: color-mix(in srgb, var(--accent-soft) 70%, transparent); color: var(--accent-text); }
+.seg button:active { background: color-mix(in srgb, var(--button-fill) 22%, var(--accent-soft)); color: var(--accent-text); }
+.seg button:focus-visible { outline-offset: 1px; }
+.mobile-panel .btn-block { margin-top: 8px; min-height: 48px; }
 .menu-leave-active { pointer-events: none; }
 
-.menu-enter-active, .menu-leave-active { transition: background-color var(--dur-2) ease; }
-.menu-enter-active .mobile-panel, .menu-leave-active .mobile-panel { transition: clip-path var(--dur-2) var(--ease-out); }
+/* Panel: fade + slight drop from the burger corner (transform/opacity only). */
+.menu-enter-active { transition: background-color 300ms ease; }
+.menu-leave-active { transition: background-color 180ms ease; }
+.menu-enter-active .mobile-panel { transition: opacity 260ms ease, transform 340ms var(--ease-out); }
+.menu-leave-active .mobile-panel { transition: opacity 160ms ease, transform 180ms ease-in; }
 .menu-enter-from, .menu-leave-to { background-color: transparent; }
-.menu-enter-from .mobile-panel, .menu-leave-to .mobile-panel { clip-path: inset(0 0 100% 0); }
+.menu-enter-from .mobile-panel, .menu-leave-to .mobile-panel { opacity: 0; transform: translateY(-8px) scale(0.98); }
+.mobile-panel { transform-origin: top right; }
 
 @media (prefers-reduced-motion: no-preference) {
   .bar { animation: mark-header 480ms var(--ease-out) backwards; }
@@ -254,7 +276,7 @@ watch(() => route.fullPath, () => { open.value = false; });
   .brand:hover:not(:active) :deep(.mark) { transform: rotate(-7deg); }
 }
 @media (prefers-reduced-motion: reduce) {
-  .menu-enter-from .mobile-panel, .menu-leave-to .mobile-panel { clip-path: inset(0); }
+  .menu-enter-from .mobile-panel, .menu-leave-to .mobile-panel { transform: none; }
 }
 @media (max-width: 1120px) {
   .nav-desktop, .lang, .staff-link, .account-label { display: none; }

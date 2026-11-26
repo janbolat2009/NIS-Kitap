@@ -8,25 +8,33 @@
       </transition>
     </router-view>
   </main>
-  <SiteFooter v-if="!$route.meta.bare" />
+  <!-- Footer waits for the first page chunk: otherwise it flashes at the top and jumps down (layout shift). -->
+  <SiteFooter v-if="routeReady && !$route.meta.bare" />
 
   <AuthDialog v-if="ui.authOpen" />
   <ClassOnboarding v-if="showOnboarding" @close="onboardingClosed = true" />
 
-  <div class="toast-stack" aria-live="polite">
+  <transition-group tag="div" name="toast" class="toast-stack" aria-live="polite">
     <div v-for="item in ui.toasts" :key="item.id" class="toast" :class="{ 'is-error': item.type === 'error' }">{{ item.message }}</div>
-  </div>
+  </transition-group>
 </template>
 
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, defineAsyncComponent, ref } from 'vue';
+import { useRouter } from 'vue-router';
 import SiteHeader from '@/components/SiteHeader.vue';
 import SiteFooter from '@/components/SiteFooter.vue';
-import AuthDialog from '@/components/AuthDialog.vue';
-import ClassOnboarding from '@/components/ClassOnboarding.vue';
+
+// Shown only on demand: loaded the first time they open.
+const AuthDialog = defineAsyncComponent(() => import('@/components/AuthDialog.vue'));
+const ClassOnboarding = defineAsyncComponent(() => import('@/components/ClassOnboarding.vue'));
 import { ui } from '@/stores/ui';
 import { session } from '@/stores/session';
 import { t } from '@/i18n';
+
+const router = useRouter();
+const routeReady = ref(false);
+router.isReady().then(() => { routeReady.value = true; });
 
 const onboardingClosed = ref(false);
 const postponed = (() => {

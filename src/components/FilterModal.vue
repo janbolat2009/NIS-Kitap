@@ -237,7 +237,7 @@ export default {
   align-items: center;
   justify-content: center;
   font-size: 14px;
-  transition: all 0.2s ease;
+  transition-property: background-color, border-color, color, box-shadow, transform, opacity; transition-duration: 0.2s; transition-timing-function: ease;
 }
 .sheet-close-btn:hover {
   background: var(--surface-3);
@@ -298,7 +298,7 @@ export default {
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-property: background-color, border-color, color, box-shadow, transform, opacity; transition-duration: 0.2s; transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .filter-tag-pill:hover {
@@ -337,7 +337,7 @@ export default {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition-property: background-color, border-color, color, box-shadow, transform, opacity; transition-duration: 0.2s; transition-timing-function: ease;
 }
 .btn-reset:hover {
   background: var(--surface-3);
@@ -355,7 +355,7 @@ export default {
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition-property: background-color, border-color, color, box-shadow, transform, opacity; transition-duration: 0.2s; transition-timing-function: ease;
   box-shadow: none;
 }
 .btn-apply:hover {

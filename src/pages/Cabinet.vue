@@ -118,7 +118,8 @@
 
 <script setup>
 import { computed, onBeforeUnmount, ref, watch, defineComponent, h } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, RouterLink } from 'vue-router';
+import LoanCard from '@/components/LoanCard.vue';
 import { sendEmailVerification } from 'firebase/auth';
 import { auth } from '@/firebase';
 import { t, currentLocale } from '@/i18n';
@@ -160,29 +161,22 @@ const readingGroups = computed(() => {
 const loc = () => ({ kz: 'kk-KZ', en: 'en-GB' }[currentLocale.value] || 'ru-RU');
 const fmtDate = (iso) => (iso ? new Date(iso).toLocaleDateString(loc(), { day: 'numeric', month: 'short', year: 'numeric' }) : '');
 
-// Reservation list (overview and the «Брони» tab).
+// Reservation list (overview and the «Брони» tab): every reservation shows its
+// stage track and what to do next (src/components/LoanCard.vue).
+// `now` ticks once a minute so «Можно забрать» and overdue states switch on time.
+const now = ref(new Date());
+const clock = setInterval(() => { now.value = new Date(); }, 60000);
+onBeforeUnmount(() => clearInterval(clock));
 const LoanList = defineComponent({
   props: { items: { type: Array, default: () => [] }, showAll: Boolean },
   emits: ['cancel'],
   setup(props, { emit }) {
-    const fmt = (iso, time) => (iso ? new Date(iso).toLocaleString(loc(), time ? { day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit' } : { day: 'numeric', month: 'long' }) : '');
     return () => (props.items.length
-      ? h('ul', { class: 'rows' }, props.items.map((l) => h('li', { class: 'row-item', key: l.id }, [
-        h('div', { class: 'row-main' }, [
-          h('div', { class: 'row-title' }, l.bookTitle || l.title),
-          h('div', { class: 'row-meta' }, [
-            `${t('loan.code')}: ${l.code || l.id}`,
-            l.pickup ? ` · ${t('loan.pickup')}: ${fmt(l.pickup.start)}, ${l.pickup.from}–${l.pickup.to}, ${l.pickup.place}` : '',
-            l.holdUntil && ['requested', 'ready'].includes(l.status) ? ` · ${t('loan.holdUntil')}: ${fmt(l.holdUntil, true)}` : '',
-            l.dueDate && l.status === 'issued' ? ` · ${t('loan.due')}: ${fmt(l.dueDate)}` : '',
-          ]),
-        ]),
-        h('div', { class: 'row-actions' }, [
-          h('span', { class: ['badge', { 'badge-success': l.status === 'ready', 'badge-info': l.status === 'issued', 'badge-warning': l.status === 'requested' }] }, t(`loan.${l.status}`)),
-          ['requested', 'ready'].includes(l.status) ? h('button', { type: 'button', class: 'btn btn-danger btn-sm', onClick: () => emit('cancel', l) }, t('loan.cancel')) : null,
-        ]),
-      ])))
-      : h('p', { class: 'muted' }, t('cabinet.noLoans')));
+      ? h('ul', { class: 'loan-list' }, props.items.map((l) => h(LoanCard, { key: l.id, loan: l, now: now.value, onCancel: (x) => emit('cancel', x) })))
+      : h('div', { class: 'empty loans-empty' }, [
+        h('p', t('cabinet.noLoans')),
+        h(RouterLink, { to: '/catalog', class: 'btn btn-secondary btn-sm' }, () => t('similar.toCatalog')),
+      ]));
   },
 });
 
@@ -270,4 +264,6 @@ legend { font-weight: 650; padding: 0 6px; }
 .seg button + button { border-left: 1px solid var(--line-strong); }
 .seg button[aria-pressed='true'] { background: var(--text-1); color: var(--bg); }
 .settings > .btn { align-self: flex-start; }
+.loan-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.loans-empty { border: 1px dashed var(--line-strong); border-radius: var(--r-lg); padding: 28px 20px; }
 </style>

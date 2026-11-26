@@ -28,14 +28,41 @@
       <span v-else-if="year" class="muted">{{ t('board.year') }} {{ year }}</span>
     </div>
 
-    <div v-if="loading" class="list"><div v-for="n in 5" :key="n" class="skeleton" style="height: 64px" /></div>
+    <section v-if="view === 'shanyraks'" class="board-info" :aria-label="t('boardInfo.howTitle')">
+      <div class="info-line">
+        <p class="period-line"><span class="lbl">{{ t('boardInfo.period') }}</span> <b>{{ periodLabel || '—' }}</b></p>
+        <p class="updated" role="status">
+          <span v-if="loading" class="skeleton updated-sk" aria-hidden="true" />
+          <time v-else-if="lastUpdated" :datetime="lastUpdated">{{ t('boardInfo.updated', { at: fmtDateTime(lastUpdated) }) }}</time>
+          <time v-else-if="loadedAt" :datetime="loadedAt">{{ t('boardInfo.loaded', { at: fmtDateTime(loadedAt) }) }}</time>
+        </p>
+      </div>
+      <details class="how">
+        <summary>{{ t('boardInfo.howTitle') }}</summary>
+        <div class="how-body">
+          <p>{{ t('boardInfo.how') }}</p>
+          <ul v-if="ruleRows.length" class="kv rules">
+            <li v-for="r in ruleRows" :key="r.key"><span>{{ t(`boardInfo.rules.${r.key}`) }}</span><b class="tabular">+{{ t('boardInfo.pts', { n: fmt(r.points) }) }}</b></li>
+          </ul>
+        </div>
+      </details>
+    </section>
+
+    <div v-if="loading" class="list" aria-hidden="true">
+      <div v-for="n in 5" :key="n" class="row sk-row">
+        <span class="skeleton sk-rank" /><span class="skeleton sk-name" /><span class="skeleton sk-score" />
+      </div>
+    </div>
 
     <template v-else-if="view === 'shanyraks'">
       <div v-if="loadError" class="notice notice-warning" role="alert">
         <p>{{ t('common.errorTitle') }}</p>
         <button type="button" class="btn btn-secondary btn-sm" @click="load">{{ t('common.retry') }}</button>
       </div>
-      <p v-else-if="!ranked.length" class="empty" role="status">{{ t('board.empty') }}</p>
+      <div v-else-if="!ranked.length || !hasPoints" class="empty board-empty" role="status">
+        <p>{{ t('boardInfo.empty') }}</p>
+        <router-link to="/100-kitap" class="btn btn-secondary btn-sm">{{ t('nav.hundred') }}</router-link>
+      </div>
       <section v-else :aria-label="t('board.scale')">
         <p class="chart-scale">{{ t('board.scale') }} · <span class="tabular">0–{{ fmt(maxScore) }}</span></p>
         <template v-for="group in groups" :key="group.id">
@@ -94,7 +121,8 @@ import { t, currentLocale } from '@/i18n';
 import { session } from '@/stores/session';
 import { openLogin } from '@/stores/ui';
 import { shanyrakPeriodTotals, monthsOfAcademicYear, monthOf, quarterOf, rankRows } from '@/lib/points';
-import { getSchoolSettings, listShanyrakPoints, listShanyraks } from '@/services/schoolService';
+import { getSchoolSettings, listShanyrakPoints, listShanyraks, getPointRules } from '@/services/schoolService';
+import { toDate } from '@/lib/points';
 import { listLeaderboardRows } from '@/services/library';
 
 const view = ref('shanyraks');
@@ -108,6 +136,37 @@ const rows = ref([]);
 const loading = ref(true);
 const loadError = ref(false);
 const openId = ref('');
+const rules = ref(null);
+// When this page received the data — shown only with the «Данные загружены» wording.
+const loadedAt = ref('');
+
+// Real update time: the latest updatedAt the server wrote into shanyrak_points.
+const lastUpdated = computed(() => {
+  let best = null;
+  for (const d of docs.value) {
+    const at = toDate(d.updatedAt);
+    if (at && (!best || at > best)) best = at;
+  }
+  return best ? best.toISOString() : '';
+});
+const hasPoints = computed(() => ranked.value.some((r) => r.score !== 0));
+const periodLabel = computed(() => {
+  if (!year.value) return '';
+  if (periodType.value === 'quarter' && quarter.value) return `${t('board.q', { n: quarter.value.split('-Q')[1] })} · ${year.value}`;
+  if (periodType.value === 'month' && month.value) return monthLabel(month.value);
+  return `${t('board.year')} ${year.value}`;
+});
+const ruleRows = computed(() => {
+  const r = rules.value;
+  if (!r) return [];
+  return [
+    { key: 'book', points: r.bookConfirmed },
+    { key: 'hundred', points: r.hundredBonus },
+    { key: 'review', points: r.reviewAccepted },
+    { key: 'milestone', points: r.milestonePoints },
+  ].filter((row) => row.points > 0);
+});
+const fmtDateTime = (iso) => new Date(iso).toLocaleString(locale.value, { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 
 const months = computed(() => monthsOfAcademicYear(year.value));
 const period = computed(() => (periodType.value === 'quarter' ? { quarter: quarter.value } : periodType.value === 'month' ? { month: month.value } : {}));
@@ -143,7 +202,11 @@ async function load() {
     month.value = months.value.includes(currentMonth) ? currentMonth : months.value[0] || '';
   }
   try {
-    [docs.value, names.value] = await Promise.all([listShanyrakPoints(year.value), listShanyraks(year.value).catch(() => [])]);
+    const [points, list, pointRules] = await Promise.all([listShanyrakPoints(year.value), listShanyraks(year.value).catch(() => []), getPointRules()]);
+    docs.value = points;
+    names.value = list;
+    rules.value = pointRules;
+    loadedAt.value = new Date().toISOString();
   } catch {
     docs.value = [];
     loadError.value = true;
@@ -194,6 +257,24 @@ onMounted(load);
 .kv li { display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: var(--fs-sm); }
 .kv .neg { color: var(--danger); }
 .hint { margin-bottom: 12px; }
+.board-info { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--bg-elevated); }
+.info-line { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 20px; }
+.period-line { min-width: 0; overflow-wrap: anywhere; }
+.period-line .lbl { font-size: var(--fs-sm); color: var(--text-3); margin-right: 4px; }
+.period-line b { font-weight: 650; }
+.updated { min-height: 20px; font-size: var(--fs-sm); color: var(--text-2); font-variant-numeric: tabular-nums; text-wrap: pretty; }
+.updated-sk { display: inline-block; width: 210px; max-width: 60vw; height: 14px; vertical-align: middle; }
+.how summary { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; cursor: pointer; font-size: var(--fs-sm); font-weight: 650; color: var(--accent-text); list-style: none; border-radius: var(--r-sm); }
+.how summary::-webkit-details-marker { display: none; }
+.how summary::after { content: ''; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-2px) rotate(45deg); transition: transform 200ms var(--ease-out); }
+.how[open] summary::after { transform: translateY(1px) rotate(-135deg); }
+.how-body { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; color: var(--text-2); font-size: var(--fs-sm); max-width: 70ch; text-wrap: pretty; animation: rise 300ms var(--ease-out) both; }
+.rules { max-width: 420px; }
+.board-empty { border: 1px dashed var(--line-strong); border-radius: var(--r-lg); animation: rise 360ms var(--ease-out) both; }
+.sk-row { display: grid; grid-template-columns: 31px minmax(0, 1fr) 70px; gap: 9px; align-items: center; padding: 16px 14px; }
+.sk-rank { width: 31px; height: 31px; }
+.sk-name { height: 14px; width: 60%; }
+.sk-score { height: 14px; }
 .notice .btn { margin-top: 8px; }
 @media (prefers-reduced-motion: no-preference) {
   .bar i { animation: grow-score 480ms var(--ease-out) both; }

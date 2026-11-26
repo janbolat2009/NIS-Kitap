@@ -98,18 +98,35 @@
         </ul>
         <p v-else-if="!editing" class="muted">{{ t('book.noReviews') }}</p>
       </section>
+
+      <section class="similar" aria-labelledby="similar-title">
+        <div class="similar-head">
+          <h2 id="similar-title" class="section-title">{{ t('similar.title') }}</h2>
+          <p v-if="similar.length" class="muted similar-lead">{{ t('similar.lead') }}</p>
+        </div>
+        <ul v-if="similar.length" class="similar-list" :aria-describedby="similar.length > 1 ? 'similar-hint' : undefined">
+          <li v-for="b in similar" :key="b._id || b.title"><BookCard :book="b" /></li>
+        </ul>
+        <p v-if="similar.length > 1" id="similar-hint" class="visually-hidden">{{ t('similar.scrollHint') }}</p>
+        <div v-else-if="!similar.length" class="similar-empty">
+          <p>{{ t('similar.empty') }}</p>
+          <router-link to="/catalog" class="btn btn-secondary btn-sm">{{ t('similar.toCatalog') }}</router-link>
+        </div>
+      </section>
     </template>
   </div>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue';
+import { computed, onBeforeUnmount, reactive, ref, shallowRef, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BookCover from '@/components/BookCover.vue';
+import BookCard from '@/components/BookCard.vue';
+import { similarBooks } from '@/lib/similarBooks';
 import { t, currentLocale } from '@/i18n';
 import { session } from '@/stores/session';
 import { openLogin, toast } from '@/stores/ui';
-import { getBookByTitle } from '@/services/bookService';
+import { getBookByTitle, getBooks, normalizeLanguage } from '@/services/bookService';
 import { getBookId } from '@/lib/bookId';
 import { displayStatus } from '@/lib/workflow';
 import { errorMessage } from '@/services/api';
@@ -139,6 +156,9 @@ const editing = ref(false);
 const rForm = reactive({ rating: 5, text: '' });
 const rError = ref('');
 const holdHours = ref(48);
+// The catalog list is cached by bookService; recomputed only when the book or the list changes.
+const catalog = shallowRef([]);
+const similar = computed(() => (book.value ? similarBooks(book.value, catalog.value, { normalizeLanguage }) : []));
 let stops = [];
 
 const bookId = computed(() => (book.value ? getBookId(book.value) : ''));
@@ -243,8 +263,9 @@ async function load() {
   justReserved.value = false;
   try {
     book.value = await getBookByTitle(route.params.title);
+    catalog.value = await getBooks();
   } catch {
-    book.value = null;
+    book.value = book.value || null;
   }
   loading.value = false;
   if (!book.value) return;
@@ -316,6 +337,14 @@ onBeforeUnmount(() => stops.forEach((s) => s()));
 .stars-ro .dim { color: var(--line-strong); }
 .rev-text { margin-top: 6px; color: var(--text-1); white-space: pre-line; overflow-wrap: anywhere; }
 .notice { margin: 10px 0; }
+.similar { margin-top: 56px; padding-top: 28px; border-top: 1px solid var(--line); }
+.similar-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 16px; margin-bottom: 16px; }
+.similar-head .section-title { margin: 0; }
+.similar-lead { font-size: var(--fs-sm); text-wrap: pretty; }
+.similar-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(178px, 1fr)); gap: 16px; }
+.similar-list > li { display: flex; min-width: 0; }
+.similar-list > li > * { flex: 1; }
+.similar-empty { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 16px; padding: 18px 20px; border: 1px dashed var(--line-strong); border-radius: var(--r-lg); color: var(--text-2); font-size: var(--fs-sm); animation: rise var(--dur-3) var(--ease-out) both; }
 @media (max-width: 760px) {
   .layout { grid-template-columns: clamp(98px, 32vw, 150px) minmax(0, 1fr); gap: 15px; }
   .info > * { grid-column: 1 / -1; }
@@ -324,5 +353,21 @@ onBeforeUnmount(() => stops.forEach((s) => s()));
   .identity .badge { font-size: 0.65rem; white-space: normal; }
   .counters { grid-template-columns: repeat(2, 1fr); }
   .reserve-btn { width: 100%; min-width: 0; white-space: normal; line-height: 1.2; }
+  /* Horizontal shelf: the next card peeks in so the row reads as scrollable. */
+  .similar-list {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: min(72%, 230px);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: var(--gutter);
+    margin-inline: calc(-1 * var(--gutter));
+    padding: 4px var(--gutter) 12px;
+    gap: 12px;
+    scrollbar-width: none;
+  }
+  .similar-list::-webkit-scrollbar { display: none; }
+  .similar-list > li { scroll-snap-align: start; }
 }
 </style>

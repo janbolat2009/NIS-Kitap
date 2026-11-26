@@ -58,7 +58,7 @@ const genres = computed(() => {
   border: 1px solid var(--line);
   border-radius: inherit;
   background: var(--surface);
-  transition: border-color var(--dur-2) ease, box-shadow 280ms ease, transform 280ms var(--ease-out);
+  transition: border-color var(--dur-2) ease, box-shadow 240ms ease, transform 240ms var(--ease-out), background-color var(--dur-1) ease;
 }
 .apple-book-card > .jacket { border-radius: calc(var(--r-lg) - 1px) calc(var(--r-lg) - 1px) 0 0; }
 .apple-book-card:focus-visible { border-radius: var(--r-lg); }

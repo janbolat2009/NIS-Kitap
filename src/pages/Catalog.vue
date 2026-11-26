@@ -50,7 +50,7 @@
             </div>
 
             <!-- Filter Modal Button -->
-            <button class="filter-sheet-btn" @click="showFilterModal = true">
+            <button ref="filterButton" type="button" class="filter-sheet-btn" @click="showFilterModal = true">
               <svg class="filter-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 5h15L14 11.5v5l-4 2v-7z" /></svg>
               <span>{{ t('catalog.filtersBtn') }}</span>
               <span v-if="hasActiveFilters" class="filter-active-dot"></span>
@@ -61,21 +61,34 @@
         <!-- Quick Filter Pills Bar -->
         <div class="quick-pills-row">
           <!-- All -->
-          <button 
-            class="pill-btn" 
-            :class="{ active: !activeGenre && !activeLanguage }"
+          <button
+            type="button"
+            class="pill-btn"
+            :class="{ active: !activeGenre && !activeLanguage && !onlyAvailable }"
+            :aria-pressed="!activeGenre && !activeLanguage && !onlyAvailable"
             @click="resetAllFilters"
           >
             {{ t('catalog.allBooksPill') }}
+          </button>
+          <button
+            type="button"
+            class="pill-btn avail-pill"
+            :class="{ active: onlyAvailable }"
+            :aria-pressed="onlyAvailable"
+            @click="onlyAvailable = !onlyAvailable"
+          >
+            <span class="avail-dot" aria-hidden="true" />{{ t('filters.inStock') }}
           </button>
 
           <!-- Genres -->
           <div class="pills-divider"></div>
           <button 
-            v-for="g in genreList" 
+            v-for="g in genreList"
             :key="g.value"
+            type="button"
             class="pill-btn"
             :class="{ active: activeGenre === g.value }"
+            :aria-pressed="activeGenre === g.value"
             @click="toggleGenre(g.value)"
           >
             {{ g.label }}
@@ -84,39 +97,39 @@
           <!-- Languages -->
           <div class="pills-divider"></div>
           <button 
-            v-for="l in languageList" 
+            v-for="l in languageList"
             :key="l.value"
+            type="button"
             class="pill-btn lang-pill"
             :class="{ active: activeLanguage === l.value }"
+            :aria-pressed="activeLanguage === l.value"
             @click="toggleLanguage(l.value)"
           >
             {{ l.label }}
           </button>
         </div>
 
-        <!-- Active Filters Summary & Count -->
-        <div class="catalog-summary-bar">
-          <div v-if="!loading" class="results-count" role="status">
-            <span>{{ t('catalog.foundCount') }} <b>{{ filteredBooks.length }}</b> {{ t('catalog.booksWord') }}</span>
-            <span v-if="activeGenre || activeLanguage || searchQuery" class="filter-tag-hint">
-              {{ t('catalog.filtersApplied') }}
-            </span>
-          </div>
+        <!-- Applied filters: one removable chip each, synced with the URL -->
+        <ActiveFilters :chips="filterChips" @remove="removeFilter" @clear="clearFilters" @empty="focusFilterButton" />
 
-          <div v-if="hasActiveFilters" class="active-chips">
-            <button v-if="activeGenre" type="button" class="active-chip" @click="activeGenre = ''">
-              {{ t('catalog.genreLabel') }} {{ getGenreLabel(activeGenre) }} ✕
-            </button>
-            <button v-if="activeLanguage" type="button" class="active-chip" @click="activeLanguage = ''">
-              {{ t('catalog.langLabel') }} {{ getLanguageLabel(activeLanguage) }} ✕
-            </button>
-            <button class="reset-all-link" @click="resetAllFilters">{{ t('catalog.resetAll') }}</button>
+        <!-- Result count -->
+        <div class="catalog-summary-bar">
+          <div class="results-count" role="status">
+            <span v-if="!loading">{{ t('catalog.foundCount') }} <b class="tabular">{{ filteredBooks.length }}</b> {{ t('catalog.booksWord') }}</span>
+            <span v-else class="skeleton count-skeleton" aria-hidden="true" />
           </div>
         </div>
 
         <!-- Books Grid -->
-        <div v-if="loading" class="books-grid">
-          <div v-for="n in 8" :key="n" class="skeleton-book-card glass-panel"></div>
+        <div v-if="loading" class="books-grid" aria-hidden="true">
+          <div v-for="n in 8" :key="n" class="skeleton-book-card">
+            <div class="skeleton sk-cover" />
+            <div class="sk-body">
+              <div class="skeleton sk-line" style="width: 38%" />
+              <div class="skeleton sk-line sk-title" style="width: 82%" />
+              <div class="skeleton sk-line" style="width: 56%" />
+            </div>
+          </div>
         </div>
 
         <div v-else-if="filteredBooks.length === 0" class="no-books-state glass-panel">
@@ -124,7 +137,7 @@
           <p>{{ t(searchQuery.trim() ? 'catalog.emptyQuery' : 'catalog.emptyDesc') }}</p>
           <div class="empty-actions">
             <button v-if="searchQuery.trim()" type="button" class="btn btn-primary" @click="clearSearch">{{ t('catalog.clearQuery') }}</button>
-            <button v-if="!searchQuery.trim() || activeGenre || activeLanguage" type="button" class="btn btn-secondary" @click="resetAllFilters">{{ t('catalog.resetAll') }}</button>
+            <button v-if="!searchQuery.trim() || activeGenre || activeLanguage || onlyAvailable" type="button" class="btn btn-secondary" @click="resetAllFilters">{{ t('catalog.resetAll') }}</button>
           </div>
         </div>
 
@@ -173,10 +186,11 @@
 <script>
 import { watch as watchShell } from 'vue';
 import { openLogin } from '@/stores/ui';
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import BookCard from '@/components/BookCard.vue';
 import FilterModal from '@/components/FilterModal.vue';
+import ActiveFilters from '@/components/ActiveFilters.vue';
 import { normalizeBookSearch } from '@/lib/bookSearch';
 import { getBooks, matchLanguage, matchGenre, getUniqueGenres } from '@/services/bookService';
 import { t } from '@/i18n';
@@ -187,6 +201,7 @@ export default {
   components: {
     BookCard,
     FilterModal,
+    ActiveFilters,
   },
   setup() {
     const route = useRoute();
@@ -208,7 +223,10 @@ export default {
     const searchQuery = ref('');
     const activeGenre = ref('');
     const activeLanguage = ref('');
+    // «Есть свободные»: catalog copies > 0 — the same rule as the badge on BookCard.
+    const onlyAvailable = ref(false);
     const sortBy = ref('default');
+    const filterButton = ref(null);
 
     const pageSize = ref(24);
     const currentPage = ref(1);
@@ -279,7 +297,9 @@ export default {
       }
       if (typeof route.query.q === 'string') {
         searchQuery.value = route.query.q;
+        lastWrittenQ = route.query.q;
       }
+      onlyAvailable.value = route.query.avail === '1';
 
       // 3. Загрузка книг через bookService
       try {
@@ -310,16 +330,85 @@ export default {
     watch(
       () => route.query.q,
       (newQ) => {
-        searchQuery.value = typeof newQ === 'string' ? newQ : '';
+        const q = typeof newQ === 'string' ? newQ : '';
+        // Our own debounced write coming back: the field may already hold newer text.
+        if (q === lastWrittenQ) return;
+        lastWrittenQ = q;
+        searchQuery.value = q;
         currentPage.value = 1;
       }
     );
 
-    watch([searchQuery, sortBy], () => { currentPage.value = 1; });
+    watch(
+      () => route.query.avail,
+      (v) => {
+        onlyAvailable.value = v === '1';
+        currentPage.value = 1;
+      }
+    );
+
+    watch([searchQuery, sortBy, onlyAvailable], () => { currentPage.value = 1; });
+
+    // ---- URL sync: the address always describes the visible list (shareable, survives «back»).
+    let lastWrittenQ = '';
+    let qTimer = 0;
+    const FILTER_KEYS = ['q', 'genre', 'lang', 'avail'];
+    const syncUrl = () => {
+      clearTimeout(qTimer);
+      if (route.name !== 'Catalog') return;
+      const next = { ...route.query };
+      const set = (key, value) => { if (value) next[key] = value; else delete next[key]; };
+      set('q', searchQuery.value.trim() ? searchQuery.value : '');
+      set('genre', activeGenre.value);
+      set('lang', activeLanguage.value);
+      set('avail', onlyAvailable.value ? '1' : '');
+      if (FILTER_KEYS.every((k) => (route.query[k] ?? '') === (next[k] ?? ''))) return;
+      lastWrittenQ = next.q ?? '';
+      router.replace({ query: next });
+    };
+    watch([activeGenre, activeLanguage, onlyAvailable], syncUrl);
+    watch(searchQuery, () => {
+      clearTimeout(qTimer);
+      qTimer = setTimeout(syncUrl, 300);
+    });
+    onBeforeUnmount(() => clearTimeout(qTimer));
 
     const hasActiveFilters = computed(() => {
-      return !!activeGenre.value || !!activeLanguage.value || !!searchQuery.value.trim();
+      return !!activeGenre.value || !!activeLanguage.value || !!searchQuery.value.trim() || onlyAvailable.value;
     });
+
+    const filterChips = computed(() => {
+      const chips = [];
+      const q = searchQuery.value.trim();
+      if (q) chips.push({ key: 'q', kind: t('filters.query'), value: `«${q}»` });
+      if (activeGenre.value) chips.push({ key: 'genre', kind: t('filters.genre'), value: getGenreLabel(activeGenre.value) });
+      if (activeLanguage.value) chips.push({ key: 'lang', kind: t('filters.language'), value: getLanguageLabel(activeLanguage.value) });
+      if (onlyAvailable.value) chips.push({ key: 'avail', kind: t('filters.availability'), value: t('filters.inStock') });
+      return chips;
+    });
+
+    const removeFilter = (key) => {
+      if (key === 'q') {
+        searchQuery.value = '';
+        syncUrl();
+      }
+      if (key === 'genre') activeGenre.value = '';
+      if (key === 'lang') activeLanguage.value = '';
+      if (key === 'avail') onlyAvailable.value = false;
+      currentPage.value = 1;
+    };
+
+    // Clears the filters only; the chosen sort order stays.
+    const clearFilters = () => {
+      activeGenre.value = '';
+      activeLanguage.value = '';
+      onlyAvailable.value = false;
+      searchQuery.value = '';
+      currentPage.value = 1;
+      syncUrl();
+    };
+
+    const focusFilterButton = () => filterButton.value?.focus();
 
     const filteredBooks = computed(() => {
       let list = allBooks.value;
@@ -332,6 +421,10 @@ export default {
       // Filter Language with normalized KZ / RU / EN matching
       if (activeLanguage.value) {
         list = list.filter((b) => matchLanguage(b.language, activeLanguage.value));
+      }
+
+      if (onlyAvailable.value) {
+        list = list.filter((b) => Number(b.copies) > 0);
       }
 
       // Filter Search
@@ -376,7 +469,9 @@ export default {
     const resetAllFilters = () => {
       activeGenre.value = '';
       activeLanguage.value = '';
+      onlyAvailable.value = false;
       searchQuery.value = '';
+      syncUrl();
       sortBy.value = 'default';
       currentPage.value = 1;
     };
@@ -393,7 +488,7 @@ export default {
 
     const clearSearch = () => {
       searchQuery.value = '';
-      if (route.query.q != null) router.replace({ query: { ...route.query, q: undefined } });
+      syncUrl();
       focusSearch();
     };
 
@@ -446,8 +541,14 @@ export default {
       searchQuery,
       activeGenre,
       activeLanguage,
+      onlyAvailable,
       sortBy,
       catalogSearchInput,
+      filterButton,
+      filterChips,
+      removeFilter,
+      clearFilters,
+      focusFilterButton,
       hasActiveFilters,
       filteredBooks,
       visibleBooks,
@@ -629,11 +730,13 @@ export default {
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s ease;
+  min-height: 44px;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
   flex-shrink: 0;
 }
 .filter-sheet-btn:hover {
-  background: var(--surface-3);
+  background: var(--accent-soft);
+  border-color: color-mix(in srgb, var(--accent-text) 35%, var(--line));
 }
 .filter-svg {
   flex: none;
@@ -645,8 +748,7 @@ export default {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: var(--accent);
-  box-shadow: 0 0 6px #38BDF8;
+  background: var(--accent-text);
 }
 
 /* Quick Pills */
@@ -674,12 +776,16 @@ export default {
   font-weight: 600;
   cursor: pointer;
   white-space: nowrap;
-  transition: all 0.2s ease;
+  min-height: 38px;
+  transition: background-color 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 .pill-btn:hover {
-  background: var(--surface-2);
-  color: var(--text-1);
+  border-color: color-mix(in srgb, var(--accent-text) 35%, var(--line));
+  color: var(--accent-text);
 }
+.avail-pill { display: inline-flex; align-items: center; gap: 7px; }
+.avail-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); }
+.avail-pill.active .avail-dot { background: currentColor; }
 .pill-btn.active {
   background: var(--button-fill);
   border-color: var(--button-fill);
@@ -711,47 +817,11 @@ export default {
   gap: 12px;
 }
 
+.results-count { min-height: 22px; display: flex; align-items: center; }
 .results-count b {
   color: var(--text-1);
 }
-.filter-tag-hint {
-  color: var(--accent-text);
-  margin-left: 6px;
-}
-
-.active-chips {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.active-chip {
-  background: var(--accent-soft);
-  border: 1px solid var(--accent-soft);
-  color: var(--accent-text);
-  padding: 3px 10px;
-  border-radius: 9999px;
-  font-size: 12px;
-  cursor: pointer;
-}
-.active-chip:hover {
-  background: var(--danger-soft);
-  border-color: rgba(239, 68, 68, 0.4);
-  color: #FCA5A5;
-}
-
-.reset-all-link {
-  background: none;
-  border: none;
-  color: var(--text-2);
-  cursor: pointer;
-  font-size: 12.5px;
-  text-decoration: underline;
-}
-.reset-all-link:hover {
-  color: var(--text-1);
-}
+.count-skeleton { display: inline-block; width: 150px; height: 14px; }
 
 /* Grid */
 .books-grid {
@@ -760,11 +830,20 @@ export default {
   gap: 24px;
 }
 
+/* Same footprint as BookCard, so the grid does not jump when books arrive. */
 .skeleton-book-card {
-  height: 360px;
-  border-radius: 20px;
-  animation: pulse-skeleton 1.5s infinite ease-in-out;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  overflow: hidden;
 }
+/* BookCover: 136 px jacket at 2:3 plus 30 px padding = 234 px at every card width used here. */
+.sk-cover { height: 234px; border-radius: 0; }
+.sk-body { display: flex; flex-direction: column; gap: 9px; padding: clamp(10px, 1.45vw, 16px); }
+.sk-line { height: 12px; }
+.sk-title { height: 18px; }
 
 .no-books-state {
   text-align: center;
@@ -836,7 +915,7 @@ export default {
   justify-content: center;
   font-size: 14px;
   z-index: 10;
-  transition: all 0.2s ease;
+  transition-property: background-color, border-color, color, box-shadow, transform, opacity; transition-duration: 0.2s; transition-timing-function: ease;
 }
 .modal-close-icon:hover {
   background: var(--surface-3);

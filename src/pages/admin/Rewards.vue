@@ -65,7 +65,7 @@
 <script setup>
 import { onMounted, ref, watch } from 'vue';
 import { collection, getDocs } from 'firebase/firestore';
-import { db } from '@/firebase';
+import { db } from '@/firebaseDb';
 import { session } from '@/stores/session';
 import { toast } from '@/stores/ui';
 import { get, post, errorMessage } from '@/services/api';

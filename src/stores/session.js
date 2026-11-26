@@ -4,8 +4,7 @@
 // Nothing stored in the browser is trusted for access decisions.
 import { reactive, watch } from 'vue';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
-import { auth, db } from '@/firebase';
+import { auth } from '@/firebase';
 import { resolveRole, can, cleanEmail } from '@/lib/roles';
 import { api } from '@/services/api';
 
@@ -65,6 +64,8 @@ export async function refreshMe() {
 
 async function saveAccount(user) {
   try {
+    // Firestore is loaded on demand (a signed-in visit only), see src/firebaseDb.js.
+    const [{ doc, setDoc }, { db }] = await Promise.all([import('firebase/firestore'), import('@/firebaseDb')]);
     await setDoc(doc(db, 'users', user.uid), {
       name: String(user.displayName || '').slice(0, 120),
       email: cleanEmail(user.email),

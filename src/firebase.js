@@ -1,6 +1,5 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, GoogleAuthProvider, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator } from 'firebase/firestore';
 
 // Public web config of the Firebase project (not a secret: access is decided by
 // Firebase Auth, the Firestore rules and the server API).
@@ -16,20 +15,19 @@ const firebaseConfig = {
 
 // Local testing against the Firebase emulators (never the real project):
 //   VITE_USE_EMULATORS=1 npm run dev
-const useEmulators = import.meta.env.VITE_USE_EMULATORS === '1';
+export const useEmulators = import.meta.env.VITE_USE_EMULATORS === '1';
 if (useEmulators) firebaseConfig.projectId = 'demo-niskitap';
 
+// Only Firebase App + Auth start with the page. Firestore lives in
+// src/firebaseDb.js and is loaded with the pages that read it, so the first
+// screen does not download the Firestore SDK.
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
 googleProvider.addScope('email');
 googleProvider.addScope('profile');
 googleProvider.setCustomParameters({ prompt: 'select_account' });
-const db = getFirestore(app);
 
-if (useEmulators) {
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
-  connectFirestoreEmulator(db, '127.0.0.1', 8080);
-}
+if (useEmulators) connectAuthEmulator(auth, 'http://127.0.0.1:9099', { disableWarnings: true });
 
-export { auth, googleProvider, db };
+export { app, auth, googleProvider };

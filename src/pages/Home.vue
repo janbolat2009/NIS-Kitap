@@ -140,7 +140,7 @@ import { session } from '@/stores/session';
 import { openLogin } from '@/stores/ui';
 import { CANONICAL_GENRE_MAP, getBooks, getUniqueGenres, searchAi } from '@/services/bookService';
 import { canPerformSearch, formatResetDateTime } from '@/services/geminiLimitService';
-import { loadHundredBooks } from '@/services/library';
+import { loadHundredBooks } from '@/services/hundredList';
 
 const locale = currentLocale;
 const stats = ref(null);

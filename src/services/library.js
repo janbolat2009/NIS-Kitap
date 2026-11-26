@@ -5,7 +5,7 @@
 import {
   collection, doc, getDoc, getDocs, onSnapshot, query, where, setDoc, deleteDoc, addDoc,
 } from 'firebase/firestore';
-import { db } from '@/firebase';
+import { db } from '@/firebaseDb';
 import { session } from '@/stores/session';
 import { post } from '@/services/api';
 import { getBookId } from '@/lib/bookId';
@@ -13,14 +13,7 @@ import { availability, normalizeStatus } from '@/lib/loans';
 import { isValidCertificateNumber } from '@/lib/workflow';
 
 // ---------- 100 kitap list ----------
-let hundredCache = null;
-export async function loadHundredBooks() {
-  if (hundredCache) return hundredCache;
-  const res = await fetch('/data/hundred-books.json', { cache: 'no-cache' });
-  if (!res.ok) throw new Error('hundred_books_unavailable');
-  hundredCache = await res.json();
-  return hundredCache;
-}
+export { loadHundredBooks } from '@/services/hundredList';
 
 export function trackId(entry) {
   return entry.catalogBookId || entry.id;

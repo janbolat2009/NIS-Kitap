@@ -8,6 +8,22 @@ import vue from '@vitejs/plugin-vue';
 export default defineConfig({
   base: process.env.VITE_BASE || (process.env.GITHUB_ACTIONS ? './' : '/'),
   plugins: [vue()],
+  build: {
+    rollupOptions: {
+      output: {
+        // Long-lived vendor chunks: they change rarely, so browsers keep them
+        // cached between deploys. Firestore gets its own chunk and is loaded only
+        // by the pages that read it (src/firebaseDb.js).
+        manualChunks(id) {
+          if (!id.includes('node_modules')) return undefined;
+          if (/[\\/]node_modules[\\/](@firebase[\\/](firestore|webchannel-wrapper)|firebase[\\/]firestore)[\\/]/.test(id)) return 'firebase-firestore';
+          if (/[\\/]node_modules[\\/](@firebase|firebase|idb)[\\/]/.test(id)) return 'firebase-core';
+          if (/[\\/]node_modules[\\/](@vue|vue|vue-router)[\\/]/.test(id)) return 'vue';
+          return undefined;
+        },
+      },
+    },
+  },
   server: {
     port: 5173,
     proxy: {

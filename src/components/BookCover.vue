@@ -124,8 +124,4 @@ function sampleCover(event) {
 .jacket-large .jacket-object { width: min(100%, 205px); }
 .jacket-large .jacket-title { font-size: clamp(0.94rem, 1.7vw, 1.55rem); }
 .jacket-large .jacket-author { font-size: clamp(0.65rem, 1vw, 0.86rem); }
-
-@media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .jacket-large:hover .jacket-object { transform: translateY(-3px) rotateY(-16deg); }
-}
 </style>
