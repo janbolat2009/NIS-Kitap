@@ -66,27 +66,9 @@
       </div>
     </section>
 
-    <section class="section-space container">
-      <div class="hundred-card">
-        <div class="hundred-text">
-          <h2>{{ t('hundred.title') }}</h2>
-          <p>{{ t('hundred.lead') }}</p>
-          <router-link to="/100-kitap" class="btn btn-secondary">
-            {{ t('hundred.viewAll') }} <span class="arrow" aria-hidden="true" />
-          </router-link>
-        </div>
-        <ul v-if="hundredPreview.length" class="book-display">
-          <li v-for="b in hundredPreview" :key="b.id" :class="`book-${b.section}`">
-            <router-link :to="`/book/${encodeURIComponent(b.catalogTitle)}`" class="feature-book" :title="`${b.title} — ${b.author}`">
-              <span class="feature-cover">
-                <span class="feature-title" :lang="bookLanguages[b.section]">{{ b.title }}</span>
-                <span class="feature-author">{{ b.author }}</span>
-              </span>
-            </router-link>
-          </li>
-        </ul>
-      </div>
-    </section>
+    <HundredShelf class="section-space container" />
+
+    <RecommendedBooks class="section-space container" />
 
     <section id="genres-section" class="section-space container" aria-labelledby="genres-title">
       <div class="section-head">
@@ -135,12 +117,13 @@ import { computed, onMounted, ref, shallowRef } from 'vue';
 import GenreIcon from '@/components/GenreIcon.vue';
 import LanguageLinks from '@/components/LanguageLinks.vue';
 import OpeningBook from '@/components/OpeningBook.vue';
+import HundredShelf from '@/components/HundredShelf.vue';
+import RecommendedBooks from '@/components/RecommendedBooks.vue';
 import { t, currentLocale } from '@/i18n';
 import { session } from '@/stores/session';
 import { openLogin } from '@/stores/ui';
 import { CANONICAL_GENRE_MAP, getBooks, getUniqueGenres, searchAi } from '@/services/bookService';
 import { canPerformSearch, formatResetDateTime } from '@/services/geminiLimitService';
-import { loadHundredBooks } from '@/services/hundredList';
 
 const locale = currentLocale;
 const stats = ref(null);
@@ -150,7 +133,6 @@ const results = ref([]);
 const searching = ref(false);
 const searched = ref(false);
 const searchError = ref('');
-const hundredPreview = ref([]);
 const tick = ref(0);
 
 const steps = computed(() => t('home.steps'));
@@ -164,7 +146,6 @@ const chips = computed(() => ({
   en: ['Dystopia', 'Space stories', 'Kazakh history', 'Detective stories', 'Growing up'],
 }[locale.value] || []));
 
-const bookLanguages = { kazakh: 'kk', russian: 'ru', foreign: 'en' };
 const canonicalGenres = Object.values(CANONICAL_GENRE_MAP);
 const genres = computed(() => {
   const active = new Set(catalogGenres.value.map((g) => g.key));
@@ -217,14 +198,6 @@ onMounted(() => {
     catalogGenres.value = getUniqueGenres(books);
   }).catch(() => {
     catalogGenres.value = [];
-  });
-
-  loadHundredBooks().then(({ books }) => {
-    hundredPreview.value = Object.keys(bookLanguages).map((section) => books.find((b) =>
-      b.section === section && b.catalogTitle && b.catalogVisible !== false && b.isActive !== false,
-    )).filter(Boolean);
-  }).catch(() => {
-    hundredPreview.value = [];
   });
 });
 </script>
@@ -360,59 +333,6 @@ onMounted(() => {
 .result-body strong { font-size: var(--fs-md); overflow-wrap: anywhere; }
 .reason { color: var(--text-2); margin-top: 4px; }
 
-.hundred-card {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(24px, 5vw, 64px);
-  align-items: center;
-  padding: clamp(22px, 4.4vw, 50px);
-  border-radius: var(--r-lg);
-  background: #152a3e;
-  color: #f7f0e2;
-}
-.hundred-text h2 { color: inherit; font-size: var(--fs-3xl); margin-bottom: 10px; }
-.hundred-text p { color: #d8e1ea; margin-bottom: 20px; max-width: 49ch; }
-.hundred-text .btn { white-space: normal; text-align: start; line-height: 1.2; padding-block: 8px; }
-.hundred-text .btn:focus-visible, .feature-book:focus-visible { outline-color: #f0ba65; }
-.book-display {
-  display: grid;
-  grid-auto-flow: column;
-  grid-auto-columns: minmax(0, 1fr);
-  align-items: end;
-  gap: clamp(8px, 1.5vw, 17px);
-  list-style: none;
-  margin: 0;
-  padding: 0 0 9px;
-  border-bottom: 1px solid #93a9bb;
-}
-.book-kazakh { --jacket: #24534f; --jacket-detail: #a9d9c7; }
-.book-russian { --jacket: #70392e; --jacket-detail: #fac5a4; }
-.book-foreign { --jacket: #624720; --jacket-detail: #f5d99a; }
-.feature-book { display: block; color: #fff7e8; text-decoration: none; border-radius: 4px 9px 9px 4px; }
-.feature-cover {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  min-height: clamp(8.4rem, 16vw, 13.5rem);
-  gap: 8px;
-  padding: clamp(8px, 1.4vw, 19px);
-  border-radius: inherit;
-  border: 1px solid color-mix(in srgb, var(--jacket-detail) 55%, var(--jacket));
-  background: linear-gradient(90deg, #0005 3px, transparent 7px), var(--jacket);
-  box-shadow: 0 4px 12px #0005;
-  transition: translate var(--dur-2) var(--ease-out), box-shadow var(--dur-2) ease;
-}
-.feature-cover::before {
-  content: '';
-  width: 20px;
-  border-top: 1px solid var(--jacket-detail);
-}
-.feature-title {
-  font: 650 clamp(0.85rem, 1.35vw, 1.28rem)/1.15 var(--font-heading);
-  overflow-wrap: anywhere;
-  hyphens: auto;
-}
-.feature-author { color: var(--jacket-detail); font-size: var(--fs-xs); overflow-wrap: anywhere; }
 
 .section-head {
   display: flex;
@@ -469,27 +389,21 @@ onMounted(() => {
 @media (prefers-reduced-motion: no-preference) {
   .home :is(.btn, .hero-project, .genre):focus-visible .arrow { translate: 3px 0; }
   .hero-cta .btn:focus-visible .arrow-down { translate: 0 3px; }
-  .feature-book:focus-visible .feature-cover { translate: 0 -5px; }
   .genre:active .genre-icon { transform: scale(0.91); }
-  .feature-book:active .feature-cover { translate: 0 2px; }
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
   .home :is(.btn, .hero-project, .genre):hover .arrow { translate: 3px 0; }
   .hero-cta .btn:hover .arrow-down { translate: 0 3px; }
   .genre:hover:not(:active) .genre-icon { transform: rotate(-7deg) scale(1.08); }
-  .feature-book:hover:not(:active) .feature-cover { translate: 0 -5px; box-shadow: 0 9px 17px #0006; }
 }
 
-@media (min-width: 700px) {
-  .hundred-text:only-child { grid-column: 1 / -1; }
-}
 @media (max-width: 960px) {
   .genre-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 699px) {
-  .hero-panel, .hundred-card { grid-template-columns: minmax(0, 1fr); }
+  .hero-panel { grid-template-columns: minmax(0, 1fr); }
   .hero-text { padding: 22px; }
   .hero-title { text-wrap: wrap; }
   .hero-lead { margin-top: 14px; }
@@ -497,7 +411,6 @@ onMounted(() => {
   .hero-cta .btn { min-height: 45px; font-size: var(--fs-sm); }
   .hero-stats { gap: 2px 12px; }
   .hero-stats dd { font-size: var(--fs-xs); }
-  .feature-cover { padding: 12px 10px; }
 }
 @media (max-width: 550px) {
   .search-box { flex-direction: column; }

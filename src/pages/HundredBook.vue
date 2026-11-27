@@ -14,8 +14,8 @@
     </div>
 
     <article v-else class="layout">
-      <div class="stage">
-        <HundredCover :entry="entry" size="hero" closing />
+      <div ref="stage" class="stage" :class="{ ready: coverFit }">
+        <HundredCover :entry="entry" size="hero" :closing="Boolean(coverFit)" :open-x="coverFit?.x" :open-scale="coverFit?.s" />
       </div>
 
       <div class="info">
@@ -92,7 +92,8 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
+import { fitOpenBookFor } from '@/lib/bookFit';
 import { useRoute } from 'vue-router';
 import HundredCover from '@/components/HundredCover.vue';
 import { t, currentLocale } from '@/i18n';
@@ -115,6 +116,8 @@ const busy = ref(false);
 // What the switch shows right after a tap, before the server confirms it.
 const optimistic = ref('');
 const verifyOpen = ref(false);
+const stage = ref(null);
+const coverFit = ref(null);
 const vForm = reactive({ review: '', publish: false, rating: 5 });
 const vError = ref('');
 let unwatch = () => {};
@@ -249,6 +252,14 @@ watch(entry, (e) => {
     unwatch = watchMyProgress((map) => { progress.value = map.get(trackId(e)) || null; optimistic.value = ''; });
   }
 });
+// The book arrives open and closes. Its open position is measured first (hidden),
+// so the first frame is already in place and the spread never leaves the screen.
+watch(() => (loading.value ? null : entry.value), async (e) => {
+  coverFit.value = null;
+  if (!e) return;
+  await nextTick();
+  coverFit.value = fitOpenBookFor(stage.value?.querySelector('.hc'), { maxScale: 1 });
+});
 watch(verifyOpen, (v) => document.body.classList.toggle('modal-open', v));
 onMounted(load);
 onBeforeUnmount(() => { unwatch(); document.body.classList.remove('modal-open'); });
@@ -258,7 +269,8 @@ onBeforeUnmount(() => { unwatch(); document.body.classList.remove('modal-open');
 .hb { overflow-x: clip; }
 .back { margin-bottom: 18px; }
 .layout { display: grid; grid-template-columns: minmax(240px, 380px) 1fr; gap: clamp(28px, 6vw, 72px); align-items: start; }
-.stage { position: sticky; top: calc(var(--nav-h) + 24px); padding: 16px 28px 28px 16px; }
+.stage { position: sticky; z-index: 2; top: calc(var(--nav-h) + 24px); padding: 16px 28px 28px 16px; }
+.stage:not(.ready) { visibility: hidden; }
 .cover-sk { aspect-ratio: 2 / 3; border-radius: 10px; }
 .kicker { font-size: var(--fs-xs); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--accent-text); }
 .title { font-size: var(--fs-3xl); margin-top: 6px; overflow-wrap: anywhere; text-wrap: balance; }

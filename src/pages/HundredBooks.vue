@@ -85,6 +85,7 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import HundredCover from '@/components/HundredCover.vue';
+import { fitOpenBookFor } from '@/lib/bookFit';
 import { t } from '@/i18n';
 import { session } from '@/stores/session';
 import { openLogin } from '@/stores/ui';
@@ -99,7 +100,7 @@ const avail = ref(new Map());
 const loading = ref(true);
 const loadError = ref('');
 const openingId = ref('');
-const openFit = ref({ x: '34%', s: 1.14 });
+const openFit = ref({ x: '0px', s: 1 });
 const f = reactive({ grade: '', section: '', status: '', avail: '' });
 const query = ref('');
 const searchInput = ref(null);
@@ -176,16 +177,11 @@ function openBook(event, e) {
     router.push(location(e));
     return;
   }
-  // The open book is twice as wide as the cover: put its spine in the middle of the
-  // screen and shrink it if needed, so it never leaves the screen (phones included).
-  const cover = event.currentTarget.querySelector('.hc');
-  if (cover) {
-    const box = cover.getBoundingClientRect();
-    const vw = document.documentElement.clientWidth;
-    openFit.value = { x: `${Math.round(vw / 2 - box.left)}px`, s: Math.min(1.14, (vw - 24) / (box.width * 2)) };
-  }
+  // The book opens to the left on its spine. It moves only as far as needed (and
+  // shrinks on narrow screens) so the whole open spread stays on the screen.
+  openFit.value = fitOpenBookFor(event.currentTarget.querySelector('.hc'));
   openingId.value = e.id;
-  openTimer = setTimeout(() => router.push(location(e)), 760);
+  openTimer = setTimeout(() => router.push(location(e)), 980);
 }
 
 async function load() {

@@ -17,6 +17,15 @@ export const v4 = {
       detailsTitle: 'Сведения',
     },
     langSwitch: { label: 'Язык интерфейса' },
+    shelf: {
+      lead: 'Сто книг, которые стоит прочитать за школьные годы. Листайте полку и выбирайте следующую.',
+      prev: 'Назад', next: 'Вперёд',
+    },
+    recommended: {
+      title: 'Рекомендуем почитать',
+      lead: 'Подборка из каталога библиотеки. Обновляется каждый день.',
+      pause: 'Остановить прокрутку', play: 'Включить прокрутку',
+    },
   },
   kz: {
     hundred: {
@@ -34,6 +43,15 @@ export const v4 = {
       detailsTitle: 'Мәліметтер',
     },
     langSwitch: { label: 'Интерфейс тілі' },
+    shelf: {
+      lead: 'Мектеп жылдарында оқуға тұрарлық жүз кітап. Сөрені парақтап, келесі кітабыңызды таңдаңыз.',
+      prev: 'Артқа', next: 'Алға',
+    },
+    recommended: {
+      title: 'Оқуға ұсынамыз',
+      lead: 'Кітапхана каталогынан іріктелген кітаптар. Күн сайын жаңарады.',
+      pause: 'Айналдыруды тоқтату', play: 'Айналдыруды қосу',
+    },
   },
   en: {
     hundred: {
@@ -51,5 +69,14 @@ export const v4 = {
       detailsTitle: 'Details',
     },
     langSwitch: { label: 'Interface language' },
+    shelf: {
+      lead: 'One hundred books worth reading during your school years. Browse the shelf and pick your next one.',
+      prev: 'Previous', next: 'Next',
+    },
+    recommended: {
+      title: 'Recommended reading',
+      lead: 'A selection from the library catalog, refreshed every day.',
+      pause: 'Pause scrolling', play: 'Play scrolling',
+    },
   },
 };
