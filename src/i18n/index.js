@@ -2,6 +2,7 @@ import { ref } from 'vue';
 import { extra } from './extra.js';
 import { v2 } from './v2.js';
 import { v3 } from './v3.js';
+import { v4 } from './v4.js';
 
 const LOCALE_KEY = 'nis_kitap_locale';
 
@@ -980,6 +981,7 @@ function deepMerge(target, source) {
 for (const loc of Object.keys(extra)) deepMerge(translations[loc], extra[loc]);
 for (const loc of Object.keys(v2)) deepMerge(translations[loc], v2[loc]);
 for (const loc of Object.keys(v3)) deepMerge(translations[loc], v3[loc]);
+for (const loc of Object.keys(v4)) deepMerge(translations[loc], v4[loc]);
 
 /**
  * Функция перевода t(key)

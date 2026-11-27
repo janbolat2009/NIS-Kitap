@@ -20,6 +20,7 @@ const routes = [
   { path: '/kazakh', name: 'Kazakh', component: () => import('@/pages/languages/KazakhBooks.vue') },
   { path: '/about-us', name: 'AboutUs', component: () => import('@/pages/about-us.vue') },
   { path: '/100-kitap', name: 'HundredBooks', component: () => import('@/pages/HundredBooks.vue') },
+  { path: '/100-kitap/:id', name: 'HundredBook', component: () => import('@/pages/HundredBook.vue') },
   { path: '/leaderboard', name: 'Leaderboard', component: () => import('@/pages/Leaderboard.vue') },
   { path: '/profile', name: 'Cabinet', component: () => import('@/pages/Cabinet.vue'), meta: { auth: true } },
   { path: '/me', redirect: '/profile' },

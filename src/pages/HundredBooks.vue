@@ -54,8 +54,8 @@
       </div>
     </section>
 
-    <div v-if="loading" class="list">
-      <div v-for="n in 6" :key="n" class="skeleton" style="height: 150px; border-radius: 16px" />
+    <div v-if="loading" class="shelf" aria-hidden="true">
+      <div v-for="n in 6" :key="n" class="skeleton cover-sk" />
     </div>
     <p v-else-if="loadError" class="notice notice-danger">{{ loadError }} <button type="button" class="btn btn-sm btn-secondary" @click="load">{{ t('common.retry') }}</button></p>
     <div v-else-if="!filtered.length" class="empty">
@@ -67,114 +67,48 @@
       </div>
     </div>
 
-    <ol v-else class="list">
-      <li v-for="e in filtered" :key="e.id" class="item" :class="{ turned: turned === e.id }">
-        <div class="num tabular" aria-hidden="true">{{ e.order }}</div>
-        <div class="body">
-          <div class="top">
-            <div class="title-block">
-              <h2 class="title">
-                <router-link v-if="e.catalogTitle" :to="`/book/${encodeURIComponent(e.catalogTitle)}`">{{ e.title }}</router-link>
-                <template v-else>{{ e.title }}</template>
-              </h2>
-              <p class="meta">{{ e.author }} · {{ t('hundred.gradeN', { n: e.grade }) }} · {{ t(`hundred.sections.${e.section}`) }}</p>
-            </div>
+    <ol v-else class="shelf" :class="{ 'has-opening': openingId }">
+      <li v-for="e in filtered" :key="e.id" class="item" :class="{ 'is-opening': openingId === e.id }">
+        <a class="bk hc-host" :href="hrefOf(e)" :aria-label="t('hundred.openCover', { title: e.title })" @click="openBook($event, e)">
+          <HundredCover :entry="e" :opening="openingId === e.id" />
+          <span class="under">
             <span class="badge status" :class="badgeClass(stateOf(e))">{{ t(`status.${stateOf(e)}`) }}</span>
-          </div>
-
-          <p class="avail" :class="availClass(e)">
-            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5V5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2Zm0 0A2 2 0 0 0 6 21h13" /></svg>
-            {{ availText(e) }}
-          </p>
-          <p v-if="progressOf(e)?.decisionNote && ['rejected', 'revoked'].includes(stateOf(e))" class="note">{{ t('hundred.rejectedNote', { note: progressOf(e).decisionNote }) }}</p>
-
-          <div class="actions">
-            <div class="seg" role="group" :aria-label="t('hundred.status')">
-              <button v-for="s in ['want', 'reading', 'finished']" :key="s" type="button" :aria-pressed="progressOf(e)?.status === s"
-                :disabled="busy === e.id || locked(e)" :aria-label="t(`status.${s}`)" @click="setStatus(e, s)">{{ short[s] }}</button>
-            </div>
-            <div class="more">
-              <button v-if="canRequest(e)" type="button" class="btn btn-primary btn-sm" :disabled="busy === e.id" @click="openVerify(e)">{{ t('hundred.sendForReview') }}</button>
-              <button v-if="stateOf(e) === 'pending'" type="button" class="btn btn-secondary btn-sm" :disabled="busy === e.id" @click="withdraw(e)">{{ t('hundred.withdraw') }}</button>
-              <router-link v-if="canReserve(e)" :to="{ path: `/book/${encodeURIComponent(e.catalogTitle)}`, hash: '#reserve' }" class="btn btn-secondary btn-sm">{{ t('loan.reserve') }}</router-link>
-            </div>
-          </div>
-        </div>
+            <span class="avail" :class="availClass(e)">{{ availText(e) }}</span>
+          </span>
+        </a>
       </li>
     </ol>
-
-    <div v-if="verifyFor" class="modal-backdrop" @click.self="verifyFor = null">
-      <form class="modal" role="dialog" aria-modal="true" aria-labelledby="verify-title" @submit.prevent="sendVerify">
-        <div class="modal-head">
-          <div>
-            <h2 id="verify-title">{{ t('hundred.verify.title') }}</h2>
-            <p class="muted">{{ verifyFor.title }} — {{ verifyFor.author }}</p>
-          </div>
-          <button type="button" class="btn btn-ghost btn-icon btn-sm" :aria-label="t('common.close')" @click="verifyFor = null">✕</button>
-        </div>
-        <p class="lead">{{ t('hundred.verify.lead') }}</p>
-        <div class="field">
-          <label class="label" for="v-review">{{ t('hundred.verify.review') }}</label>
-          <textarea id="v-review" v-model="vForm.review" class="textarea" maxlength="2000" :placeholder="t('hundred.verify.reviewHint')" />
-        </div>
-        <label class="check"><input v-model="vForm.publish" type="checkbox" /> {{ t('hundred.verify.publish') }}</label>
-        <div v-if="vForm.publish" class="field">
-          <span class="label">{{ t('hundred.verify.rating') }}</span>
-          <div class="stars" role="radiogroup" :aria-label="t('hundred.verify.rating')">
-            <button v-for="n in 5" :key="n" type="button" role="radio" :aria-checked="vForm.rating === n" :class="{ on: n <= vForm.rating }" @click="vForm.rating = n">★</button>
-          </div>
-          <p class="hint">{{ t('book.reviewRules') }}</p>
-        </div>
-        <p v-if="vError" class="error-text" role="alert">{{ vError }}</p>
-        <div class="modal-actions">
-          <button type="button" class="btn btn-ghost" @click="verifyFor = null">{{ t('common.cancel') }}</button>
-          <button type="submit" class="btn btn-primary" :disabled="Boolean(busy)">{{ t('hundred.verify.submit') }}</button>
-        </div>
-      </form>
-    </div>
   </div>
 </template>
 
 <script setup>
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue';
-import { t, currentLocale } from '@/i18n';
+import { useRouter } from 'vue-router';
+import HundredCover from '@/components/HundredCover.vue';
+import { t } from '@/i18n';
 import { session } from '@/stores/session';
-import { openLogin, toast } from '@/stores/ui';
+import { openLogin } from '@/stores/ui';
 import { displayStatus } from '@/lib/workflow';
 import { normalizeBookSearch } from '@/lib/bookSearch';
-import { errorMessage } from '@/services/api';
-import {
-  loadHundredBooks, trackId, watchMyProgress, getAvailabilityMany, setReadingStatus, requestVerification, withdrawVerification,
-} from '@/services/library';
+import { loadHundredBooks, trackId, watchMyProgress, getAvailabilityMany } from '@/services/library';
 
+const router = useRouter();
 const entries = ref([]);
 const progress = ref(new Map());
 const avail = ref(new Map());
 const loading = ref(true);
 const loadError = ref('');
-const busy = ref('');
-const turned = ref('');
+const openingId = ref('');
 const f = reactive({ grade: '', section: '', status: '', avail: '' });
 const query = ref('');
 const searchInput = ref(null);
 const searchTerms = computed(() => normalizeBookSearch(query.value).trim().split(/\s+/).filter(Boolean));
-const verifyFor = ref(null);
-const vForm = reactive({ review: '', publish: false, rating: 5 });
-const vError = ref('');
 let unwatch = () => {};
+let openTimer = 0;
 
-const SHORT = {
-  ru: { want: 'Хочу', reading: 'Читаю', finished: 'Прочитано' },
-  kz: { want: 'Оқимын', reading: 'Оқып жүрмін', finished: 'Оқыдым' },
-  en: { want: 'Want', reading: 'Reading', finished: 'Finished' },
-};
-const short = computed(() => SHORT[currentLocale.value] || SHORT.ru);
 const grades = computed(() => [...new Set(entries.value.map((e) => e.grade))].sort((a, b) => a - b));
-
 const progressOf = (e) => progress.value.get(trackId(e)) || null;
 const stateOf = (e) => displayStatus(progressOf(e));
-const locked = (e) => ['pending', 'confirmed'].includes(progressOf(e)?.verificationStatus);
-const canRequest = (e) => progressOf(e)?.status === 'finished' && ['none', 'rejected', 'revoked', undefined].includes(progressOf(e)?.verificationStatus);
 
 function availOf(e) {
   if (!e.catalogBookId) return { kind: 'not_in_catalog' };
@@ -184,7 +118,6 @@ function availOf(e) {
   if (!copies) return { kind: 'unknown' };
   return { kind: 'available', total: copies, available: copies };
 }
-const canReserve = (e) => availOf(e).kind === 'available' && e.catalogTitle;
 function availText(e) {
   const a = availOf(e);
   if (a.kind === 'not_in_catalog') return t('loan.notInCatalog');
@@ -224,72 +157,26 @@ const pending = computed(() => entries.value.filter((e) => stateOf(e) === 'pendi
 function resetFilters() {
   Object.assign(f, { grade: '', section: '', status: '', avail: '' });
 }
-
 function clearQuery() {
   query.value = '';
   searchInput.value?.focus();
 }
 
-function requireSignIn() {
-  if (!session.uid) {
-    openLogin('login');
-    return false;
+const location = (e) => ({ name: 'HundredBook', params: { id: e.id } });
+const hrefOf = (e) => router.resolve(location(e)).href;
+
+// A plain click plays the «book opens» animation, then goes to the book page.
+// Ctrl/Cmd/Shift-click and middle click keep their normal browser behaviour.
+function openBook(event, e) {
+  if (event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  event.preventDefault();
+  if (openingId.value) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    router.push(location(e));
+    return;
   }
-  return true;
-}
-
-function flip(id) {
-  turned.value = id;
-  setTimeout(() => { if (turned.value === id) turned.value = ''; }, 650);
-}
-
-async function setStatus(e, status) {
-  if (!requireSignIn()) return;
-  const current = progressOf(e)?.status;
-  busy.value = e.id;
-  try {
-    await setReadingStatus(trackId(e), current === status ? 'none' : status, e.id);
-    flip(e.id);
-  } catch (err) {
-    toast(errorMessage(err, currentLocale.value), { type: 'error' });
-  } finally {
-    busy.value = '';
-  }
-}
-
-function openVerify(e) {
-  if (!requireSignIn()) return;
-  Object.assign(vForm, { review: '', publish: false, rating: 5 });
-  vError.value = '';
-  verifyFor.value = e;
-}
-
-async function sendVerify() {
-  const e = verifyFor.value;
-  busy.value = e.id;
-  vError.value = '';
-  try {
-    const res = await requestVerification(trackId(e), { review: vForm.review, publishReview: vForm.publish, rating: vForm.publish ? vForm.rating : null }, e.id);
-    verifyFor.value = null;
-    flip(e.id);
-    toast(t('hundred.verify.sent'));
-    if (vForm.publish && res?.reviewResult && !res.reviewResult.ok) toast(t('book.reviewRules'), { type: 'error', timeout: 6000 });
-  } catch (err) {
-    vError.value = errorMessage(err, currentLocale.value);
-  } finally {
-    busy.value = '';
-  }
-}
-
-async function withdraw(e) {
-  busy.value = e.id;
-  try {
-    await withdrawVerification(trackId(e), e.id);
-  } catch (err) {
-    toast(errorMessage(err, currentLocale.value), { type: 'error' });
-  } finally {
-    busy.value = '';
-  }
+  openingId.value = e.id;
+  openTimer = setTimeout(() => router.push(location(e)), 720);
 }
 
 async function load() {
@@ -310,9 +197,8 @@ watch(() => session.uid, () => {
   unwatch();
   unwatch = watchMyProgress((map) => { progress.value = map; });
 }, { immediate: true });
-watch(verifyFor, (v) => document.body.classList.toggle('modal-open', Boolean(v)));
 onMounted(load);
-onBeforeUnmount(() => { unwatch(); document.body.classList.remove('modal-open'); });
+onBeforeUnmount(() => { unwatch(); clearTimeout(openTimer); });
 </script>
 
 <style scoped>
@@ -324,7 +210,7 @@ onBeforeUnmount(() => { unwatch(); document.body.classList.remove('modal-open');
 .ring span { width: calc(var(--size) - 12px); height: calc(var(--size) - 12px); border-radius: 50%; background: var(--surface); display: grid; place-items: center; font-weight: 700; }
 .signin { align-items: center; justify-content: space-between; flex-wrap: wrap; max-width: 520px; }
 
-.filters { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 10px; align-items: end; margin-bottom: 20px; }
+.filters { display: grid; grid-template-columns: repeat(4, 1fr) auto; gap: 10px; align-items: end; margin-bottom: 28px; }
 .list-search { display: grid; grid-column: 1 / -1; gap: 6px; margin-bottom: 4px; }
 .search-controls { position: relative; }
 .search-controls .input { min-height: 50px; padding-inline: 42px 52px; font-weight: 550; }
@@ -336,51 +222,43 @@ onBeforeUnmount(() => { unwatch(); document.body.classList.remove('modal-open');
 .f .select { font-weight: 550; }
 .f-foot { display: flex; align-items: center; gap: 8px; min-height: 44px; white-space: nowrap; }
 
-.list { list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 12px; }
-.item { display: flex; gap: 14px; padding: 16px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); transition: border-color var(--dur-1) ease; }
-.item:hover { border-color: var(--line-strong); }
-.num { flex: none; width: 34px; font-family: var(--font-heading); font-size: 1.15rem; color: var(--text-3); padding-top: 1px; }
-.body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
-.top { display: flex; gap: 10px; justify-content: space-between; align-items: flex-start; }
-.title-block { min-width: 0; }
-.title { font-family: var(--font-heading); font-size: 1.08rem; font-weight: 600; line-height: 1.3; overflow-wrap: anywhere; }
-.title a { color: inherit; text-decoration: none; }
-.title a:hover { text-decoration: underline; }
-.meta { font-size: var(--fs-sm); color: var(--text-3); margin-top: 2px; }
+/* Three books to a row. */
+.shelf {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: clamp(28px, 4.5vw, 56px) clamp(18px, 4vw, 52px);
+}
+.cover-sk { aspect-ratio: 2 / 3; border-radius: 10px; }
+.item { position: relative; transition: opacity 500ms ease; }
+.item.is-opening { z-index: 3; }
+.has-opening .item:not(.is-opening) { opacity: 0.25; }
+.bk {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: min(100%, 270px);
+  margin-inline: auto;
+  color: var(--text-1);
+  text-decoration: none;
+  outline-offset: 6px;
+  border-radius: 10px;
+  -webkit-tap-highlight-color: transparent;
+}
+.under { display: flex; flex-direction: column; align-items: center; gap: 5px; text-align: center; }
 .status { flex: none; }
-.turned .status { animation: page-turn 0.6s var(--ease-out); transform-origin: left center; }
-.avail { display: flex; align-items: center; gap: 6px; font-size: var(--fs-sm); font-weight: 550; }
+.avail { font-size: var(--fs-xs); font-weight: 550; }
 .avail.ok { color: var(--success); }
 .avail.off { color: var(--text-3); }
-.note { font-size: var(--fs-sm); color: var(--danger); background: var(--danger-soft); padding: 8px 10px; border-radius: var(--r-sm); }
-
-.actions { display: flex; flex-direction: column; gap: 8px; }
-.seg { display: grid; grid-template-columns: repeat(3, 1fr); border: 1px solid var(--line-strong); border-radius: var(--r-md); overflow: hidden; }
-.seg button { min-height: 40px; border: none; background: var(--surface); color: var(--text-2); font-size: var(--fs-sm); font-weight: 600; cursor: pointer; padding: 0 4px; transition: background-color var(--dur-1) ease, color var(--dur-1) ease; }
-.seg button + button { border-left: 1px solid var(--line-strong); }
-.seg button[aria-pressed='true'] { background: var(--text-1); color: var(--bg); }
-.seg button:disabled { opacity: 0.5; cursor: not-allowed; }
-.more { display: flex; gap: 8px; flex-wrap: wrap; }
-.more:empty { display: none; }
-
-.lead { color: var(--text-2); font-size: var(--fs-sm); margin: -6px 0 14px; }
-.modal .field { margin-bottom: 12px; }
-.modal .check { margin-bottom: 12px; }
-.stars { display: flex; gap: 4px; }
-.stars button { width: 40px; height: 40px; border: none; background: none; font-size: 26px; color: var(--line-strong); cursor: pointer; }
-.stars button.on { color: var(--warm); }
 
 @media (max-width: 900px) { .filters { grid-template-columns: 1fr 1fr; } .f-foot { grid-column: 1 / -1; justify-content: space-between; } }
-@media (max-width: 430px) {
-  .list { grid-template-columns: 1fr; }
-  .item { padding: 14px 12px; gap: 10px; }
-  .num { width: 24px; font-size: 1rem; }
-  .top { flex-direction: column; gap: 6px; }
-  .more .btn { flex: 1; }
+@media (max-width: 560px) {
+  .shelf { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 26px 14px; }
   .progress { max-width: none; width: 100%; }
 }
 @media (max-width: 340px) {
   .filters { grid-template-columns: 1fr; }
-  .seg button { font-size: 13px; }
 }
 </style>

@@ -184,6 +184,27 @@ html.theme-ready .surface-transition {
   transition: background-color var(--dur-2) ease, color var(--dur-2) ease;
 }
 
+/* While the theme changes, every colour eases over instead of snapping. The class is
+   set by stores/theme.js for the length of the fade only. */
+@media (prefers-reduced-motion: no-preference) {
+  html.theme-fade, html.theme-fade *, html.theme-fade *::before, html.theme-fade *::after {
+    transition: background-color 480ms ease, border-color 480ms ease, color 480ms ease, fill 480ms ease, stroke 480ms ease, box-shadow 480ms ease, outline-color 480ms ease, opacity 480ms ease !important;
+  }
+  /* The switch itself keeps its own springy motion. */
+  html.theme-fade .ts-knob { transition: transform 420ms cubic-bezier(0.3, 1.35, 0.5, 1), width 220ms ease, background-color 480ms ease !important; }
+
+  /* Language change: the page dips and returns while the text swaps underneath. */
+  html.lang-swap :is(.site-main, .nav-desktop, .m-links, .site-footer, footer, .signin, .account-label) {
+    animation: lang-swap 480ms var(--ease-in-out) both;
+  }
+}
+@keyframes lang-swap {
+  0% { opacity: 1; filter: blur(0); transform: none; }
+  35% { opacity: 0; filter: blur(5px); transform: translateY(4px); }
+  65% { opacity: 0; filter: blur(5px); transform: translateY(-4px); }
+  100% { opacity: 1; filter: blur(0); transform: none; }
+}
+
 #app { min-height: 100vh; display: flex; flex-direction: column; }
 
 h1, h2, h3, h4, h5, h6 { color: var(--text-1); font-family: var(--font-heading); margin: 0; line-height: 1.2; }

@@ -23,9 +23,16 @@ function resolved(pref) {
   return media && media.matches ? 'dark' : 'light';
 }
 
+let fadeTimer = 0;
 function apply(value) {
-  theme.value = value;
   const root = document.documentElement;
+  // Ease colours over ~half a second, but not on the very first paint.
+  if (root.classList.contains('theme-ready') && root.dataset.theme !== value) {
+    root.classList.add('theme-fade');
+    clearTimeout(fadeTimer);
+    fadeTimer = setTimeout(() => root.classList.remove('theme-fade'), 560);
+  }
+  theme.value = value;
   root.dataset.theme = value;
   root.style.colorScheme = value;
   const meta = document.querySelector('meta[name="theme-color"]');

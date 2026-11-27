@@ -11,18 +11,8 @@
       </nav>
 
       <div class="actions">
-        <div class="lang" role="group" aria-label="Language">
-          <button v-for="l in locales" :key="l" type="button" class="lang-btn" :aria-pressed="locale === l" @click="setLocale(l)">{{ l.toUpperCase() }}</button>
-        </div>
-        <button type="button" class="icon-btn theme-btn" :aria-label="theme === 'dark' ? t('theme.toLight') : t('theme.toDark')" :title="theme === 'dark' ? t('theme.toLight') : t('theme.toDark')" @click="toggleTheme">
-          <svg :key="theme" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <template v-if="theme === 'dark'">
-              <circle cx="12" cy="12" r="4.2" />
-              <path d="M12 2.5v2.2M12 19.3v2.2M4.6 4.6l1.6 1.6M17.8 17.8l1.6 1.6M2.5 12h2.2M19.3 12h2.2M4.6 19.4l1.6-1.6M17.8 6.2l1.6-1.6" />
-            </template>
-            <path v-else d="M20 14.2A8 8 0 0 1 9.8 4a8 8 0 1 0 10.2 10.2Z" />
-          </svg>
-        </button>
+        <LangSwitch class="lang" />
+        <ThemeSwitch class="theme-btn" />
         <router-link v-if="isStaff" to="/admin" class="btn btn-sm btn-ghost staff-link">{{ t('nav.staff') }}</router-link>
         <router-link v-if="session.uid" to="/profile" class="account" :title="t('nav.cabinet')">
           <span class="avatar">{{ initials }}</span>
@@ -48,17 +38,11 @@
           </div>
           <div class="m-row">
             <span class="m-label">{{ t('theme.label') }}</span>
-            <div class="seg" role="group" :aria-label="t('theme.label')">
-              <!-- The theme in use is marked even when it comes from the device setting. -->
-              <button type="button" :aria-pressed="theme === 'light'" @click="setTheme('light')">{{ t('theme.toLight') }}</button>
-              <button type="button" :aria-pressed="theme === 'dark'" @click="setTheme('dark')">{{ t('theme.toDark') }}</button>
-            </div>
+            <ThemeSwitch />
           </div>
-          <div class="m-row">
+          <div class="m-row m-row-col">
             <span class="m-label">Тіл · Язык · Language</span>
-            <div class="seg" role="group" aria-label="Тіл · Язык · Language">
-              <button v-for="l in locales" :key="l" type="button" :aria-pressed="locale === l" @click="setLocale(l)">{{ l.toUpperCase() }}</button>
-            </div>
+            <LangSwitch wide />
           </div>
           <button v-if="!session.uid" type="button" class="btn btn-primary btn-block" @click="open = false; openLogin()">{{ t('nav.signIn') }}</button>
         </nav>
@@ -71,10 +55,11 @@
 import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import BrandMark from '@/components/BrandMark.vue';
-import { t, currentLocale, setLocale } from '@/i18n';
+import LangSwitch from '@/components/LangSwitch.vue';
+import ThemeSwitch from '@/components/ThemeSwitch.vue';
+import { t } from '@/i18n';
 import { session } from '@/stores/session';
 import { openLogin } from '@/stores/ui';
-import { theme, setTheme, toggleTheme } from '@/stores/theme';
 
 const links = [
   { to: '/', label: 'nav.home' },
@@ -83,8 +68,6 @@ const links = [
   { to: '/leaderboard', label: 'nav.leaderboard' },
   { to: '/about-us', label: 'nav.about' },
 ];
-const locales = ['kz', 'ru', 'en'];
-const locale = currentLocale;
 const open = ref(false);
 const scrolled = ref(false);
 const menuButton = ref(null);
@@ -165,17 +148,13 @@ watch(() => route.fullPath, () => { open.value = false; });
 .nav-link:active { background: var(--surface-3); }
 
 .actions { margin-left: auto; display: flex; align-items: center; gap: 8px; }
-.lang { display: flex; gap: 2px; padding: 3px; background: var(--surface-2); border-radius: var(--r-sm); }
-.lang-btn { border: none; border-radius: 5px; background: none; color: var(--text-2); font-size: 12px; font-weight: 650; padding: 5px 7px; cursor: pointer; }
-.lang-btn:hover { color: var(--accent-text); }
-.lang-btn[aria-pressed='true'] { background: var(--surface); color: var(--accent-text); box-shadow: var(--shadow-1); }
 .icon-btn {
   display: inline-grid; place-items: center; width: 40px; height: 40px;
   border-radius: var(--r-sm); border: 1px solid var(--line); background: var(--surface); color: var(--text-2); cursor: pointer;
 }
 .icon-btn:hover, .icon-btn[aria-expanded='true'] { border-color: var(--accent-text); background: var(--accent-soft); color: var(--accent-text); }
-.icon-btn:active, .lang-btn:active { background: var(--surface-3); }
-.lang-btn, .icon-btn, .account, .seg button, .m-link {
+.icon-btn:active { background: var(--surface-3); }
+.icon-btn, .account, .seg button, .m-link {
   transition: background-color var(--dur-1) ease, color var(--dur-1) ease, border-color var(--dur-1) ease, transform var(--dur-1) var(--ease-out);
 }
 
@@ -221,6 +200,7 @@ watch(() => route.fullPath, () => { open.value = false; });
 .m-link.router-link-exact-active { background: var(--accent-soft); color: var(--accent-text); font-weight: 720; }
 .m-link:is(:hover, :active) { background: var(--accent-soft); color: var(--accent-text); }
 .m-row { display: flex; flex-direction: column; gap: 7px; padding: 10px 3px; border-top: 1px solid var(--line); }
+.m-row:not(.m-row-col) { flex-direction: row; align-items: center; justify-content: space-between; }
 .m-label { font-size: var(--fs-xs); color: var(--text-3); text-transform: uppercase; letter-spacing: 0.06em; font-weight: 650; }
 /* Theme and language switches share the primary blue of «Войти» (--button-fill /
    --accent-text): the selected option is a tinted blue segment, «Войти» stays the
@@ -259,16 +239,11 @@ watch(() => route.fullPath, () => { open.value = false; });
 
 @media (prefers-reduced-motion: no-preference) {
   .bar { animation: mark-header 480ms var(--ease-out) backwards; }
-  .theme-btn svg { animation: turn-theme 300ms var(--ease-out) both; }
-  .brand:active :deep(.mark), .icon-btn:active, .lang-btn:active, .account:active { transform: scale(0.92); }
+  .brand:active :deep(.mark), .icon-btn:active, .account:active { transform: scale(0.92); }
 
   @keyframes mark-header {
     from { opacity: 0.76; transform: translateY(-7px); }
     to { opacity: 1; transform: translateY(0); }
-  }
-  @keyframes turn-theme {
-    from { opacity: 0.55; transform: rotate(-30deg) scale(0.8); }
-    to { opacity: 1; transform: rotate(0) scale(1); }
   }
 }
 
