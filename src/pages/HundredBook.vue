@@ -228,7 +228,6 @@ async function load() {
     const data = await loadHundredBooks();
     entry.value = data.books.find((b) => b.id === route.params.id && b.isActive !== false) || null;
     if (entry.value) {
-      document.title = `${entry.value.title} — NIS Kitap`;
       if (entry.value.catalogBookId) getAvailabilityMany([entry.value.catalogBookId]).then((m) => { availability.value = m.get(entry.value.catalogBookId) || null; }).catch(() => {});
       if (entry.value.catalogTitle) getBookByTitle(entry.value.catalogTitle).then((b) => { description.value = b?.description || ''; }).catch(() => {});
     }
