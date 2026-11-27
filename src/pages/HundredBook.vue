@@ -255,6 +255,7 @@ onBeforeUnmount(() => { unwatch(); document.body.classList.remove('modal-open');
 </script>
 
 <style scoped>
+.hb { overflow-x: clip; }
 .back { margin-bottom: 18px; }
 .layout { display: grid; grid-template-columns: minmax(240px, 380px) 1fr; gap: clamp(28px, 6vw, 72px); align-items: start; }
 .stage { position: sticky; top: calc(var(--nav-h) + 24px); padding: 16px 28px 28px 16px; }

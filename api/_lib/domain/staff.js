@@ -8,7 +8,7 @@ import { rebuildAggregates } from './points.js';
 import { mailStatus } from './mail.js';
 import { normalizeRules, periodKeys, actionOf } from '../../../src/lib/points.js';
 import { normalizeStatus, reservationCode, addHours, applyDelta, availability } from '../../../src/lib/loans.js';
-import { cleanEmail, roleFromConfig, canAssignRole } from '../../../src/lib/roles.js';
+import { cleanEmail, roleFromConfig, canAssignRole, configuredStaff, roleBlockReason } from '../../../src/lib/roles.js';
 import { ASSIGNABLE_ROLES } from '../../../src/lib/permissions.js';
 import { isAcademicYear } from '../../../src/lib/school.js';
 import { catalogBook } from '../catalog.js';
@@ -72,14 +72,17 @@ export async function studentDetail(uid) {
 // ---------- roles ----------
 export async function listRoles() {
   const snap = await coll('roles').get();
-  return docs(snap).map((r) => ({ ...r, active: ASSIGNABLE_ROLES.includes(r.role) && !roleFromConfig(r.id) }));
+  const stored = docs(snap).filter((r) => !roleFromConfig(r.id));
+  // Staff fixed in config/access.json are shown too (read-only), so the tech admin
+  // sees who already has access and does not try to add them again.
+  return [...configuredStaff(), ...stored.map((r) => ({ ...r, active: ASSIGNABLE_ROLES.includes(r.role) }))];
 }
 
 export async function assignRole(actor, body) {
   const email = cleanEmail(str(body.email, { max: 120, required: true, field: 'email' }));
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) fail(400, 'bad_email');
   const role = oneOf(body.role, ASSIGNABLE_ROLES, 'role');
-  if (!canAssignRole(actor.role, actor.email, email, role)) fail(403, 'cannot_assign_role');
+  if (!canAssignRole(actor.role, actor.email, email, role)) fail(403, 'cannot_assign_role', { reason: roleBlockReason(actor.email, email) });
   const ref = coll('roles').doc(email);
   await db().runTransaction(async (tx) => {
     const snap = await tx.get(ref);

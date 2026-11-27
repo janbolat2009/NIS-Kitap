@@ -70,7 +70,7 @@
     <ol v-else class="shelf" :class="{ 'has-opening': openingId }">
       <li v-for="e in filtered" :key="e.id" class="item" :class="{ 'is-opening': openingId === e.id }">
         <a class="bk hc-host" :href="hrefOf(e)" :aria-label="t('hundred.openCover', { title: e.title })" @click="openBook($event, e)">
-          <HundredCover :entry="e" :opening="openingId === e.id" />
+          <HundredCover :entry="e" :opening="openingId === e.id" :open-x="openFit.x" :open-scale="openFit.s" />
           <span class="under">
             <span class="badge status" :class="badgeClass(stateOf(e))">{{ t(`status.${stateOf(e)}`) }}</span>
             <span class="avail" :class="availClass(e)">{{ availText(e) }}</span>
@@ -99,6 +99,7 @@ const avail = ref(new Map());
 const loading = ref(true);
 const loadError = ref('');
 const openingId = ref('');
+const openFit = ref({ x: '34%', s: 1.14 });
 const f = reactive({ grade: '', section: '', status: '', avail: '' });
 const query = ref('');
 const searchInput = ref(null);
@@ -175,8 +176,16 @@ function openBook(event, e) {
     router.push(location(e));
     return;
   }
+  // The open book is twice as wide as the cover: put its spine in the middle of the
+  // screen and shrink it if needed, so it never leaves the screen (phones included).
+  const cover = event.currentTarget.querySelector('.hc');
+  if (cover) {
+    const box = cover.getBoundingClientRect();
+    const vw = document.documentElement.clientWidth;
+    openFit.value = { x: `${Math.round(vw / 2 - box.left)}px`, s: Math.min(1.14, (vw - 24) / (box.width * 2)) };
+  }
   openingId.value = e.id;
-  openTimer = setTimeout(() => router.push(location(e)), 720);
+  openTimer = setTimeout(() => router.push(location(e)), 760);
 }
 
 async function load() {
@@ -202,6 +211,8 @@ onBeforeUnmount(() => { unwatch(); clearTimeout(openTimer); });
 </script>
 
 <style scoped>
+/* The opening book may swing past the edge for a moment: never scroll sideways. */
+.hundred { overflow-x: clip; }
 .source { margin-top: 10px; font-size: var(--fs-xs); color: var(--text-3); max-width: 680px; }
 .progress { display: flex; align-items: center; gap: 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--surface); max-width: 420px; }
 .progress strong { display: block; }

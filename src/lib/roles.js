@@ -34,6 +34,23 @@ export function roleFromConfig(email, config = access) {
   return null;
 }
 
+// Staff fixed in config/access.json, for the roles screen (read-only there).
+export function configuredStaff(config = access) {
+  const out = [];
+  for (const [role, key] of Object.entries(CONFIG_KEYS)) {
+    for (const email of configuredEmails(config[key])) out.push({ id: email, email, role, fixed: true, active: true });
+  }
+  return out;
+}
+
+// Why a role cannot be assigned: 'self', 'config' (fixed in the config file) or 'other'.
+export function roleBlockReason(actorEmail, targetEmail, config = access) {
+  const target = cleanEmail(targetEmail);
+  if (cleanEmail(actorEmail) === target) return 'self';
+  if (roleFromConfig(target, config)) return 'config';
+  return 'other';
+}
+
 // Final role. Config wins, then a roles/{email} document written by a tech admin
 // through the API (tech_admin itself is never accepted from a document), then
 // 'student' for any signed-in account with a verified e-mail.

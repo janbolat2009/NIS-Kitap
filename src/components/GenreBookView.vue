@@ -511,4 +511,20 @@ export default {
   font-size: 14px;
   z-index: 10;
 }
+
+/* Nothing may be wider than the screen: the toolbar wraps inside its box. */
+.genre-container, .genre-hero, .genre-toolbar, .genre-hero-left { min-width: 0; max-width: 100%; }
+.genre-hero-left > div:last-child { min-width: 0; }
+.search-box { min-width: min(260px, 100%); }
+.sort-box { min-width: 0; max-width: 100%; }
+.apple-select { min-width: 0; max-width: 100%; text-overflow: ellipsis; }
+.books-grid { grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); }
+@media (max-width: 640px) {
+  .genre-container { padding-inline: 16px; }
+  .genre-hero { padding: 20px; border-radius: 22px; }
+  .genre-hero-left { flex-wrap: wrap; gap: 14px; }
+  .genre-toolbar { padding: 12px; gap: 10px; }
+  .search-box { flex-basis: 100%; }
+  .sort-box, .sort-box .apple-select { width: 100%; }
+}
 </style>

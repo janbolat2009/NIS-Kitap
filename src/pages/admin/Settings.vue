@@ -51,11 +51,11 @@
       <p class="small">Постоянные роли заданы в <code>config/access.json</code>: директор, завуч, библиотекарь, технический администратор. Здесь можно добавить ещё сотрудников. Роль действует только после входа с подтверждённым email.</p>
       <ul class="rows">
         <li v-for="r in roles" :key="r.id" class="row-item">
-          <div class="row-main"><div class="row-title">{{ r.id }}</div><div class="row-meta">{{ ROLE[r.role] || r.role }}<span v-if="!r.active"> · не действует</span></div></div>
-          <div class="row-actions"><button type="button" class="btn btn-ghost btn-sm" @click="setRole(r.id, 'student')">Снять роль</button></div>
+          <div class="row-main"><div class="row-title">{{ r.id }}</div><div class="row-meta">{{ ROLE[r.role] || r.role }}<span v-if="r.fixed"> · закреплён в config/access.json, доступ уже есть</span><span v-else-if="!r.active"> · не действует</span></div></div>
+          <div v-if="!r.fixed" class="row-actions"><button type="button" class="btn btn-ghost btn-sm" @click="setRole(r.id, 'student')">Снять роль</button></div>
         </li>
       </ul>
-      <form class="add" @submit.prevent="setRole(newEmail, newRole)">
+      <form class="add" @submit.prevent="addStaff">
         <input v-model="newEmail" type="email" class="input" placeholder="email сотрудника" required />
         <select v-model="newRole" class="select"><option value="librarian">Библиотекарь</option><option value="deputy">Завуч</option><option value="director">Директор</option></select>
         <button type="submit" class="btn btn-primary">Назначить</button>
@@ -114,6 +114,13 @@ const saveRules = () => wrap(() => post('admin/settings/points', { ...rules, mil
 const saveSchool = () => wrap(() => post('admin/settings/school', { ...school, pickupPlaces: places.value.split('\n').map((x) => x.trim()).filter(Boolean) }), 'Настройки сохранены');
 const checkMail = () => wrap(async () => { s.value.mail = await get('admin/mail/status'); }, 'Проверено');
 const setRole = (email, role) => wrap(() => post('admin/roles', { email, role }), 'Роль обновлена');
+async function addStaff() {
+  const email = newEmail.value.trim().toLowerCase();
+  if (!email) return;
+  await setRole(email, newRole.value);
+  // Keep the address in the field when it failed, so it can be corrected.
+  if (roles.value.some((r) => r.id === email)) newEmail.value = '';
+}
 async function migrate(dryRun) {
   if (!dryRun && !window.confirm('Выполнить миграцию в рабочей базе? Копии изменяемых документов будут сохранены.')) return;
   try { maint.value = JSON.stringify(await post('admin/maintenance/migrate', dryRun ? { dryRun: true } : { apply: true, dryRun: false }), null, 2); } catch (err) { toast(errorMessage(err), { type: 'error' }); }

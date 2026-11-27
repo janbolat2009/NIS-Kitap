@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { resolveRole, roleFromConfig, can, canAssignRole, permissionsOf, isStaff } from '../src/lib/roles.js';
+import { resolveRole, roleFromConfig, can, canAssignRole, permissionsOf, isStaff, configuredStaff, roleBlockReason } from '../src/lib/roles.js';
 import { PERMISSIONS, ROLES } from '../src/lib/permissions.js';
 
 const config = {
@@ -70,5 +70,18 @@ describe('permissions', () => {
     expect(canAssignRole('tech_admin', 'tech@school.kz', 'new@school.kz', 'tech_admin', config)).toBe(false);
     expect(canAssignRole('tech_admin', 'tech@school.kz', 'lib@school.kz', 'student', config)).toBe(false);
     expect(canAssignRole('director', 'director@school.kz', 'new@school.kz', 'librarian', config)).toBe(false);
+  });
+
+  it('explains why a role was refused, so the screen can say it', () => {
+    expect(roleBlockReason('tech@school.kz', 'TECH@school.kz', config)).toBe('self');
+    expect(roleBlockReason('tech@school.kz', 'Director@School.kz', config)).toBe('config');
+    expect(roleBlockReason('tech@school.kz', 'new@school.kz', config)).toBe('other');
+  });
+
+  it('lists the staff fixed in the config file, without placeholders', () => {
+    const list = configuredStaff(config);
+    expect(list.map((r) => r.id).sort()).toEqual(['deputy@school.kz', 'director@school.kz', 'lib@school.kz', 'tech@school.kz']);
+    expect(list.every((r) => r.fixed && r.active)).toBe(true);
+    expect(list.find((r) => r.id === 'director@school.kz').role).toBe('director');
   });
 });

@@ -1,5 +1,5 @@
 <template>
-  <div class="hc" :class="[`hc-${size}`, { 'is-opening': opening, 'is-closing': closing }]" :style="{ '--hc-a': palette[0], '--hc-b': palette[1] }" aria-hidden="true">
+  <div class="hc" :class="[`hc-${size}`, { 'is-opening': opening, 'is-closing': closing }]" :style="{ '--hc-a': palette[0], '--hc-b': palette[1], '--open-x': openX, '--open-s': openScale }" aria-hidden="true">
     <div class="hc-shadow" />
     <div class="hc-obj">
       <span class="hc-pages" />
@@ -27,6 +27,9 @@ const props = defineProps({
   size: { type: String, default: 'card' },
   opening: { type: Boolean, default: false },
   closing: { type: Boolean, default: false },
+  // Where the open book goes: set by the list page so it always fits the screen.
+  openX: { type: String, default: '34%' },
+  openScale: { type: Number, default: 1.14 },
 });
 
 // Deep, calm jacket colours; a book always gets the same one.
@@ -66,7 +69,7 @@ const titleSize = computed(() => {
   inset: 0;
   transform: rotateY(-16deg) rotateX(3deg);
   transform-style: preserve-3d;
-  transition: transform 700ms var(--ease-out);
+  transition: transform 700ms var(--ease-out), transform-origin 700ms var(--ease-out);
 }
 .hc-pages, .hc-inside, .hc-front, .hc-face, .hc-back {
   position: absolute;
@@ -164,9 +167,9 @@ const titleSize = computed(() => {
 }
 
 /* Click: the cover swings open on its spine and the book comes forward. */
-.is-opening .hc-obj { transform: rotateY(-6deg) rotateX(0deg) translateX(34%) scale(1.14); transition-duration: 760ms; }
+.is-opening .hc-obj { transform-origin: left center; transform: rotateY(-6deg) translateX(var(--open-x)) scale(var(--open-s)); transition-duration: 760ms; }
 .is-opening .hc-front { transform: translateZ(3px) rotateY(-158deg); transition-duration: 760ms; }
-.is-opening .hc-shadow { opacity: 0.4; transform: translateX(34%) scaleX(1.5); }
+.is-opening .hc-shadow { opacity: 0; }
 
 /* Detail page: the book arrives open and settles closed. */
 @media (prefers-reduced-motion: no-preference) {
@@ -177,9 +180,13 @@ const titleSize = computed(() => {
     to { transform: translateZ(3px) rotateY(0deg); }
   }
   @keyframes hc-settle {
-    from { transform: rotateY(-6deg) translateX(34%) scale(1.1); }
-    to { transform: rotateY(-16deg) rotateX(3deg); }
+    from { transform-origin: left center; transform: rotateY(-6deg) translateX(var(--settle-x, 34%)) scale(var(--settle-s, 1.1)); }
+    to { transform-origin: left center; transform: rotateY(-16deg) rotateX(3deg); }
   }
+}
+/* On a phone the open book (twice as wide as the cover) is shrunk and centred. */
+@media (max-width: 760px) {
+  .hc-hero { --settle-x: 50%; --settle-s: 0.62; }
 }
 @media (prefers-reduced-motion: reduce) {
   .is-opening .hc-obj { transform: rotateY(-16deg) rotateX(3deg); }

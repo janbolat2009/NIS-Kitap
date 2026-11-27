@@ -80,6 +80,18 @@ const MESSAGES = {
     below_in_use: 'Нельзя сделать фонд меньше числа выданных и зарезервированных экземпляров.',
     pickup_in_past: 'Время получения уже прошло.',
     internal_error: 'Что-то пошло не так. Попробуйте ещё раз.',
+    role_self: 'Нельзя менять роль своего аккаунта.',
+    role_config: 'Этот сотрудник уже закреплён в config/access.json — доступ у него есть, добавлять не нужно.',
+    role_other: 'Эту роль назначить нельзя.',
+    bad_email: 'Проверьте адрес: он должен выглядеть как name@school.kz.',
+    bad_value: 'Недопустимое значение поля.',
+    missing_field: 'Заполните обязательное поле.',
+    too_long: 'Значение слишком длинное.',
+    too_short: 'Значение слишком короткое.',
+    bad_id: 'Некорректный идентификатор.',
+    invalid_json: 'Запрос повреждён. Обновите страницу и повторите.',
+    payload_too_large: 'Слишком большой запрос.',
+    invalid_token: 'Сессия устарела. Войдите заново.',
   },
   kz: {
     network_error: 'Сервермен байланыс жоқ. Интернетті тексеріп, қайталап көріңіз.',
@@ -96,6 +108,13 @@ const MESSAGES = {
     invalid_review: 'Пікір тексеруден өтпеді.',
     criteria_not_met: 'Марапат шарттары әлі орындалмаған.',
     internal_error: 'Бірдеңе дұрыс болмады. Қайталап көріңіз.',
+    role_self: 'Өз аккаунтыңыздың рөлін өзгертуге болмайды.',
+    role_config: 'Бұл қызметкер config/access.json ішінде бекітілген — қолжетімділігі бар, қосудың қажеті жоқ.',
+    role_other: 'Бұл рөлді тағайындауға болмайды.',
+    bad_email: 'Мекенжайды тексеріңіз: name@school.kz түрінде болуы керек.',
+    bad_value: 'Өріс мәні жарамсыз.',
+    missing_field: 'Міндетті өрісті толтырыңыз.',
+    invalid_token: 'Сессия ескірді. Қайта кіріңіз.',
   },
   en: {
     network_error: 'No connection to the server. Check the internet and try again.',
@@ -112,11 +131,24 @@ const MESSAGES = {
     invalid_review: 'The review did not pass the check.',
     criteria_not_met: 'The conditions for this reward are not met yet.',
     internal_error: 'Something went wrong. Please try again.',
+    role_self: 'You cannot change the role of your own account.',
+    role_config: 'This person is already fixed in config/access.json and has access, no need to add them.',
+    role_other: 'This role cannot be assigned.',
+    bad_email: 'Check the address: it should look like name@school.kz.',
+    bad_value: 'This value is not allowed.',
+    missing_field: 'Fill in the required field.',
+    invalid_token: 'Your session expired. Sign in again.',
   },
 };
 
 export function errorMessage(err, locale = 'ru') {
-  const code = err?.code || 'internal_error';
+  let code = err?.code || 'internal_error';
+  // The server explains why a role was refused (self / fixed in config / other).
+  if (code === 'cannot_assign_role') code = `role_${err?.data?.reason || 'other'}`;
   const dict = MESSAGES[locale] || MESSAGES.ru;
-  return dict[code] || MESSAGES.ru[code] || MESSAGES[locale]?.internal_error || MESSAGES.ru.internal_error;
+  const known = dict[code] || MESSAGES.ru[code];
+  if (known) return known;
+  // An unexpected code: say so instead of hiding it behind a generic phrase.
+  const base = MESSAGES[locale]?.internal_error || MESSAGES.ru.internal_error;
+  return code === 'internal_error' ? base : `${base} (${code})`;
 }

@@ -543,4 +543,27 @@ export default {
   font-size: 14px;
   z-index: 10;
 }
+
+/* Nothing may be wider than the screen: the toolbar wraps inside its box. */
+.lang-container, .lang-hero, .lang-toolbar, .lang-hero-left { min-width: 0; max-width: 100%; }
+.lang-hero-left > div:last-child { min-width: 0; }
+.lang-heading, .lang-description { overflow-wrap: anywhere; }
+.search-box { min-width: min(260px, 100%); }
+.filters-group { min-width: 0; max-width: 100%; }
+.apple-select { min-width: 0; max-width: 100%; text-overflow: ellipsis; }
+.books-grid { grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr)); }
+@media (max-width: 640px) {
+  .lang-main-content { padding-top: 84px; }
+  .lang-container { padding: 0 16px; }
+  .lang-hero { padding: 20px; border-radius: 22px; }
+  .lang-hero-left { flex-wrap: wrap; gap: 14px; }
+  .lang-heading { font-size: 26px; }
+  .lang-toolbar { padding: 12px; gap: 10px; }
+  .search-box { flex-basis: 100%; }
+  .filters-group { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; }
+  .apple-select { width: 100%; }
+}
+@media (max-width: 360px) {
+  .filters-group { grid-template-columns: minmax(0, 1fr); }
+}
 </style>
